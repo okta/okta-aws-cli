@@ -2,6 +2,7 @@ TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT:=gofumpt
 GOLINT=golint
 STATICCHECK=staticcheck
+GOBIN ?= $(shell go env GOPATH)/bin
 
 ifdef TEST_FILTER
 	TEST_FILTER := -run $(TEST_FILTER)
@@ -13,7 +14,7 @@ dep: # Download required dependencies
 	go mod tidy
 
 build: fmtcheck
-	go install
+	go build -o $(GOBIN)/otka-aws-cli cmd/cli/main.go
 
 clean:
 	go clean -cache -testcache ./...
