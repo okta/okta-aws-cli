@@ -18,6 +18,7 @@ package agent
 
 import "runtime"
 
+// UserAgent Helper for a stylized User Agent header in HTTP requests
 type UserAgent struct {
 	goVersion  string
 	osName     string
@@ -25,6 +26,7 @@ type UserAgent struct {
 	appVersion string
 }
 
+// NewUserAgent Create an new User Agent
 func NewUserAgent(version string) UserAgent {
 	ua := UserAgent{
 		goVersion:  runtime.Version(),

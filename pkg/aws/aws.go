@@ -16,8 +16,9 @@
 
 package aws
 
+// Credential Convenience representation of an AWS credential.
 type Credential struct {
-	AccessKeyId     string
+	AccessKeyID     string
 	SecretAccessKey string
 	SessionToken    string
 }
