@@ -104,6 +104,7 @@ func init() {
 	}
 }
 
+// Execute executes the root command
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error '%s'", err)

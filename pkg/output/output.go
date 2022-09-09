@@ -21,6 +21,7 @@ import (
 	"github.com/okta/okta-aws-cli/pkg/config"
 )
 
-type Outputer interface {
+// Outputter Interface to output AWS credentials in different formats.
+type Outputter interface {
 	Output(c *config.Config, ac *aws.Credential)
 }

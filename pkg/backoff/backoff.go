@@ -26,18 +26,22 @@ type Backoff struct {
 	ctx context.Context
 }
 
+// NewBackoff Creates a new backoff
 func NewBackoff(ctx context.Context) *Backoff {
 	return &Backoff{
 		ctx: ctx,
 	}
 }
 
+// NextBackOff Satisfies github.com/cenkalti/backoff/v4 BackOff interface
 func (b *Backoff) NextBackOff() time.Duration {
 	return time.Second * 2
 }
 
+// Reset Satisfies github.com/cenkalti/backoff/v4 BackOff interface
 func (b *Backoff) Reset() {}
 
+// Context Satisfies github.com/cenkalti/backoff/v4 BackOff interface
 func (b *Backoff) Context() context.Context {
 	return b.ctx
 }

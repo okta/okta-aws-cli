@@ -44,17 +44,22 @@ import (
 	"github.com/okta/okta-aws-cli/pkg/output"
 )
 
+// SessionToken Encapsulates the work of getting an AWS Session Token
 type SessionToken struct {
 	config *config.Config
 }
 
-type authToken struct {
+// AuthToken Encapsulates an Okta Token
+// https://developer.okta.com/docs/reference/api/oidc/#token
+type AuthToken struct {
 	AccessToken string `json:"access_token,omitempty"`
 	IDToken     string `json:"id_token,omitempty"`
 	Scope       string `json:"scope,omitempty"`
 }
 
-type deviceAuthorization struct {
+// DeviceAuthorization Encapsulates Okta API result to
+// /oauth2/v1/device/authorize call
+type DeviceAuthorization struct {
 	UserCode      string `json:"user_code,omitempty"`
 	DeviceCode    string `json:"device_code,omitempty"`
 	VericationURI string `json:"verification_uri,omitempty"`
@@ -65,12 +70,15 @@ type apiError struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
+// NewSessionToken Creates a new session token.
 func NewSessionToken(config *config.Config) *SessionToken {
 	return &SessionToken{
 		config: config,
 	}
 }
 
+// EstablishToken Template method of the steps to establish an AWS session
+// token.
 func (s *SessionToken) EstablishToken() error {
 	deviceAuth, err := s.Authorize()
 	if err != nil {
@@ -114,8 +122,9 @@ func (s *SessionToken) EstablishToken() error {
 	return nil
 }
 
+// RenderCredential Renders the credentials in the prescribed format.
 func (s *SessionToken) RenderCredential(ac *oaws.Credential) {
-	var o output.Outputer
+	var o output.Outputter
 	switch s.config.Format {
 	default:
 		o = output.NewEnvVar()
@@ -123,6 +132,8 @@ func (s *SessionToken) RenderCredential(ac *oaws.Credential) {
 	o.Output(s.config, ac)
 }
 
+// GetAWSCredential Get AWS Credentials with an STS Assume Role With SAML AWS
+// API call.
 func (s *SessionToken) GetAWSCredential(role, assertion string) (*oaws.Credential, error) {
 	idpRole := strings.Split(role, ",")
 	sess, err := session.NewSession()
@@ -142,12 +153,14 @@ func (s *SessionToken) GetAWSCredential(role, assertion string) (*oaws.Credentia
 	}
 
 	return &oaws.Credential{
-		AccessKeyId:     *svcResp.Credentials.AccessKeyId,
+		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
 	}, nil
 }
 
+// PromptForRoleChoice UX to prompt operator for the AWS role whose credentials
+// will be utilized.
 func (s *SessionToken) PromptForRoleChoice(roles []string) (string, error) {
 	if len(roles) == 0 {
 		return "", errors.New("no roles to choose from")
@@ -180,6 +193,7 @@ func (s *SessionToken) PromptForRoleChoice(roles []string) (string, error) {
 	return roles[num-1], nil
 }
 
+// GetRolesFromAssertion Get AWS Roles from SAML assertion.
 func (s *SessionToken) GetRolesFromAssertion(encoded string) ([]string, error) {
 	result := []string{}
 	assertion, err := base64.StdEncoding.DecodeString(encoded)
@@ -197,18 +211,19 @@ func (s *SessionToken) GetRolesFromAssertion(encoded string) ([]string, error) {
 	return result, nil
 }
 
-func (s *SessionToken) GetSAMLAssertion(at *authToken) (string, error) {
+// GetSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
+func (s *SessionToken) GetSAMLAssertion(at *AuthToken) (string, error) {
 	params := url.Values{"token": {at.AccessToken}}
-	apiUrl := fmt.Sprintf("https://%s/login/token/sso?%s", s.config.OrgDomain, params.Encode())
+	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", s.config.OrgDomain, params.Encode())
 
-	req, err := http.NewRequest(http.MethodGet, apiUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Add("Accept", "text/html")
 	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HttpClient.Do(req)
+	resp, err := s.config.HTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -224,13 +239,13 @@ func (s *SessionToken) GetSAMLAssertion(at *authToken) (string, error) {
 	if assertion, ok := findSAMLResponse(doc); ok {
 		return assertion, nil
 	}
-	return "", fmt.Errorf("could not find SAML assertion in API call %q", apiUrl)
+	return "", fmt.Errorf("could not find SAML assertion in API call %q", apiURL)
 }
 
 // GetSSOToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) GetSSOToken(at *authToken) (*authToken, error) {
-	apiUrl := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
+func (s *SessionToken) GetSSOToken(at *AuthToken) (*AuthToken, error) {
+	apiURL := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
 
 	data := url.Values{
 		"client_id":            {s.config.OidcAppID},
@@ -244,7 +259,7 @@ func (s *SessionToken) GetSSOToken(at *authToken) (*authToken, error) {
 	}
 	body := strings.NewReader(data.Encode())
 
-	req, err := http.NewRequest(http.MethodPost, apiUrl, body)
+	req, err := http.NewRequest(http.MethodPost, apiURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +267,7 @@ func (s *SessionToken) GetSSOToken(at *authToken) (*authToken, error) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HttpClient.Do(req)
+	resp, err := s.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +275,7 @@ func (s *SessionToken) GetSSOToken(at *authToken) (*authToken, error) {
 		return nil, fmt.Errorf("GetSSOToken received API response %q", resp.Status)
 	}
 
-	var respAt authToken
+	var respAt AuthToken
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&respAt)
 	if err != nil {
@@ -270,7 +285,8 @@ func (s *SessionToken) GetSSOToken(at *authToken) (*authToken, error) {
 	return &respAt, nil
 }
 
-func (s *SessionToken) PromptAuthentication(da *deviceAuthorization) {
+// PromptAuthentication UX to display activation URL and code.
+func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
 	prompt := `Initiate authentication for an AWS CLI by opening the following URL.
 Enter the given activation code when prompted.
 
@@ -294,10 +310,10 @@ func apiErr(bodyBytes []byte) (*apiError, error) {
 
 // GetAccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) GetAccessToken(deviceAuth *deviceAuthorization) (*authToken, error) {
-	apiUrl := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
+func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthToken, error) {
+	apiURL := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
 
-	req, err := http.NewRequest(http.MethodPost, apiUrl, nil)
+	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +335,7 @@ func (s *SessionToken) GetAccessToken(deviceAuth *deviceAuthorization) (*authTok
 		body := strings.NewReader(data.Encode())
 		req.Body = io.NopCloser(body)
 
-		resp, err := s.config.HttpClient.Do(req)
+		resp, err := s.config.HTTPClient.Do(req)
 		bodyBytes, _ = io.ReadAll(resp.Body)
 		if err != nil {
 			return backoff.Permanent(fmt.Errorf("GetAccessToken polling received API err %+v", err))
@@ -350,7 +366,7 @@ func (s *SessionToken) GetAccessToken(deviceAuth *deviceAuthorization) (*authTok
 		return nil, err
 	}
 
-	var at authToken
+	var at AuthToken
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&at)
 	if err != nil {
 		return nil, err
@@ -361,14 +377,14 @@ func (s *SessionToken) GetAccessToken(deviceAuth *deviceAuthorization) (*authTok
 
 // Authorize see:
 // https://developer.okta.com/docs/reference/api/oidc/#device-authorize
-func (s *SessionToken) Authorize() (*deviceAuthorization, error) {
-	apiUrl := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
+func (s *SessionToken) Authorize() (*DeviceAuthorization, error) {
+	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
 	data := url.Values{
 		"client_id": {s.config.OidcAppID},
 		"scope":     {"openid okta.apps.sso"},
 	}
 	body := strings.NewReader(data.Encode())
-	req, err := http.NewRequest(http.MethodPost, apiUrl, body)
+	req, err := http.NewRequest(http.MethodPost, apiURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +392,7 @@ func (s *SessionToken) Authorize() (*deviceAuthorization, error) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HttpClient.Do(req)
+	resp, err := s.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +405,7 @@ func (s *SessionToken) Authorize() (*deviceAuthorization, error) {
 		return nil, fmt.Errorf("Authorize non-JSON API response content type %q", ct)
 	}
 
-	var da deviceAuthorization
+	var da DeviceAuthorization
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&da)
 	if err != nil {

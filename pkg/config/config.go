@@ -23,18 +23,20 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+// Version The version of the CLI
 var Version = "0.0.1"
 
+// Config A config object for the CLI
 type Config struct {
 	OrgDomain  string
 	OidcAppID  string
 	FedAppID   string
 	Format     string
 	Profile    string
-	HttpClient *http.Client
+	HTTPClient *http.Client
 }
 
-// Work Does work.
+// NewConfig Creates a new config
 func NewConfig(orgDomain, oidcAppID, fedAppID, format *flag.Flag, profile *flag.Flag) *Config {
 	tr := &http.Transport{
 		IdleConnTimeout: 30 * time.Second,
@@ -50,6 +52,6 @@ func NewConfig(orgDomain, oidcAppID, fedAppID, format *flag.Flag, profile *flag.
 		FedAppID:   fedAppID.Value.String(),
 		Format:     format.Value.String(),
 		Profile:    profile.Value.String(),
-		HttpClient: httpClient,
+		HTTPClient: httpClient,
 	}
 }
