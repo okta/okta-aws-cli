@@ -175,7 +175,6 @@ func (s *SessionToken) PromptForRoleChoice(roles []string) (string, error) {
 
 	if num < 1 || num > len(roles) {
 		return "", fmt.Errorf("invalid choice %d, valid values are 1 to %d", num, len(roles))
-
 	}
 	fmt.Fprintf(os.Stderr, "\n")
 	return roles[num-1], nil
@@ -215,7 +214,6 @@ func (s *SessionToken) GetSAMLAssertion(at *authToken) (string, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("GetSAMLAssertion received API response %q", resp.Status)
-
 	}
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
@@ -316,7 +314,8 @@ func (s *SessionToken) GetAccessToken(deviceAuth *deviceAuthorization) (*authTok
 		data := url.Values{
 			"client_id":   {s.config.OidcAppID},
 			"device_code": {deviceAuth.DeviceCode},
-			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"}}
+			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+		}
 		body := strings.NewReader(data.Encode())
 		req.Body = io.NopCloser(body)
 
@@ -366,7 +365,8 @@ func (s *SessionToken) Authorize() (*deviceAuthorization, error) {
 	apiUrl := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
 	data := url.Values{
 		"client_id": {s.config.OidcAppID},
-		"scope":     {"openid okta.apps.sso"}}
+		"scope":     {"openid okta.apps.sso"},
+	}
 	body := strings.NewReader(data.Encode())
 	req, err := http.NewRequest(http.MethodPost, apiUrl, body)
 	if err != nil {
@@ -436,7 +436,6 @@ func findSAMLRoleValues(n *html.Node) []string {
 			if c.FirstChild != nil {
 				result = append(result, c.FirstChild.Data)
 			}
-
 		}
 	}
 	return result
