@@ -22,26 +22,91 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/okta/okta-aws-cli/pkg/work"
+	"github.com/okta/okta-aws-cli/pkg/config"
+	"github.com/okta/okta-aws-cli/pkg/sessiontoken"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "okta-aws",
-	Short: "okta-aws - Okta federated identity for AWS CLI",
-	Long: `okta-aws - Okta federated identity for AWS CLI
+	Version: config.Version,
+	Use:     "okta-aws-cli",
+	Short:   "okta-aws-cli - Okta federated identity for AWS CLI",
+	Long: `okta-aws-cli - Okta federated identity for AWS CLI
 
 Okta authentication for federated identity providers in support of AWS CLI.
-okta-aws handles authentication to the IdP and token exchange with AWS STS to
-collect a proper IAM role for the AWS CLI operator.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		work.Work()
+okta-aws-cli handles authentication to the IdP and token exchange with AWS STS 
+to collect a proper IAM role for the AWS CLI operator.`,
+
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c := config.NewConfig(
+			cmd.Flag("org-domain"),
+			cmd.Flag("oidc-client-id"),
+			cmd.Flag("aws-acct-fed-app-id"),
+			cmd.Flag("format"),
+			cmd.Flag("profile"))
+		st := sessiontoken.NewSessionToken(c)
+		return st.EstablishToken()
 	},
 }
 
-// Execute Execute the roote aws-cli command.
+type flag struct {
+	name     string
+	short    string
+	value    string
+	usage    string
+	required bool
+}
+
+var flags = []flag{
+	{
+		name:     "org-domain",
+		short:    "o",
+		value:    "",
+		usage:    "Org Domain",
+		required: true,
+	},
+	{
+		name:     "oidc-client-id",
+		short:    "c",
+		value:    "",
+		usage:    "OIDC Client ID",
+		required: true,
+	},
+	{
+		name:     "aws-acct-fed-app-id",
+		short:    "a",
+		value:    "",
+		usage:    "AWS Account Federation app ID",
+		required: true,
+	},
+	{
+		name:     "format",
+		short:    "f",
+		value:    "env-var",
+		usage:    "Output format",
+		required: false,
+	},
+	{
+		name:     "profile",
+		short:    "p",
+		value:    "default",
+		usage:    "AWS Profile",
+		required: false,
+	},
+}
+
+func init() {
+	for _, f := range flags {
+		rootCmd.Flags().StringP(f.name, f.short, f.value, f.usage)
+		if f.required {
+			rootCmd.MarkFlagRequired(f.name)
+		}
+
+	}
+}
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "aws-cli experienced the following error '%s'", err)
+		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error '%s'", err)
 		os.Exit(1)
 	}
 }

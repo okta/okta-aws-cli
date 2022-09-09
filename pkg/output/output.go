@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package work
+package output
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"github.com/okta/okta-aws-cli/pkg/aws"
+	"github.com/okta/okta-aws-cli/pkg/config"
 )
 
-func TestWork(t *testing.T) {
-	require.True(t, Work())
+type Outputer interface {
+	Output(c *config.Config, ac *aws.Credential)
 }

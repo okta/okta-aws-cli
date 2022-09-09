@@ -14,9 +14,24 @@
  * limitations under the License.
  */
 
-package work
+package output
 
-// Work Does work.
-func Work() bool {
-	return true
+import (
+	"fmt"
+
+	"github.com/okta/okta-aws-cli/pkg/aws"
+	"github.com/okta/okta-aws-cli/pkg/config"
+)
+
+type EnvVar struct{}
+
+func NewEnvVar() *EnvVar {
+	return &EnvVar{}
+}
+
+func (e *EnvVar) Output(c *config.Config, ac *aws.Credential) {
+	fmt.Printf("export AWS_PROFILE=%s\n", c.Profile)
+	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", ac.AccessKeyId)
+	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", ac.SecretAccessKey)
+	fmt.Printf("export AWS_SESSION_TOKEN=%s\n", ac.SessionToken)
 }
