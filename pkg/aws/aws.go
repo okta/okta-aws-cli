@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package work
+package aws
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-)
-
-func TestWork(t *testing.T) {
-	require.True(t, Work())
+// Credential Convenience representation of an AWS credential.
+type Credential struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
 }
