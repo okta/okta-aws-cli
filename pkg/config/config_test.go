@@ -19,9 +19,27 @@ package config
 import (
 	"testing"
 
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 )
 
+type value struct{}
+
+func (v *value) String() string {
+	return ""
+}
+
+func (v *value) Set(string) error {
+	return nil
+}
+
+func (v *value) Type() string {
+	return ""
+}
+
 func TestWork(t *testing.T) {
-	require.NotNull(t, NewConfig())
+	f := &pflag.Flag{
+		Value: &value{},
+	}
+	require.NotNil(t, NewConfig(f, f, f, f, f))
 }
