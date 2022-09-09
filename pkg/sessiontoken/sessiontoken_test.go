@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
-package work
+package sessiontoken
 
-// Work Does work.
-func Work() bool {
-	return true
+import (
+	"testing"
+
+	"github.com/okta/okta-aws-cli/pkg/config"
+	"github.com/stretchr/testify/require"
+)
+
+func TestEstablishToken(t *testing.T) {
+	require.NotNil(t, NewSessionToken(&config.Config{}))
 }

@@ -29,6 +29,6 @@ jobs:
 
       - name: Check Build
         run: make build
-        
+
       - name: Test
         run: make test
