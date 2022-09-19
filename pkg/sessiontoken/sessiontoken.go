@@ -248,7 +248,7 @@ func (s *SessionToken) GetSSOToken(at *AuthToken) (*AuthToken, error) {
 	apiURL := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
 
 	data := url.Values{
-		"client_id":            {s.config.OidcAppID},
+		"client_id":            {s.config.OIDCAppID},
 		"actor_token":          {at.AccessToken},
 		"actor_token_type":     {"urn:ietf:params:oauth:token-type:access_token"},
 		"subject_token":        {at.IDToken},
@@ -328,7 +328,7 @@ func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthTok
 	// else error
 	poll := func() error {
 		data := url.Values{
-			"client_id":   {s.config.OidcAppID},
+			"client_id":   {s.config.OIDCAppID},
 			"device_code": {deviceAuth.DeviceCode},
 			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
 		}
@@ -380,7 +380,7 @@ func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthTok
 func (s *SessionToken) Authorize() (*DeviceAuthorization, error) {
 	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
 	data := url.Values{
-		"client_id": {s.config.OidcAppID},
+		"client_id": {s.config.OIDCAppID},
 		"scope":     {"openid okta.apps.sso"},
 	}
 	body := strings.NewReader(data.Encode())
