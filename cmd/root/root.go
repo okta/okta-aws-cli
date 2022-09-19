@@ -26,87 +26,86 @@ import (
 	"github.com/okta/okta-aws-cli/pkg/sessiontoken"
 )
 
-var rootCmd = &cobra.Command{
-	Version: config.Version,
-	Use:     "okta-aws-cli",
-	Short:   "okta-aws-cli - Okta federated identity for AWS CLI",
-	Long: `okta-aws-cli - Okta federated identity for AWS CLI
+type flag struct {
+	name  string
+	short string
+	value string
+	usage string
+}
+
+var flags = []flag{
+	{
+		name:  "org-domain",
+		short: "o",
+		value: "",
+		usage: "Okta Org Domain",
+	},
+	{
+		name:  "oidc-client-id",
+		short: "c",
+		value: "",
+		usage: "OIDC Client ID",
+	},
+	{
+		name:  "aws-acct-fed-app-id",
+		short: "a",
+		value: "",
+		usage: "AWS Account Federation app ID",
+	},
+	{
+		name:  "format",
+		short: "f",
+		value: "env-var",
+		usage: "Output format",
+	},
+	{
+		name:  "profile",
+		short: "p",
+		value: "default",
+		usage: "AWS Profile",
+	},
+}
+
+func buildRootCommand(c *config.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Version: config.Version,
+		Use:     "okta-aws-cli",
+		Short:   "okta-aws-cli - Okta federated identity for AWS CLI",
+		Long: `okta-aws-cli - Okta federated identity for AWS CLI
 
 Okta authentication for federated identity providers in support of AWS CLI.
 okta-aws-cli handles authentication to the IdP and token exchange with AWS STS 
 to collect a proper IAM role for the AWS CLI operator.`,
 
-	RunE: func(cmd *cobra.Command, args []string) error {
-		c := config.NewConfig(
-			cmd.Flag("org-domain"),
-			cmd.Flag("oidc-client-id"),
-			cmd.Flag("aws-acct-fed-app-id"),
-			cmd.Flag("format"),
-			cmd.Flag("profile"))
-		st := sessiontoken.NewSessionToken(c)
-		return st.EstablishToken()
-	},
-}
-
-type flag struct {
-	name     string
-	short    string
-	value    string
-	usage    string
-	required bool
-}
-
-var flags = []flag{
-	{
-		name:     "org-domain",
-		short:    "o",
-		value:    "",
-		usage:    "Org Domain",
-		required: true,
-	},
-	{
-		name:     "oidc-client-id",
-		short:    "c",
-		value:    "",
-		usage:    "OIDC Client ID",
-		required: true,
-	},
-	{
-		name:     "aws-acct-fed-app-id",
-		short:    "a",
-		value:    "",
-		usage:    "AWS Account Federation app ID",
-		required: true,
-	},
-	{
-		name:     "format",
-		short:    "f",
-		value:    "env-var",
-		usage:    "Output format",
-		required: false,
-	},
-	{
-		name:     "profile",
-		short:    "p",
-		value:    "default",
-		usage:    "AWS Profile",
-		required: false,
-	},
-}
-
-func init() {
-	for _, f := range flags {
-		rootCmd.Flags().StringP(f.name, f.short, f.value, f.usage)
-		if f.required {
-			rootCmd.MarkFlagRequired(f.name)
-		}
-
+		RunE: func(cmd *cobra.Command, args []string) error {
+			st := sessiontoken.NewSessionToken(c)
+			return st.EstablishToken()
+		},
 	}
+
+	for _, f := range flags {
+		cmd.Flags().StringP(f.name, f.short, f.value, f.usage)
+	}
+
+	return cmd
 }
 
 // Execute executes the root command
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+func Execute(c *config.Config) {
+	cmd := buildRootCommand(c)
+	c.OverrideIfSet(cmd, "org-domain")
+	c.OverrideIfSet(cmd, "oidc-client-id")
+	c.OverrideIfSet(cmd, "aws-acct-fed-app-id")
+	c.OverrideIfSet(cmd, "format")
+	c.OverrideIfSet(cmd, "profile")
+
+	if err := c.CheckConfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error(s):\n%s\n\n", err)
+		cmd.Help()
+		os.Exit(1)
+	}
+
+	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error '%s'", err)
 		os.Exit(1)
 	}

@@ -17,9 +17,18 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/okta/okta-aws-cli/cmd/root"
+	"github.com/okta/okta-aws-cli/pkg/config"
 )
 
 func main() {
-	root.Execute()
+	config, err := config.NewConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "okta-aws-cli received error: %v\n", err)
+		os.Exit(1)
+	}
+	root.Execute(config)
 }

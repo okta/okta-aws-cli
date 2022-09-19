@@ -36,7 +36,8 @@ Configuration can be done with environment variables, `.env` file, or command li
 | Okta Org Domain | OKTA_ORG_DOMAIN | OKTA_ORG_DOMAIN | --org-domain value | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID | OKTA_OIDC_CLIENT_ID | OKTA_OIDC_CLIENT_ID | --oidc-client-id value | See [Allowed Web SSO Client](#allowed-web-sso-client) |
 | Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id value | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
-| Output format | OKTA_AWS_CLI_OUTPUT_FORMAT | OKTA_AWS_CLI_OUTPUT_FORMAT | --format value | Default is `env-var`. `cred-file` is also allowed |
+| Output format | FORMAT | FORMAT | --format value | Default is `env-var`. `cred-file` is also allowed |
+| Profile | PROFILE | PROFILE | --profile value | Default is `default`  |
 
 #### Allowed Web SSO Client
 
