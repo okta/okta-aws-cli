@@ -36,8 +36,11 @@ Configuration can be done with environment variables, `.env` file, or command li
 | Okta Org Domain | OKTA_ORG_DOMAIN | OKTA_ORG_DOMAIN | --org-domain value | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID | OKTA_OIDC_CLIENT_ID | OKTA_OIDC_CLIENT_ID | --oidc-client-id value | See [Allowed Web SSO Client](#allowed-web-sso-client) |
 | Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id value | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
+| AWS IAM Identity Provider ARN | AWS_IAM_IDP | AWS_IAM_IDP | --aws-iam-idp | The preferred IAM Identity Provider. If there are multiple IdPs available from AWS and this value does not match then a menu of choices will be rendered. |
+| AWS IAM Role ARN to assume | AWS_IAM_ROLE | AWS_IAM_ROLE | --aws-iam-role | The preferred IAM role for the given IAM Identity Provider |
 | Output format | FORMAT | FORMAT | --format value | Default is `env-var`. `cred-file` is also allowed |
 | Profile | PROFILE | PROFILE | --profile value | Default is `default`  |
+| Display QR Code | QR_CODE | QR_CODE | --qr-code | `yes` if flag is present  |
 
 #### Allowed Web SSO Client
 
@@ -99,21 +102,17 @@ variables or `.env` file.
 
 ```shell
 $ okta-aws-cli
-Initiate authentication for an AWS CLI by opening the following URL.
-Enter the given activation code when prompted.
+Open the following URL (copy and paste or scan QR code) and enter the activation
+code to begin Okta device authorization for the AWS CLI.
 
-Activation URL:  https://test.oktapreview.com/activate
-Activation code: HTCQSJLW
+[QR CODE]
 
-You have 2 available AWS IAM roles:
-Choice 1
-  IdP “arn:aws:iam::294719231913:saml-provider/Okta_DevEx_Test”
-  AWS Role “arn:aws:iam::294719231913:role/Test_Role_S3_Read”
-Choice 2
-  IDP “arn:aws:iam::294719231913:saml-provider/Okta_DevEx_Other”
-  AWS Role “arn:aws:iam::294719231913:role/Test-s3-full-read-write”
+https://test-org.okta.com/activate
 
-Enter Your choice: 1
+Activation code: ZNQZQXQQ
+
+? Choose an IdP: arn:aws:iam::123456789012:saml-provider/My_IdP
+? Choose a Role: arn:aws:iam::456789012345:role/My_Role
 
 export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY

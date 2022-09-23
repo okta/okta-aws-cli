@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/okta/okta-aws-cli/pkg/ansi"
 	"github.com/okta/okta-aws-cli/pkg/config"
 	"github.com/okta/okta-aws-cli/pkg/sessiontoken"
 )
@@ -29,7 +30,7 @@ import (
 type flag struct {
 	name  string
 	short string
-	value string
+	value interface{}
 	usage string
 }
 
@@ -59,6 +60,24 @@ var flags = []flag{
 		usage: "Output format",
 	},
 	{
+		name:  "aws-iam-idp",
+		short: "i",
+		value: "",
+		usage: "IAM Identity Provider ARN",
+	},
+	{
+		name:  "aws-iam-role",
+		short: "r",
+		value: "",
+		usage: "IAM Role ARN",
+	},
+	{
+		name:  "qr-code",
+		short: "q",
+		value: false,
+		usage: "Print QR Code",
+	},
+	{
 		name:  "profile",
 		short: "p",
 		value: "default",
@@ -84,8 +103,15 @@ to collect a proper IAM role for the AWS CLI operator.`,
 	}
 
 	for _, f := range flags {
-		cmd.Flags().StringP(f.name, f.short, f.value, f.usage)
+		if val, ok := f.value.(string); ok {
+			cmd.PersistentFlags().StringP(f.name, f.short, val, f.usage)
+		}
+		if val, ok := f.value.(bool); ok {
+			cmd.PersistentFlags().BoolP(f.name, f.short, val, f.usage)
+		}
 	}
+
+	cmd.SetUsageTemplate(resourceUsageTemplate())
 
 	return cmd
 }
@@ -97,6 +123,9 @@ func Execute(c *config.Config) {
 	c.OverrideIfSet(cmd, "oidc-client-id")
 	c.OverrideIfSet(cmd, "aws-acct-fed-app-id")
 	c.OverrideIfSet(cmd, "format")
+	c.OverrideIfSet(cmd, "aws-iam-idp")
+	c.OverrideIfSet(cmd, "aws-iam-role")
+	c.OverrideIfSet(cmd, "qr-code")
 	c.OverrideIfSet(cmd, "profile")
 
 	if err := c.CheckConfig(); err != nil {
@@ -106,7 +135,42 @@ func Execute(c *config.Config) {
 	}
 
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error '%s'", err)
+		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error '%s'\n", err)
 		os.Exit(1)
 	}
+}
+
+func resourceUsageTemplate() string {
+	return fmt.Sprintf(`%s:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+%s
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+%s
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+  
+%s{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+  
+%s
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+  
+%s
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+  
+%s{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+  
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`,
+		ansi.Faint("Usage:"),
+		ansi.Faint("Aliases:"),
+		ansi.Faint("Examples:"),
+		ansi.Faint("Available Commands:"),
+		ansi.Faint("Flags:"),
+		ansi.Faint("Global Flags:"),
+		ansi.Faint("Additional help topics:"),
+	)
 }
