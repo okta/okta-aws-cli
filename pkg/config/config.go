@@ -38,8 +38,11 @@ type Config struct {
 	OrgDomain  string `env:"OKTA_ORG_DOMAIN"`
 	OIDCAppID  string `env:"OKTA_OIDC_CLIENT_ID"`
 	FedAppID   string `env:"OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"`
+	AWSIAMIdP  string `env:"AWS_IAM_IDP"`
+	AWSIAMRole string `env:"AWS_IAM_ROLE"`
 	Format     string `env:"FORMAT,default=env-var"`
 	Profile    string `env:"PROFILE,default=default"`
+	QRCode     bool   `env:"QR_CODE"`
 	HTTPClient *http.Client
 }
 
@@ -81,7 +84,7 @@ func (c *Config) OverrideIfSet(cmd *cobra.Command, name string) {
 	}
 
 	val := flag.Value.String()
-	switch val {
+	switch name {
 	case "org-domain":
 		c.OrgDomain = val
 	case "oidc-client-id":
@@ -90,6 +93,12 @@ func (c *Config) OverrideIfSet(cmd *cobra.Command, name string) {
 		c.FedAppID = val
 	case "format":
 		c.Format = val
+	case "aws-iam-idp":
+		c.AWSIAMIdP = val
+	case "aws-iam-role":
+		c.AWSIAMRole = val
+	case "qr-code":
+		c.QRCode = (val == "true")
 	case "profile":
 		c.Profile = val
 	}

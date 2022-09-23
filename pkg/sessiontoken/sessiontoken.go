@@ -17,7 +17,6 @@
 package sessiontoken
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -28,13 +27,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/mdp/qrterminal"
 	"golang.org/x/net/html"
 
 	"github.com/okta/okta-aws-cli/pkg/agent"
@@ -60,14 +61,20 @@ type AuthToken struct {
 // DeviceAuthorization Encapsulates Okta API result to
 // /oauth2/v1/device/authorize call
 type DeviceAuthorization struct {
-	UserCode      string `json:"user_code,omitempty"`
-	DeviceCode    string `json:"device_code,omitempty"`
-	VericationURI string `json:"verification_uri,omitempty"`
+	UserCode        string `json:"user_code,omitempty"`
+	DeviceCode      string `json:"device_code,omitempty"`
+	VerificationURI string `json:"verification_uri,omitempty"`
 }
 
 type apiError struct {
 	Error            string `json:"error,omitempty"`
 	ErrorDescription string `json:"error_description,omitempty"`
+}
+
+// IDPAndRole IdP and role pairs
+type IDPAndRole struct {
+	idp  string
+	role string
 }
 
 // NewSessionToken Creates a new session token.
@@ -102,23 +109,22 @@ func (s *SessionToken) EstablishToken() error {
 		return err
 	}
 
-	roles, err := s.GetRolesFromAssertion(assertion)
+	idpRolesMap, err := s.GetIDPRolesMapFromAssertion(assertion)
 	if err != nil {
 		return err
 	}
 
-	role, err := s.PromptForRoleChoice(roles)
+	idpAndRole, err := s.PromptForIdpAndRole(idpRolesMap)
 	if err != nil {
 		return err
 	}
 
-	ac, err := s.GetAWSCredential(role, assertion)
+	ac, err := s.GetAWSCredential(idpAndRole, assertion)
 	if err != nil {
 		return err
 	}
 
 	s.RenderCredential(ac)
-
 	return nil
 }
 
@@ -129,13 +135,14 @@ func (s *SessionToken) RenderCredential(ac *oaws.Credential) {
 	default:
 		o = output.NewEnvVar()
 	}
+
+	fmt.Fprintf(os.Stderr, "\n")
 	o.Output(s.config, ac)
 }
 
 // GetAWSCredential Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (s *SessionToken) GetAWSCredential(role, assertion string) (*oaws.Credential, error) {
-	idpRole := strings.Split(role, ",")
+func (s *SessionToken) GetAWSCredential(idpAndRole *IDPAndRole, assertion string) (*oaws.Credential, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
@@ -143,8 +150,8 @@ func (s *SessionToken) GetAWSCredential(role, assertion string) (*oaws.Credentia
 	svc := sts.New(sess)
 	input := &sts.AssumeRoleWithSAMLInput{
 		DurationSeconds: aws.Int64(3600),
-		RoleArn:         aws.String(idpRole[1]),
-		PrincipalArn:    aws.String(idpRole[0]),
+		PrincipalArn:    aws.String(idpAndRole.idp),
+		RoleArn:         aws.String(idpAndRole.role),
 		SAMLAssertion:   aws.String(assertion),
 	}
 	svcResp, err := svc.AssumeRoleWithSAML(input)
@@ -159,43 +166,68 @@ func (s *SessionToken) GetAWSCredential(role, assertion string) (*oaws.Credentia
 	}, nil
 }
 
-// PromptForRoleChoice UX to prompt operator for the AWS role whose credentials
+// PromptForIdpAndRole UX to prompt operator for the AWS role whose credentials
 // will be utilized.
-func (s *SessionToken) PromptForRoleChoice(roles []string) (string, error) {
-	if len(roles) == 0 {
-		return "", errors.New("no roles to choose from")
-	}
-	fmt.Fprintf(os.Stderr, "You have %d available AWS IAM roles\n", len(roles))
-	for i, role := range roles {
-		idpRole := strings.Split(role, ",")
-		out := `Choice %d
-  IdP      %q
-  AWS Role %q
-`
-		fmt.Fprintf(os.Stderr, out, i+1, idpRole[0], idpRole[1])
-	}
-	fmt.Fprintf(os.Stderr, "\nEnter your choice: ")
-	reader := bufio.NewReader(os.Stdin)
-	choice, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	choice = strings.ReplaceAll(choice, "\n", "")
-	num, err := strconv.Atoi(choice)
-	if err != nil {
-		return "", err
+func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAndRole, error) {
+	result := &IDPAndRole{}
+
+	idps := make([]string, 0, len(idpRoles))
+	for idp := range idpRoles {
+		idps = append(idps, idp)
 	}
 
-	if num < 1 || num > len(roles) {
-		return "", fmt.Errorf("invalid choice %d, valid values are 1 to %d", num, len(roles))
+	if len(idps) == 0 {
+		return result, errors.New("no IdPs to choose from")
 	}
-	fmt.Fprintf(os.Stderr, "\n")
-	return roles[num-1], nil
+
+	var idp string
+	prompt := &survey.Select{
+		Message: "Choose an IdP:",
+		Options: idps,
+		Default: s.config.AWSIAMIdP,
+	}
+
+	stderrIsOutAskOpt := func(options *survey.AskOptions) error {
+		options.Stdio = terminal.Stdio{
+			In:  os.Stdin,
+			Out: os.Stderr,
+			Err: os.Stderr,
+		}
+		return nil
+	}
+
+	survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if idp == "" {
+		return result, errors.New("failed to select IdP value")
+	}
+
+	roles := idpRoles[idp]
+	if len(roles) == 0 {
+		return result, fmt.Errorf("IdP %q has no roles to choose from", idp)
+	}
+
+	var role string
+	// survey for role
+	prompt = &survey.Select{
+		Message: "Choose a Role:",
+		Options: roles,
+		Default: s.config.AWSIAMRole,
+	}
+	survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if role == "" {
+		return result, fmt.Errorf("no roles chosen for IdP %q", idp)
+	}
+
+	result.idp = idp
+	result.role = role
+	return result, nil
 }
 
-// GetRolesFromAssertion Get AWS Roles from SAML assertion.
-func (s *SessionToken) GetRolesFromAssertion(encoded string) ([]string, error) {
-	result := []string{}
+// GetIDPRolesMapFromAssertion Get AWS IdP and Roles from SAML assertion. Result
+// a map string string slice keyed by the IdP ARN value and slice of ARN role
+// values.
+func (s *SessionToken) GetIDPRolesMapFromAssertion(encoded string) (map[string][]string, error) {
+	result := make(map[string][]string)
 	assertion, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return result, err
@@ -206,7 +238,23 @@ func (s *SessionToken) GetRolesFromAssertion(encoded string) ([]string, error) {
 	}
 
 	if role, ok := findSAMLRoleAttibute(doc); ok {
-		result = findSAMLRoleValues(role)
+		pairs := findSAMLIdPRoleValues(role)
+		for _, pair := range pairs {
+			idpRole := strings.Split(pair, ",")
+			idp := idpRole[0]
+			if _, found := result[idp]; !found {
+				result[idp] = []string{}
+			}
+
+			if len(idpRole) == 1 {
+				continue
+			}
+
+			roles := result[idp]
+			role := idpRole[1]
+			roles = append(roles, role)
+			result[idp] = roles
+		}
 	}
 	return result, nil
 }
@@ -287,15 +335,25 @@ func (s *SessionToken) GetSSOToken(at *AuthToken) (*AuthToken, error) {
 
 // PromptAuthentication UX to display activation URL and code.
 func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
-	prompt := `Initiate authentication for an AWS CLI by opening the following URL.
-Enter the given activation code when prompted.
+	verificationURL := fmt.Sprintf("%s?user_code=%s", da.VerificationURI, da.UserCode)
+	var qrBuf []byte
+	qrCode := ""
 
-Activation URL:  %s
-Activation code: %s
+	if s.config.QRCode {
+		qrBuf = make([]byte, 4096)
+		buf := bytes.NewBufferString("")
+		qrterminal.GenerateHalfBlock(verificationURL, qrterminal.L, buf)
+		buf.Read(qrBuf)
+		qrCode = fmt.Sprintf("%s\n", qrBuf)
+	}
+
+	prompt := `Open the following URL to begin Okta device authorization for the AWS CLI.
+
+%s%s
 
 `
 
-	fmt.Fprintf(os.Stderr, prompt, da.VericationURI, da.UserCode)
+	fmt.Fprintf(os.Stderr, prompt, qrCode, verificationURL)
 }
 
 func apiErr(bodyBytes []byte) (*apiError, error) {
@@ -442,7 +500,7 @@ func findSAMLResponse(n *html.Node) (string, bool) {
 	return "", false
 }
 
-func findSAMLRoleValues(n *html.Node) []string {
+func findSAMLIdPRoleValues(n *html.Node) []string {
 	result := []string{}
 	if n == nil {
 		return result
