@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,11 @@ package sessiontoken
 import (
 	"testing"
 
-	"github.com/okta/okta-aws-cli/pkg/config"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEstablishToken(t *testing.T) {
-	require.NotNil(t, NewSessionToken(&config.Config{}))
+	_, err := NewSessionToken()
+	// config is not set so this should error
+	require.Error(t, err)
 }

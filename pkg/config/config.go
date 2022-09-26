@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,17 +17,12 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/joeshaw/envdecode"
-	"github.com/joho/godotenv"
-
-	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // Version The version of the CLI
@@ -35,33 +30,58 @@ var Version = "0.0.2"
 
 // Config A config object for the CLI
 type Config struct {
-	OrgDomain  string `env:"OKTA_ORG_DOMAIN"`
-	OIDCAppID  string `env:"OKTA_OIDC_CLIENT_ID"`
-	FedAppID   string `env:"OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"`
-	AWSIAMIdP  string `env:"AWS_IAM_IDP"`
-	AWSIAMRole string `env:"AWS_IAM_ROLE"`
-	Format     string `env:"FORMAT,default=env-var"`
-	Profile    string `env:"PROFILE,default=default"`
-	QRCode     bool   `env:"QR_CODE"`
+	OrgDomain  string
+	OIDCAppID  string
+	FedAppID   string
+	AWSIAMIdP  string
+	AWSIAMRole string
+	Format     string
+	Profile    string
+	QRCode     bool
 	HTTPClient *http.Client
 }
 
-// NewConfig Creates a new config gathering values in this order:
-//  1. .env file
+// NewConfig Creates a new config gathering values in this precedence of order:
+//  1. CLI flags
 //  2. ENV variables
-//
-// Consumers of the config, like the root command, may then overwrite values
-// given CLI args and flags.
-func NewConfig(envFiles ...string) (*Config, error) {
-	err := godotenv.Load(envFiles...)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, err
+//  3. .env file
+func NewConfig() *Config {
+	cfg := Config{
+		OrgDomain:  viper.GetString("org-domain"),
+		OIDCAppID:  viper.GetString("oidc-client-id"),
+		FedAppID:   viper.GetString("aws-acct-fed-app-id"),
+		AWSIAMIdP:  viper.GetString("aws-iam-idp"),
+		AWSIAMRole: viper.GetString("aws-iam-role"),
+		Format:     viper.GetString("format"),
+		Profile:    viper.GetString("profile"),
+		QRCode:     viper.GetBool("qr-code"),
+	}
+	if cfg.Format == "" {
+		cfg.Format = "env-var"
+	}
+	if cfg.Profile == "" {
+		cfg.Profile = "default"
 	}
 
-	var cfg Config
-	err = envdecode.Decode(&cfg)
-	if err != nil {
-		return nil, err
+	// Viper binds ENV VARs to a lower snake version, set the configs with them
+	// if they haven't already been set by cli flag binding.
+	if cfg.OrgDomain == "" {
+		cfg.OrgDomain = viper.GetString("okta_org_domain")
+	}
+	if cfg.OIDCAppID == "" {
+		cfg.OIDCAppID = viper.GetString("okta_oidc_client_id")
+	}
+	if cfg.FedAppID == "" {
+		cfg.FedAppID = viper.GetString("okta_aws_account_federation_app_id")
+	}
+	if cfg.AWSIAMIdP == "" {
+		cfg.AWSIAMIdP = viper.GetString("aws_iam_idp")
+	}
+	if cfg.AWSIAMRole == "" {
+		cfg.AWSIAMRole = viper.GetString("aws_iam_role")
+	}
+	if !cfg.QRCode {
+		cfg.QRCode = viper.GetBool("qr_code")
 	}
 
 	tr := &http.Transport{
@@ -73,35 +93,7 @@ func NewConfig(envFiles ...string) (*Config, error) {
 	}
 	cfg.HTTPClient = httpClient
 
-	return &cfg, nil
-}
-
-// OverrideIfSet Override the corresponding config value if it is set a CLI flag
-func (c *Config) OverrideIfSet(cmd *cobra.Command, name string) {
-	flag := cmd.Flag(name)
-	if flag.Value == nil || flag.Value.String() == "" {
-		return
-	}
-
-	val := flag.Value.String()
-	switch name {
-	case "org-domain":
-		c.OrgDomain = val
-	case "oidc-client-id":
-		c.OIDCAppID = val
-	case "aws-acct-fed-app-id":
-		c.FedAppID = val
-	case "format":
-		c.Format = val
-	case "aws-iam-idp":
-		c.AWSIAMIdP = val
-	case "aws-iam-role":
-		c.AWSIAMRole = val
-	case "qr-code":
-		c.QRCode = (val == "true")
-	case "profile":
-		c.Profile = val
-	}
+	return &cfg
 }
 
 // CheckConfig Checks that required configuration variables are set.

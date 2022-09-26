@@ -102,14 +102,9 @@ variables or `.env` file.
 
 ```shell
 $ okta-aws-cli
-Open the following URL (copy and paste or scan QR code) and enter the activation
-code to begin Okta device authorization for the AWS CLI.
+Open the following URL to begin Okta device authorization for the AWS CLI.
 
-[QR CODE]
-
-https://test-org.okta.com/activate
-
-Activation code: ZNQZQXQQ
+https://test-org.okta.com/activate?user_code=ZNQZQXQQ
 
 ? Choose an IdP: arn:aws:iam::123456789012:saml-provider/My_IdP
 ? Choose a Role: arn:aws:iam::456789012345:role/My_Role
