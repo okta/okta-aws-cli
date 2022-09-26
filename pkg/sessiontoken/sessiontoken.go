@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,10 +78,16 @@ type IDPAndRole struct {
 }
 
 // NewSessionToken Creates a new session token.
-func NewSessionToken(config *config.Config) *SessionToken {
+func NewSessionToken() (*SessionToken, error) {
+	config := config.NewConfig()
+	err := config.CheckConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	return &SessionToken{
 		config: config,
-	}
+	}, nil
 }
 
 // EstablishToken Template method of the steps to establish an AWS session
@@ -180,13 +186,6 @@ func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAn
 		return result, errors.New("no IdPs to choose from")
 	}
 
-	var idp string
-	prompt := &survey.Select{
-		Message: "Choose an IdP:",
-		Options: idps,
-		Default: s.config.AWSIAMIdP,
-	}
-
 	stderrIsOutAskOpt := func(options *survey.AskOptions) error {
 		options.Stdio = terminal.Stdio{
 			In:  os.Stdin,
@@ -194,6 +193,15 @@ func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAn
 			Err: os.Stderr,
 		}
 		return nil
+	}
+
+	var idp string
+	prompt := &survey.Select{
+		Message: "Choose an IdP:",
+		Options: idps,
+	}
+	if s.config.AWSIAMIdP != "" {
+		prompt.Default = s.config.AWSIAMIdP
 	}
 
 	survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
@@ -211,7 +219,9 @@ func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAn
 	prompt = &survey.Select{
 		Message: "Choose a Role:",
 		Options: roles,
-		Default: s.config.AWSIAMRole,
+	}
+	if s.config.AWSIAMRole != "" {
+		prompt.Default = s.config.AWSIAMRole
 	}
 	survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
 	if role == "" {

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +17,9 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/okta/okta-aws-cli/cmd/root"
-	"github.com/okta/okta-aws-cli/pkg/config"
 )
 
 func main() {
-	config, err := config.NewConfig()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "okta-aws-cli received error: %v\n", err)
-		os.Exit(1)
-	}
-	root.Execute(config)
+	root.Execute()
 }

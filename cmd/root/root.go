@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,13 @@
 package root
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/okta/okta-aws-cli/pkg/ansi"
 	"github.com/okta/okta-aws-cli/pkg/config"
@@ -28,64 +31,73 @@ import (
 )
 
 type flag struct {
-	name  string
-	short string
-	value interface{}
-	usage string
+	name   string
+	short  string
+	value  interface{}
+	usage  string
+	envVar string
 }
 
 var flags = []flag{
 	{
-		name:  "org-domain",
-		short: "o",
-		value: "",
-		usage: "Okta Org Domain",
+		name:   "org-domain",
+		short:  "o",
+		value:  "",
+		usage:  "Okta Org Domain",
+		envVar: "OKTA_ORG_DOMAIN",
 	},
 	{
-		name:  "oidc-client-id",
-		short: "c",
-		value: "",
-		usage: "OIDC Client ID",
+		name:   "oidc-client-id",
+		short:  "c",
+		value:  "",
+		usage:  "OIDC Client ID",
+		envVar: "OKTA_OIDC_CLIENT_ID",
 	},
 	{
-		name:  "aws-acct-fed-app-id",
-		short: "a",
-		value: "",
-		usage: "AWS Account Federation app ID",
+		name:   "aws-acct-fed-app-id",
+		short:  "a",
+		value:  "",
+		usage:  "AWS Account Federation app ID",
+		envVar: "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID",
 	},
 	{
-		name:  "format",
-		short: "f",
-		value: "env-var",
-		usage: "Output format",
+		name:   "aws-iam-idp",
+		short:  "i",
+		value:  "",
+		usage:  "IAM Identity Provider ARN",
+		envVar: "AWS_IAM_IDP",
 	},
 	{
-		name:  "aws-iam-idp",
-		short: "i",
-		value: "",
-		usage: "IAM Identity Provider ARN",
+		name:   "aws-iam-role",
+		short:  "r",
+		value:  "",
+		usage:  "IAM Role ARN",
+		envVar: "AWS_IAM_ROLE",
 	},
 	{
-		name:  "aws-iam-role",
-		short: "r",
-		value: "",
-		usage: "IAM Role ARN",
+		name:   "profile",
+		short:  "p",
+		value:  "default",
+		usage:  "AWS Profile",
+		envVar: "PROFILE",
 	},
 	{
-		name:  "qr-code",
-		short: "q",
-		value: false,
-		usage: "Print QR Code",
+		name:   "format",
+		short:  "f",
+		value:  "env-var",
+		usage:  "Output format",
+		envVar: "FORMAT",
 	},
 	{
-		name:  "profile",
-		short: "p",
-		value: "default",
-		usage: "AWS Profile",
+		name:   "qr-code",
+		short:  "q",
+		value:  false,
+		usage:  "Print QR Code of activation URL",
+		envVar: "QR_CODE",
 	},
 }
 
-func buildRootCommand(c *config.Config) *cobra.Command {
+func buildRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Version: config.Version,
 		Use:     "okta-aws-cli",
@@ -97,11 +109,31 @@ okta-aws-cli handles authentication to the IdP and token exchange with AWS STS
 to collect a proper IAM role for the AWS CLI operator.`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			st := sessiontoken.NewSessionToken(c)
+			st, err := sessiontoken.NewSessionToken()
+			if err != nil {
+				return err
+			}
 			return st.EstablishToken()
 		},
 	}
 
+	// bind env vars
+	for _, f := range flags {
+		viper.BindEnv(f.envVar, f.name)
+	}
+	// bind env vars via dotenv if it exists
+	path, _ := os.Getwd()
+	dotEnv := filepath.Join(path, ".env")
+	if _, err := os.Stat(dotEnv); err == nil || !errors.Is(err, os.ErrNotExist) {
+		viper.AddConfigPath(path)
+		viper.SetConfigName(".env")
+		viper.SetConfigType("dotenv")
+
+		viper.ReadInConfig()
+	}
+	viper.AutomaticEnv()
+
+	// bind cli flags
 	for _, f := range flags {
 		if val, ok := f.value.(string); ok {
 			cmd.PersistentFlags().StringP(f.name, f.short, val, f.usage)
@@ -109,33 +141,18 @@ to collect a proper IAM role for the AWS CLI operator.`,
 		if val, ok := f.value.(bool); ok {
 			cmd.PersistentFlags().BoolP(f.name, f.short, val, f.usage)
 		}
+
+		viper.BindPFlag(f.name, cmd.PersistentFlags().Lookup(f.name))
 	}
 
 	cmd.SetUsageTemplate(resourceUsageTemplate())
-
 	return cmd
 }
 
 // Execute executes the root command
-func Execute(c *config.Config) {
-	cmd := buildRootCommand(c)
-	c.OverrideIfSet(cmd, "org-domain")
-	c.OverrideIfSet(cmd, "oidc-client-id")
-	c.OverrideIfSet(cmd, "aws-acct-fed-app-id")
-	c.OverrideIfSet(cmd, "format")
-	c.OverrideIfSet(cmd, "aws-iam-idp")
-	c.OverrideIfSet(cmd, "aws-iam-role")
-	c.OverrideIfSet(cmd, "qr-code")
-	c.OverrideIfSet(cmd, "profile")
-
-	if err := c.CheckConfig(); err != nil {
-		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error(s):\n%s\n\n", err)
-		cmd.Help()
-		os.Exit(1)
-	}
-
+func Execute() {
+	cmd := buildRootCommand()
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "okta-aws-cli experienced the following error '%s'\n", err)
 		os.Exit(1)
 	}
 }
