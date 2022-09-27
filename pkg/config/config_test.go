@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,28 +18,8 @@ package config
 
 import (
 	"testing"
-
-	"github.com/spf13/pflag"
-	"github.com/stretchr/testify/require"
 )
 
-type value struct{}
-
-func (v *value) String() string {
-	return ""
-}
-
-func (v *value) Set(string) error {
-	return nil
-}
-
-func (v *value) Type() string {
-	return ""
-}
-
-func TestWork(t *testing.T) {
-	f := &pflag.Flag{
-		Value: &value{},
-	}
-	require.NotNil(t, NewConfig(f, f, f, f, f))
+func TestNewConfigVariables(t *testing.T) {
+	t.Skip("Usage of Viper for config variables made this test obsolete.")
 }
