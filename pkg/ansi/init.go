@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 /*
  * Copyright (c) 2022-Present, Okta, Inc.
  *
@@ -14,14 +17,8 @@
  * limitations under the License.
  */
 
-package output
+package ansi
 
-import (
-	"github.com/okta/okta-aws-cli/pkg/aws"
-	"github.com/okta/okta-aws-cli/pkg/config"
-)
-
-// Outputter Interface to output AWS credentials in different formats.
-type Outputter interface {
-	Output(c *config.Config, ac *aws.Credential)
-}
+// InitConsole initializes any platform-specific aspect of the terminal.
+// This method will run for all except Windows.
+func InitConsole() {}
