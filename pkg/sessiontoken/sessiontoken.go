@@ -61,9 +61,12 @@ type AuthToken struct {
 // DeviceAuthorization Encapsulates Okta API result to
 // /oauth2/v1/device/authorize call
 type DeviceAuthorization struct {
-	UserCode        string `json:"user_code,omitempty"`
-	DeviceCode      string `json:"device_code,omitempty"`
-	VerificationURI string `json:"verification_uri,omitempty"`
+	UserCode                string `json:"user_code,omitempty"`
+	DeviceCode              string `json:"device_code,omitempty"`
+	VerificationURI         string `json:"verification_uri,omitempty"`
+	VerificationURIComplete string `json:"verification_uri_complete,omitempty"`
+	ExpiresIn               int    `json:"expires_in,omitempty"`
+	Interval                int    `json:"interval,omitempty"`
 }
 
 type apiError struct {
@@ -130,20 +133,26 @@ func (s *SessionToken) EstablishToken() error {
 		return err
 	}
 
-	s.RenderCredential(ac)
+	err = s.RenderCredential(ac)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // RenderCredential Renders the credentials in the prescribed format.
-func (s *SessionToken) RenderCredential(ac *oaws.Credential) {
+func (s *SessionToken) RenderCredential(ac *oaws.Credential) error {
 	var o output.Outputter
 	switch s.config.Format {
+	case "aws-credentials":
+		o = output.NewAWSCredentialsFile()
 	default:
 		o = output.NewEnvVar()
+		fmt.Fprintf(os.Stderr, "\n")
 	}
 
-	fmt.Fprintf(os.Stderr, "\n")
-	o.Output(s.config, ac)
+	return o.Output(s.config, ac)
 }
 
 // GetAWSCredential Get AWS Credentials with an STS Assume Role With SAML AWS
@@ -345,14 +354,13 @@ func (s *SessionToken) GetSSOToken(at *AuthToken) (*AuthToken, error) {
 
 // PromptAuthentication UX to display activation URL and code.
 func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
-	verificationURL := fmt.Sprintf("%s?user_code=%s", da.VerificationURI, da.UserCode)
 	var qrBuf []byte
 	qrCode := ""
 
 	if s.config.QRCode {
 		qrBuf = make([]byte, 4096)
 		buf := bytes.NewBufferString("")
-		qrterminal.GenerateHalfBlock(verificationURL, qrterminal.L, buf)
+		qrterminal.GenerateHalfBlock(da.VerificationURIComplete, qrterminal.L, buf)
 		buf.Read(qrBuf)
 		qrCode = fmt.Sprintf("%s\n", qrBuf)
 	}
@@ -363,7 +371,7 @@ func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
 
 `
 
-	fmt.Fprintf(os.Stderr, prompt, qrCode, verificationURL)
+	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
 }
 
 func apiErr(bodyBytes []byte) (*apiError, error) {
