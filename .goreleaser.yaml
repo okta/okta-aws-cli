@@ -14,6 +14,8 @@ builds:
       - windows
       - darwin
       - freebsd
+    main: ./cmd/cli/
+    binary: '{{ .ProjectName }}_v{{ .Version }}'
 archives:
   - replacements:
       darwin: Darwin
