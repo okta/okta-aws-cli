@@ -30,31 +30,33 @@ var Version = "0.0.2"
 
 // Config A config object for the CLI
 type Config struct {
-	OrgDomain  string
-	OIDCAppID  string
-	FedAppID   string
-	AWSIAMIdP  string
-	AWSIAMRole string
-	Format     string
-	Profile    string
-	QRCode     bool
-	HTTPClient *http.Client
+	OrgDomain      string
+	OIDCAppID      string
+	FedAppID       string
+	AWSIAMIdP      string
+	AWSIAMRole     string
+	Format         string
+	Profile        string
+	QRCode         bool
+	AWSCredentials string
+	HTTPClient     *http.Client
 }
 
-// NewConfig Creates a new config gathering values in this precedence of order:
+// NewConfig Creates a new config gathering values in this order of precedence:
 //  1. CLI flags
 //  2. ENV variables
 //  3. .env file
 func NewConfig() *Config {
 	cfg := Config{
-		OrgDomain:  viper.GetString("org-domain"),
-		OIDCAppID:  viper.GetString("oidc-client-id"),
-		FedAppID:   viper.GetString("aws-acct-fed-app-id"),
-		AWSIAMIdP:  viper.GetString("aws-iam-idp"),
-		AWSIAMRole: viper.GetString("aws-iam-role"),
-		Format:     viper.GetString("format"),
-		Profile:    viper.GetString("profile"),
-		QRCode:     viper.GetBool("qr-code"),
+		OrgDomain:      viper.GetString("org-domain"),
+		OIDCAppID:      viper.GetString("oidc-client-id"),
+		FedAppID:       viper.GetString("aws-acct-fed-app-id"),
+		AWSIAMIdP:      viper.GetString("aws-iam-idp"),
+		AWSIAMRole:     viper.GetString("aws-iam-role"),
+		Format:         viper.GetString("format"),
+		Profile:        viper.GetString("profile"),
+		QRCode:         viper.GetBool("qr-code"),
+		AWSCredentials: viper.GetString("aws-credentials"),
 	}
 	if cfg.Format == "" {
 		cfg.Format = "env-var"
