@@ -23,5 +23,5 @@ import (
 
 // Outputter Interface to output AWS credentials in different formats.
 type Outputter interface {
-	Output(c *config.Config, ac *aws.Credential)
+	Output(c *config.Config, ac *aws.Credential) error
 }

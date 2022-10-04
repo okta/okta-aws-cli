@@ -38,63 +38,79 @@ type flag struct {
 	envVar string
 }
 
-var flags = []flag{
-	{
-		name:   "org-domain",
-		short:  "o",
-		value:  "",
-		usage:  "Okta Org Domain",
-		envVar: "OKTA_ORG_DOMAIN",
-	},
-	{
-		name:   "oidc-client-id",
-		short:  "c",
-		value:  "",
-		usage:  "OIDC Client ID",
-		envVar: "OKTA_OIDC_CLIENT_ID",
-	},
-	{
-		name:   "aws-acct-fed-app-id",
-		short:  "a",
-		value:  "",
-		usage:  "AWS Account Federation app ID",
-		envVar: "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID",
-	},
-	{
-		name:   "aws-iam-idp",
-		short:  "i",
-		value:  "",
-		usage:  "IAM Identity Provider ARN",
-		envVar: "AWS_IAM_IDP",
-	},
-	{
-		name:   "aws-iam-role",
-		short:  "r",
-		value:  "",
-		usage:  "IAM Role ARN",
-		envVar: "AWS_IAM_ROLE",
-	},
-	{
-		name:   "profile",
-		short:  "p",
-		value:  "default",
-		usage:  "AWS Profile",
-		envVar: "PROFILE",
-	},
-	{
-		name:   "format",
-		short:  "f",
-		value:  "env-var",
-		usage:  "Output format",
-		envVar: "FORMAT",
-	},
-	{
-		name:   "qr-code",
-		short:  "q",
-		value:  false,
-		usage:  "Print QR Code of activation URL",
-		envVar: "QR_CODE",
-	},
+var flags []flag
+
+func init() {
+	var awsCredentialsFilename string
+	if home, err := os.UserHomeDir(); err == nil {
+		awsCredentialsFilename = filepath.Join(home, ".aws", "credentials")
+	}
+
+	flags = []flag{
+		{
+			name:   "org-domain",
+			short:  "o",
+			value:  "",
+			usage:  "Okta Org Domain",
+			envVar: "OKTA_ORG_DOMAIN",
+		},
+		{
+			name:   "oidc-client-id",
+			short:  "c",
+			value:  "",
+			usage:  "OIDC Client ID",
+			envVar: "OKTA_OIDC_CLIENT_ID",
+		},
+		{
+			name:   "aws-acct-fed-app-id",
+			short:  "a",
+			value:  "",
+			usage:  "AWS Account Federation app ID",
+			envVar: "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID",
+		},
+		{
+			name:   "aws-iam-idp",
+			short:  "i",
+			value:  "",
+			usage:  "IAM Identity Provider ARN",
+			envVar: "AWS_IAM_IDP",
+		},
+		{
+			name:   "aws-iam-role",
+			short:  "r",
+			value:  "",
+			usage:  "IAM Role ARN",
+			envVar: "AWS_IAM_ROLE",
+		},
+		{
+			name:   "profile",
+			short:  "p",
+			value:  "default",
+			usage:  "AWS Profile",
+			envVar: "PROFILE",
+		},
+		{
+			name:   "format",
+			short:  "f",
+			value:  "env-var",
+			usage:  "Output format",
+			envVar: "FORMAT",
+		},
+		{
+			name:   "qr-code",
+			short:  "q",
+			value:  false,
+			usage:  "Print QR Code of activation URL",
+			envVar: "QR_CODE",
+		},
+		{
+			name:   "aws-credentials",
+			short:  "w",
+			value:  awsCredentialsFilename,
+			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", "aws-credentials"),
+			envVar: "AWS_CREDENTIALS",
+		},
+	}
 }
 
 func buildRootCommand() *cobra.Command {

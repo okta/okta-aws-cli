@@ -5,6 +5,12 @@ Okta authentication for federated identity providers in support of AWS CLI.
 `okta-aws-cli` handles authentication to the IdP and token exchange with AWS STS
 to collect a proper IAM role for the AWS CLI operator.
 
+```shell
+$ eval `okta-aws-cli` && aws s3 ls
+2018-04-04 11:56:00 test-bucket
+2021-06-10 12:47:11 mah-bucket
+```
+
 * [Configuration](#configuration)
 * [Operation](#operation)
 * [Development](#development)
@@ -29,18 +35,19 @@ that can be used for the AWS CLI configuration.  Output can be expressed as
 values](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for AWS CLI configuration.
 
-Configuration can be done with environment variables, `.env` file, or command line flags.
+Configuration can be done with environment variables, an `.env` file, command line flags, or a combination of the three.
 
-| Value | ENV var | .env file value | Command line flag | Description |
-|-------|---------|-----------------|-------------------|-------------|
-| Okta Org Domain | OKTA_ORG_DOMAIN | OKTA_ORG_DOMAIN | --org-domain value | Full domain hostname of the Okta org e.g. `test.okta.com` |
-| OIDC Client ID | OKTA_OIDC_CLIENT_ID | OKTA_OIDC_CLIENT_ID | --oidc-client-id value | See [Allowed Web SSO Client](#allowed-web-sso-client) |
-| Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id value | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
-| AWS IAM Identity Provider ARN | AWS_IAM_IDP | AWS_IAM_IDP | --aws-iam-idp | The preferred IAM Identity Provider. If there are multiple IdPs available from AWS and this value does not match then a menu of choices will be rendered. |
-| AWS IAM Role ARN to assume | AWS_IAM_ROLE | AWS_IAM_ROLE | --aws-iam-role | The preferred IAM role for the given IAM Identity Provider |
-| Output format | FORMAT | FORMAT | --format value | Default is `env-var`. `cred-file` is also allowed |
-| Profile | PROFILE | PROFILE | --profile value | Default is `default`  |
-| Display QR Code | QR_CODE | QR_CODE | --qr-code | `yes` if flag is present  |
+| Name | ENV var and .env file value | Command line flag | Description |
+|-------|-----------------------------|-------------------|-------------|
+| Okta Org Domain | OKTA_ORG_DOMAIN | `--org-domain` **[value]** | Full domain hostname of the Okta org e.g. `test.okta.com` |
+| OIDC Client ID | OKTA_OIDC_CLIENT_ID | --oidc-client-id **[value]** | See [Allowed Web SSO Client](#allowed-web-sso-client) |
+| Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id **[value]** | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
+| AWS IAM Identity Provider ARN | AWS_IAM_IDP | --aws-iam-idp **[value]** | The preferred IAM Identity Provider. If there are multiple IdPs available from AWS and this value does not match then a menu of choices will be rendered. |
+| AWS IAM Role ARN to assume | AWS_IAM_ROLE | --aws-iam-role **[value]** | The preferred IAM role for the given IAM Identity Provider |
+| Output format | FORMAT | --format **[value]** | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
+| Profile | PROFILE | --profile **[value]** | Default is `default`  |
+| Display QR Code | QR_CODE | --qr-code | `yes` if flag is present  |
+| Alternate AWS credentials file path | AWS_CREDENTIALS | --aws-credentials | Path to alternative credentials file other than AWS CLI default |
 
 #### Allowed Web SSO Client
 
@@ -97,8 +104,8 @@ use of `STDOUT` values.
 
 ### Plain usage
 
-Note: Example assumes Okta AWS CLI configuration has already been set by ENV
-variables or `.env` file.
+Note: Example assumes other Okta AWS CLI configuration vales have already been
+set by ENV variables or `.env` file.
 
 ```shell
 $ okta-aws-cli
@@ -123,8 +130,8 @@ $ aws s3 ls
 
 ### Scripted orientated usages
 
-Note: Example assumes Okta AWS CLI configuration has already been set by ENV
-variables or `.env` file.
+Note: Example assumes other Okta AWS CLI configuration vales have already been
+set by ENV variables or `.env` file.
 
 ```shell
 $ eval `okta-aws-cli` && aws s3 ls
@@ -135,6 +142,37 @@ $ eval `okta-aws-cli`
 $ aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
+```
+
+### AWS credentials file orientated usage
+
+Note: Example assumes other Okta AWS CLI configuration vales have already been
+set by ENV variables or `.env` file.
+
+```shell
+$ okta-aws-cli --profile test --format aws-credentials && \
+  aws s3 ls
+
+Open the following URL to begin Okta device authorization for the AWS CLI.
+
+https://test-org.okta.com/activate?user_code=ZNQZQXQQ
+
+? Choose an IdP: arn:aws:iam::123456789012:saml-provider/My_IdP
+? Choose a Role: arn:aws:iam::456789012345:role/My_Role
+Wrote profile "test" to /Users/mikemondragon/.aws/credentials
+
+2018-04-04 11:56:00 test-bucket
+2021-06-10 12:47:11 mah-bucket
+```
+
+Note: The Okta AWS CLI will only append to the AWS credentials file. Be sure to
+comment out or remove previous named profiles from the credentials file.
+Otherwise and error like the following may occur.
+
+```shell
+aws --profile example s3 ls
+
+Unable to parse config file: /home/user/.aws/credentials
 ```
 
 ### Help
