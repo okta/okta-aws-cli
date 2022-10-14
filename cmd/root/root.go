@@ -93,7 +93,7 @@ func init() {
 			name:   "format",
 			short:  "f",
 			value:  "env-var",
-			usage:  "Output format",
+			usage:  "Output format. [env-var|aws-credentials]",
 			envVar: "FORMAT",
 		},
 		{
