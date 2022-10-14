@@ -189,6 +189,12 @@ $ otka-aws --version
 
 ## Development
 
+Run source code locally
+
+```
+go run cmd/okta-aws-cli/main.go
+```
+
 Make file help
 
 ```

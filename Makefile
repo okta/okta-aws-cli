@@ -14,7 +14,7 @@ dep: # Download required dependencies
 	go mod tidy
 
 build: fmtcheck
-	go build -o $(GOBIN)/otka-aws-cli cmd/cli/main.go
+	go build -o $(GOBIN)/otka-aws-cli cmd/okta-aws-cli/main.go
 
 clean:
 	go clean -cache -testcache ./...
