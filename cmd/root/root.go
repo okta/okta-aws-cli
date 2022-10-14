@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/okta/okta-aws-cli/pkg/ansi"
-	"github.com/okta/okta-aws-cli/pkg/config"
-	"github.com/okta/okta-aws-cli/pkg/sessiontoken"
+	"github.com/okta/okta-aws-cli/internal/ansi"
+	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/sessiontoken"
 )
 
 type flag struct {
