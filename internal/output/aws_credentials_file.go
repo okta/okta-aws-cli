@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/okta/okta-aws-cli/pkg/aws"
-	"github.com/okta/okta-aws-cli/pkg/config"
+	"github.com/okta/okta-aws-cli/internal/aws"
+	"github.com/okta/okta-aws-cli/internal/config"
 )
 
 // AWSCredentialsFile AWS credentials file output formatter
