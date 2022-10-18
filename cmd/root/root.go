@@ -28,6 +28,11 @@ import (
 	"github.com/okta/okta-aws-cli/internal/ansi"
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/sessiontoken"
+	pstr "github.com/okta/okta-aws-cli/pkg/strings"
+)
+
+const (
+	dotEnvFilename = ".env"
 )
 
 type flag struct {
@@ -107,7 +112,7 @@ func init() {
 			name:   "aws-credentials",
 			short:  "w",
 			value:  awsCredentialsFilename,
-			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", "aws-credentials"),
+			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", pstr.AWSCredentials),
 			envVar: "AWS_CREDENTIALS",
 		},
 	}
@@ -135,17 +140,17 @@ to collect a proper IAM role for the AWS CLI operator.`,
 
 	// bind env vars
 	for _, f := range flags {
-		viper.BindEnv(f.envVar, f.name)
+		_ = viper.BindEnv(f.envVar, f.name)
 	}
 	// bind env vars via dotenv if it exists
 	path, _ := os.Getwd()
-	dotEnv := filepath.Join(path, ".env")
+	dotEnv := filepath.Join(path, dotEnvFilename)
 	if _, err := os.Stat(dotEnv); err == nil || !errors.Is(err, os.ErrNotExist) {
 		viper.AddConfigPath(path)
-		viper.SetConfigName(".env")
+		viper.SetConfigName(dotEnvFilename)
 		viper.SetConfigType("dotenv")
 
-		viper.ReadInConfig()
+		_ = viper.ReadInConfig()
 	}
 	viper.AutomaticEnv()
 
@@ -158,7 +163,7 @@ to collect a proper IAM role for the AWS CLI operator.`,
 			cmd.PersistentFlags().BoolP(f.name, f.short, val, f.usage)
 		}
 
-		viper.BindPFlag(f.name, cmd.PersistentFlags().Lookup(f.name))
+		_ = viper.BindPFlag(f.name, cmd.PersistentFlags().Lookup(f.name))
 	}
 
 	cmd.SetUsageTemplate(resourceUsageTemplate())
