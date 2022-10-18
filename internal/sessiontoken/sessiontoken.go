@@ -43,6 +43,20 @@ import (
 	boff "github.com/okta/okta-aws-cli/internal/backoff"
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/output"
+	pstr "github.com/okta/okta-aws-cli/pkg/strings"
+)
+
+const (
+	amazonAWS               = "amazon_aws"
+	accept                  = "Accept"
+	applicationJSON         = "application/json"
+	applicationXWwwForm     = "application/x-www-form-urlencoded"
+	contentType             = "Content-Type"
+	userAgent               = "User-Agent"
+	nameKey                 = "name"
+	saml2Attribute          = "saml2:attribute"
+	samlAttributesRole      = "https://aws.amazon.com/SAML/Attributes/Role"
+	oauthV1TokenEndpointFmt = "https://%s/oauth2/v1/token"
 )
 
 // SessionToken Encapsulates the work of getting an AWS Session Token
@@ -50,17 +64,18 @@ type SessionToken struct {
 	config *config.Config
 }
 
-// AuthToken Encapsulates an Okta Token
+// authToken Encapsulates an Okta Token
 // https://developer.okta.com/docs/reference/api/oidc/#token
-type AuthToken struct {
+type authToken struct {
 	AccessToken string `json:"access_token,omitempty"`
 	IDToken     string `json:"id_token,omitempty"`
+	TokenType   string `json:"token_type,omitempty"`
 	Scope       string `json:"scope,omitempty"`
 }
 
-// DeviceAuthorization Encapsulates Okta API result to
+// deviceAuthorization Encapsulates Okta API result to
 // /oauth2/v1/device/authorize call
-type DeviceAuthorization struct {
+type deviceAuthorization struct {
 	UserCode                string `json:"user_code,omitempty"`
 	DeviceCode              string `json:"device_code,omitempty"`
 	VerificationURI         string `json:"verification_uri,omitempty"`
@@ -69,71 +84,99 @@ type DeviceAuthorization struct {
 	Interval                int    `json:"interval,omitempty"`
 }
 
+// oktaApplication Okta API application object
+// See: https://developer.okta.com/docs/reference/api/apps/#application-object
+type oktaApplication struct {
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Settings struct {
+		App struct {
+			IdentityProviderARN string `json:"identityProviderArn"`
+			WebSSOClientID      string `json:"webSSOAllowedClient"`
+		} `json:"app"`
+	} `json:"settings"`
+}
+
+// apiError Wrapper for Okta API error
 type apiError struct {
 	Error            string `json:"error,omitempty"`
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// IDPAndRole IdP and role pairs
-type IDPAndRole struct {
+// idpAndRole IdP and role pairs
+type idpAndRole struct {
 	idp  string
 	role string
 }
 
 // NewSessionToken Creates a new session token.
-func NewSessionToken() (*SessionToken, error) {
+func NewSessionToken() (token *SessionToken, err error) {
 	config := config.NewConfig()
-	err := config.CheckConfig()
+	err = config.CheckConfig()
 	if err != nil {
 		return nil, err
 	}
-
-	return &SessionToken{
+	token = &SessionToken{
 		config: config,
-	}, nil
+	}
+	return token, nil
 }
 
 // EstablishToken Template method of the steps to establish an AWS session
 // token.
 func (s *SessionToken) EstablishToken() error {
-	deviceAuth, err := s.Authorize()
+	deviceAuth, err := s.authorize()
 	if err != nil {
 		return err
 	}
 
-	s.PromptAuthentication(deviceAuth)
+	s.promptAuthentication(deviceAuth)
 
-	authToken, err := s.GetAccessToken(deviceAuth)
+	authToken, err := s.fetchAccessToken(deviceAuth)
 	if err != nil {
 		return err
 	}
 
-	authToken, err = s.GetSSOToken(authToken)
+	_, err = s.listFedApps(authToken)
+	if errors.As(err, &multipleFedAppsError{}) {
+		return err
+	}
+	// TODO
+	// The OIDC app which the authToken is associated with has the
+	// okta.apps.read scope granted to it if the length of the fed apps are
+	// greater than one. Go into multi fed app mode when that is the case
+	// if len(fedApps) > 0 {
+	// 	return s.multiFedEstablishToken(fedApps)
+	// }
+
+	authToken, err = s.fetchSSOWebToken(authToken)
 	if err != nil {
 		return err
 	}
 
-	assertion, err := s.GetSAMLAssertion(authToken)
+	assertion, err := s.fetchSAMLAssertion(authToken)
 	if err != nil {
 		return err
 	}
 
-	idpRolesMap, err := s.GetIDPRolesMapFromAssertion(assertion)
+	idpRolesMap, err := s.extractIDPAndRolesMapFromAssertion(assertion)
 	if err != nil {
 		return err
 	}
 
-	idpAndRole, err := s.PromptForIdpAndRole(idpRolesMap)
+	iar, err := s.promptForIdpAndRole(idpRolesMap)
 	if err != nil {
 		return err
 	}
 
-	ac, err := s.GetAWSCredential(idpAndRole, assertion)
+	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
 	if err != nil {
 		return err
 	}
 
-	err = s.RenderCredential(ac)
+	err = s.renderCredential(ac)
 	if err != nil {
 		return err
 	}
@@ -141,11 +184,11 @@ func (s *SessionToken) EstablishToken() error {
 	return nil
 }
 
-// RenderCredential Renders the credentials in the prescribed format.
-func (s *SessionToken) RenderCredential(ac *oaws.Credential) error {
+// renderCredential Renders the credentials in the prescribed format.
+func (s *SessionToken) renderCredential(ac *oaws.Credential) error {
 	var o output.Outputter
 	switch s.config.Format {
-	case "aws-credentials":
+	case pstr.AWSCredentials:
 		o = output.NewAWSCredentialsFile()
 	default:
 		o = output.NewEnvVar()
@@ -155,9 +198,9 @@ func (s *SessionToken) RenderCredential(ac *oaws.Credential) error {
 	return o.Output(s.config, ac)
 }
 
-// GetAWSCredential Get AWS Credentials with an STS Assume Role With SAML AWS
+// fetchAWSCredentialWithSAMLRole Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (s *SessionToken) GetAWSCredential(idpAndRole *IDPAndRole, assertion string) (*oaws.Credential, error) {
+func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
@@ -165,8 +208,8 @@ func (s *SessionToken) GetAWSCredential(idpAndRole *IDPAndRole, assertion string
 	svc := sts.New(sess)
 	input := &sts.AssumeRoleWithSAMLInput{
 		DurationSeconds: aws.Int64(3600),
-		PrincipalArn:    aws.String(idpAndRole.idp),
-		RoleArn:         aws.String(idpAndRole.role),
+		PrincipalArn:    aws.String(iar.idp),
+		RoleArn:         aws.String(iar.role),
 		SAMLAssertion:   aws.String(assertion),
 	}
 	svcResp, err := svc.AssumeRoleWithSAML(input)
@@ -174,25 +217,24 @@ func (s *SessionToken) GetAWSCredential(idpAndRole *IDPAndRole, assertion string
 		return nil, err
 	}
 
-	return &oaws.Credential{
+	credential = &oaws.Credential{
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
-	}, nil
+	}
+	return credential, nil
 }
 
-// PromptForIdpAndRole UX to prompt operator for the AWS role whose credentials
+// promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
 // will be utilized.
-func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAndRole, error) {
-	result := &IDPAndRole{}
-
+func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *idpAndRole, err error) {
 	idps := make([]string, 0, len(idpRoles))
 	for idp := range idpRoles {
 		idps = append(idps, idp)
 	}
 
 	if len(idps) == 0 {
-		return result, errors.New("no IdPs to choose from")
+		return nil, errors.New("no IdPs to choose from")
 	}
 
 	stderrIsOutAskOpt := func(options *survey.AskOptions) error {
@@ -213,14 +255,17 @@ func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAn
 		prompt.Default = s.config.AWSIAMIdP
 	}
 
-	survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return nil, fmt.Errorf("error asking for IdP selection: %w", err)
+	}
 	if idp == "" {
-		return result, errors.New("failed to select IdP value")
+		return nil, errors.New("failed to select IdP value")
 	}
 
 	roles := idpRoles[idp]
 	if len(roles) == 0 {
-		return result, fmt.Errorf("IdP %q has no roles to choose from", idp)
+		return nil, fmt.Errorf("provider %q has no roles to choose from", idp)
 	}
 
 	var role string
@@ -232,87 +277,92 @@ func (s *SessionToken) PromptForIdpAndRole(idpRoles map[string][]string) (*IDPAn
 	if s.config.AWSIAMRole != "" {
 		prompt.Default = s.config.AWSIAMRole
 	}
-	survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return nil, fmt.Errorf("error asking for role selection: %w", err)
+	}
 	if role == "" {
-		return result, fmt.Errorf("no roles chosen for IdP %q", idp)
+		return nil, fmt.Errorf("no roles chosen for provider %q", idp)
 	}
 
-	result.idp = idp
-	result.role = role
-	return result, nil
+	iar = &idpAndRole{
+		idp:  idp,
+		role: role,
+	}
+	return iar, nil
 }
 
-// GetIDPRolesMapFromAssertion Get AWS IdP and Roles from SAML assertion. Result
+// extractIDPAndRolesMapFromAssertion Get AWS IdP and Roles from SAML assertion. Result
 // a map string string slice keyed by the IdP ARN value and slice of ARN role
 // values.
-func (s *SessionToken) GetIDPRolesMapFromAssertion(encoded string) (map[string][]string, error) {
-	result := make(map[string][]string)
+func (s *SessionToken) extractIDPAndRolesMapFromAssertion(encoded string) (irmap map[string][]string, err error) {
 	assertion, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	doc, err := html.Parse(strings.NewReader(string(assertion)))
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
+	irmap = make(map[string][]string)
 	if role, ok := findSAMLRoleAttibute(doc); ok {
 		pairs := findSAMLIdPRoleValues(role)
 		for _, pair := range pairs {
 			idpRole := strings.Split(pair, ",")
 			idp := idpRole[0]
-			if _, found := result[idp]; !found {
-				result[idp] = []string{}
+			if _, found := irmap[idp]; !found {
+				irmap[idp] = []string{}
 			}
 
 			if len(idpRole) == 1 {
 				continue
 			}
 
-			roles := result[idp]
+			roles := irmap[idp]
 			role := idpRole[1]
 			roles = append(roles, role)
-			result[idp] = roles
+			irmap[idp] = roles
 		}
 	}
-	return result, nil
+	return irmap, nil
 }
 
-// GetSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
-func (s *SessionToken) GetSAMLAssertion(at *AuthToken) (string, error) {
+// fetchSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
+func (s *SessionToken) fetchSAMLAssertion(at *authToken) (assertion string, err error) {
 	params := url.Values{"token": {at.AccessToken}}
 	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", s.config.OrgDomain, params.Encode())
 
 	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 	if err != nil {
-		return "", err
+		return assertion, err
 	}
-	req.Header.Add("Accept", "text/html")
-	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
+	req.Header.Add(accept, "text/html")
+	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
 	if err != nil {
-		return "", err
+		return assertion, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GetSAMLAssertion received API response %q", resp.Status)
+		return "", fmt.Errorf("fetching SAML assertion received API response %q", resp.Status)
 	}
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
 	if err != nil {
-		return "", err
+		return assertion, err
 	}
 
 	if assertion, ok := findSAMLResponse(doc); ok {
 		return assertion, nil
 	}
-	return "", fmt.Errorf("could not find SAML assertion in API call %q", apiURL)
+	return assertion, fmt.Errorf("could not find SAML assertion in API call %q", apiURL)
 }
 
-// GetSSOToken see:
+// fetchSSOWebToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) GetSSOToken(at *AuthToken) (*AuthToken, error) {
-	apiURL := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
+func (s *SessionToken) fetchSSOWebToken(at *authToken) (token *authToken, err error) {
+	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain)
 
 	data := url.Values{
 		"client_id":            {s.config.OIDCAppID},
@@ -330,30 +380,30 @@ func (s *SessionToken) GetSSOToken(at *AuthToken) (*AuthToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
+	req.Header.Add(accept, applicationJSON)
+	req.Header.Add(contentType, applicationXWwwForm)
+	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GetSSOToken received API response %q", resp.Status)
+		return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
 	}
 
-	var respAt AuthToken
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&respAt)
+	token = &authToken{}
+	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(token)
 	if err != nil {
 		return nil, err
 	}
 
-	return &respAt, nil
+	return
 }
 
-// PromptAuthentication UX to display activation URL and code.
-func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
+// promptAuthentication UX to display activation URL and code.
+func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 	var qrBuf []byte
 	qrCode := ""
 
@@ -361,8 +411,9 @@ func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
 		qrBuf = make([]byte, 4096)
 		buf := bytes.NewBufferString("")
 		qrterminal.GenerateHalfBlock(da.VerificationURIComplete, qrterminal.L, buf)
-		buf.Read(qrBuf)
-		qrCode = fmt.Sprintf("%s\n", qrBuf)
+		if _, err := buf.Read(qrBuf); err == nil {
+			qrCode = fmt.Sprintf("%s\n", qrBuf)
+		}
 	}
 
 	prompt := `Open the following URL to begin Okta device authorization for the AWS CLI.
@@ -374,28 +425,74 @@ func (s *SessionToken) PromptAuthentication(da *DeviceAuthorization) {
 	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
 }
 
-func apiErr(bodyBytes []byte) (*apiError, error) {
-	var ae apiError
-	err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&ae)
+// ListFedApp Lists Okta AWS Fed Apps that are active. Errors after that occur
+// after getting anything other than a 403 on /api/v1/apps will be wrapped as as
+// an error that is related having multiple fed apps available -
+// hasMultipleFedApps.
+func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err error) {
+	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain))
 	if err != nil {
-		return nil, err
+		return apps, err
+	}
+	params := url.Values{}
+	params.Add("limit", "200")
+	params.Add("q", amazonAWS)
+	params.Add("filter", `status eq "ACTIVE"`)
+	apiURL.RawQuery = params.Encode()
+	req, err := http.NewRequest(http.MethodGet, apiURL.String(), nil)
+	if err != nil {
+		return apps, err
 	}
 
-	return &ae, nil
+	req.Header.Add(accept, applicationJSON)
+	req.Header.Add(contentType, applicationJSON)
+	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
+	resp, err := s.config.HTTPClient.Do(req)
+	if resp.StatusCode == http.StatusForbidden {
+		return apps, err
+	}
+
+	// Any errors after this point should be considered related to having multiple fed apps
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return apps, newMultipleFedAppsError(err)
+	}
+	var bodyBytes []byte
+	var oktaApps []oktaApplication
+	bodyBytes, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return apps, newMultipleFedAppsError(err)
+	}
+	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&oktaApps)
+	if err != nil {
+		return apps, newMultipleFedAppsError(err)
+	}
+
+	for _, app := range oktaApps {
+		if app.Name != amazonAWS {
+			continue
+		}
+		if app.Status != "ACTIVE" {
+			continue
+		}
+		apps = append(apps, app)
+	}
+
+	return
 }
 
-// GetAccessToken see:
+// fetchAccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthToken, error) {
-	apiURL := fmt.Sprintf("https://%s/oauth2/v1/token", s.config.OrgDomain)
+func (s *SessionToken) fetchAccessToken(deviceAuth *deviceAuthorization) (at *authToken, err error) {
+	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain)
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
+	req.Header.Add(accept, applicationJSON)
+	req.Header.Add(contentType, applicationXWwwForm)
+	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	var bodyBytes []byte
 
@@ -414,7 +511,7 @@ func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthTok
 		resp, err := s.config.HTTPClient.Do(req)
 		bodyBytes, _ = io.ReadAll(resp.Body)
 		if err != nil {
-			return backoff.Permanent(fmt.Errorf("GetAccessToken polling received API err %+v", err))
+			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
 		}
 		if resp.StatusCode == http.StatusOK {
 			// done
@@ -424,16 +521,16 @@ func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthTok
 			// continue polling if status code is 400 and "error" is "authorization_pending"
 			apiErr, err := apiErr(bodyBytes)
 			if err != nil {
-				return backoff.Permanent(fmt.Errorf("GetAccessToken polling received unexpected API error body %q", string(bodyBytes)))
+				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API error body %q", string(bodyBytes)))
 			}
 			if apiErr.Error != "authorization_pending" {
-				return backoff.Permanent(fmt.Errorf("GetAccessToken polling received unexpected API polling error %q - %q", apiErr.Error, apiErr.ErrorDescription))
+				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API polling error %q - %q", apiErr.Error, apiErr.ErrorDescription))
 			}
 
 			return errors.New("continue polling")
 		}
 
-		return backoff.Permanent(fmt.Errorf("GetAccessToken polling received unexpected API status %q %q", resp.Status, string(bodyBytes)))
+		return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API status %q %q", resp.Status, string(bodyBytes)))
 	}
 
 	bOff := boff.NewBackoff(context.Background())
@@ -442,46 +539,47 @@ func (s *SessionToken) GetAccessToken(deviceAuth *DeviceAuthorization) (*AuthTok
 		return nil, err
 	}
 
-	var at AuthToken
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&at)
+	at = &authToken{}
+	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(at)
 	if err != nil {
 		return nil, err
 	}
 
-	return &at, nil
+	return
 }
 
-// Authorize see:
+// authorize see:
 // https://developer.okta.com/docs/reference/api/oidc/#device-authorize
-func (s *SessionToken) Authorize() (*DeviceAuthorization, error) {
+func (s *SessionToken) authorize() (*deviceAuthorization, error) {
 	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
 	data := url.Values{
 		"client_id": {s.config.OIDCAppID},
-		"scope":     {"openid okta.apps.sso"},
+		//"scope":     {"openid okta.apps.sso"},
+		"scope": {"openid okta.apps.sso okta.apps.read"},
 	}
 	body := strings.NewReader(data.Encode())
 	req, err := http.NewRequest(http.MethodPost, apiURL, body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", agent.NewUserAgent(config.Version).String())
+	req.Header.Add(accept, applicationJSON)
+	req.Header.Add(contentType, applicationXWwwForm)
+	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Authorize received API response %q", resp.Status)
+		return nil, fmt.Errorf("authorize received API response %q", resp.Status)
 	}
 
-	ct := resp.Header.Get("Content-Type")
-	if !strings.Contains(ct, "application/json") {
-		return nil, fmt.Errorf("Authorize non-JSON API response content type %q", ct)
+	ct := resp.Header.Get(contentType)
+	if !strings.Contains(ct, applicationJSON) {
+		return nil, fmt.Errorf("authorize non-JSON API response content type %q", ct)
 	}
 
-	var da DeviceAuthorization
+	var da deviceAuthorization
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&da)
 	if err != nil {
@@ -491,15 +589,13 @@ func (s *SessionToken) Authorize() (*DeviceAuthorization, error) {
 	return &da, nil
 }
 
-func findSAMLResponse(n *html.Node) (string, bool) {
+func findSAMLResponse(n *html.Node) (val string, found bool) {
 	if n == nil {
-		return "", false
+		return
 	}
 	if n.Type == html.ElementNode && n.Data == "input" {
-		found := false
-		var val string
 		for _, a := range n.Attr {
-			if a.Key == "name" && a.Val == "SAMLResponse" {
+			if a.Key == nameKey && a.Val == "SAMLResponse" {
 				found = true
 			}
 			if a.Key == "value" {
@@ -507,47 +603,53 @@ func findSAMLResponse(n *html.Node) (string, bool) {
 			}
 		}
 		if found {
-			return val, true
+			return
 		}
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if v, ok := findSAMLResponse(c); ok {
-			return v, ok
+		if val, found = findSAMLResponse(c); found {
+			return
 		}
 	}
-	return "", false
+	return
 }
 
 func findSAMLIdPRoleValues(n *html.Node) []string {
-	result := []string{}
 	if n == nil {
-		return result
+		return nil
 	}
-	if n.Type == html.ElementNode && n.Data == "saml2:attribute" {
+	values := []string{}
+	if n.Type == html.ElementNode && n.Data == saml2Attribute {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			if c.FirstChild != nil {
-				result = append(result, c.FirstChild.Data)
+				values = append(values, c.FirstChild.Data)
 			}
 		}
 	}
-	return result
+	return values
 }
 
-func findSAMLRoleAttibute(n *html.Node) (*html.Node, bool) {
+func findSAMLRoleAttibute(n *html.Node) (node *html.Node, found bool) {
 	if n == nil {
-		return nil, false
+		return
 	}
-	if n.Type == html.ElementNode && n.Data == "saml2:attribute" {
+	if n.Type == html.ElementNode && n.Data == saml2Attribute {
 		for _, a := range n.Attr {
-			if a.Key == "name" && a.Val == "https://aws.amazon.com/SAML/Attributes/Role" {
+			if a.Key == nameKey && a.Val == samlAttributesRole {
 				return n, true
 			}
 		}
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if found, ok := findSAMLRoleAttibute(c); ok {
-			return found, ok
+		if node, found = findSAMLRoleAttibute(c); found {
+			return
 		}
 	}
 	return nil, false
+}
+
+func apiErr(bodyBytes []byte) (ae *apiError, err error) {
+	ae = &apiError{}
+	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
+	return
 }

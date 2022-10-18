@@ -39,7 +39,9 @@ func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error 
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	creds := `
 [%s]
@@ -53,7 +55,7 @@ aws_session_token = %s
 	if err != nil {
 		return err
 	}
-	f.Sync()
+	_ = f.Sync()
 
 	fmt.Fprintf(os.Stderr, "Wrote profile %q to %s\n", c.Profile, c.AWSCredentials)
 
