@@ -19,8 +19,8 @@ package output
 import (
 	"fmt"
 
-	"github.com/okta/okta-aws-cli/pkg/aws"
-	"github.com/okta/okta-aws-cli/pkg/config"
+	"github.com/okta/okta-aws-cli/internal/aws"
+	"github.com/okta/okta-aws-cli/internal/config"
 )
 
 // EnvVar Environment Variable output formatter
