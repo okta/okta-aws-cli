@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package output
+package sessiontoken
 
-import (
-	"github.com/okta/okta-aws-cli/pkg/aws"
-	"github.com/okta/okta-aws-cli/pkg/config"
-)
+import "fmt"
 
-// Outputter Interface to output AWS credentials in different formats.
-type Outputter interface {
-	Output(c *config.Config, ac *aws.Credential) error
+//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
+func newMultipleFedAppsError(err error) multipleFedAppsError {
+	return multipleFedAppsError{err: err}
+}
+
+type multipleFedAppsError struct {
+	err error
+}
+
+func (n multipleFedAppsError) Error() string {
+	return fmt.Sprintf("Multiple AWS Federation Apps error: %+v", n.err)
 }
