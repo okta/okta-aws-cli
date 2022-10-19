@@ -33,16 +33,16 @@ Types (as listed in Admin UI > Applications > [the OIDC app] > General Settings
     > Grant type) `Authorization Code`, `Device Authorization`, and `Token
 Exchange`.  The OIDC app is then paired with an [Okta AWS
 Federation](https://www.okta.com/integrations/aws-account-federation/)
-integration application. The pairing is acheived in the Fed app's `Allowed Web
+integration application. The pairing is achieved in the Fed app's `Allowed Web
 SSO Client` setting (as listed in the Admin UI > Applications > [the AWS Fed
     app] > Sign On) the Client ID of the OIDC native app and `Identity Provider
 ARN (Required only for SAML SSO)` setting is the AWS ARN value for the AWS IAM
 Identity Provider for the integration.
 
-Okta has a wizzard to help establish the settings needed in AWS IAM, SAML
+Okta has a wizard to help establish the settings needed in AWS IAM, SAML
 certificate generation, and settings needed for the Okta AWS Federation app.
 Replace these required values in the URL below. Then follow the directions in
-that wizzard.
+that wizard.
 
 * Org Admin Domain - [ADMIN_DOMAIN] - example: `myorg-admin.okta.com`
 * Okta AWS Federation app Client ID - [CLIENT_ID] - example: `0oa555555aaaaaaZZZZZ`
@@ -56,8 +56,7 @@ The Okta AWS CLI requires configuration values for the [Okta Org
 domain](https://developer.okta.com/docs/guides/find-your-domain/main/), the ID
 of the [OIDC Native
 Application](https://developer.okta.com/blog/2021/11/12/native-sso) client app
-acting as identity provider for AWS. If the OIDC application has not been
-granted the `okta.apps.read` scope the ID of the [Okta AWS
+acting as identity provider for AWS. The ID of the [Okta AWS
 Federation](https://www.okta.com/integrations/aws-account-federation/)
 integration application is also required.
 
@@ -77,7 +76,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 |-------|-----------------------------|-------------------|-------------|
 | Okta Org Domain | OKTA_ORG_DOMAIN | `--org-domain` **[value]** | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID | OKTA_OIDC_CLIENT_ID | --oidc-client-id **[value]** | See [Allowed Web SSO Client](#allowed-web-sso-client) |
-| Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id **[value]** | Required if OIDC client is not granted `okta.apps.read` scope. See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
+| Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id **[value]** | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
 | AWS IAM Identity Provider ARN | AWS_IAM_IDP | --aws-iam-idp **[value]** | The preferred IAM Identity Provider |
 | AWS IAM Role ARN to assume | AWS_IAM_ROLE | --aws-iam-role **[value]** | The preferred IAM role for the given IAM Identity Provider |
 | Output format | FORMAT | --format **[value]** | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
@@ -103,8 +102,6 @@ Federation"](https://www.okta.com/integrations/aws-account-federation/)
 integration app.
 
 Example: `0oa9x1rifa2H6Q5d8325`
-
-Note: Only required if OIDC client is not granted `okta.apps.read` scope.
 
 
 ### Environment variables example
