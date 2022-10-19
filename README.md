@@ -49,13 +49,6 @@ that wizzard.
 
 `https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service.html?baseAdminUrl=https://[ADMIN_DOMAIN]&app=amazon_aws&instanceId=[CLIENT_ID]`
 
-Additionlly, multiple OIDC app / Fed app pairs can be made accessible to the
-Okta AWS CLI at the same time during IdP/Role selection. In order to achieve
-this the OIDC app needs to have the [scope
-`okta.apps.read`](https://developer.okta.com/docs/guides/implement-oauth-for-okta/main/#scopes-and-supported-endpoints)
-granted to it. This setting is accessible in the Admin UI at Applications >
-[the OIDC app] > Okta API Scopes.
-
 
 ## Configuration
 
@@ -85,7 +78,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Okta Org Domain | OKTA_ORG_DOMAIN | `--org-domain` **[value]** | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID | OKTA_OIDC_CLIENT_ID | --oidc-client-id **[value]** | See [Allowed Web SSO Client](#allowed-web-sso-client) |
 | Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | --aws-acct-fed-app-id **[value]** | Required if OIDC client is not granted `okta.apps.read` scope. See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
-| AWS IAM Identity Provider ARN | AWS_IAM_IDP | --aws-iam-idp **[value]** | The preferred IAM Identity Provider. If there are multiple IdPs available from AWS and this value does not match then a menu of choices will be rendered. |
+| AWS IAM Identity Provider ARN | AWS_IAM_IDP | --aws-iam-idp **[value]** | The preferred IAM Identity Provider |
 | AWS IAM Role ARN to assume | AWS_IAM_ROLE | --aws-iam-role **[value]** | The preferred IAM role for the given IAM Identity Provider |
 | Output format | FORMAT | --format **[value]** | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
 | Profile | PROFILE | --profile **[value]** | Default is `default`  |

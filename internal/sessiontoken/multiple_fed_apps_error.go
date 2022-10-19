@@ -18,6 +18,7 @@ package sessiontoken
 
 import "fmt"
 
+//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
 func newMultipleFedAppsError(err error) multipleFedAppsError {
 	return multipleFedAppsError{err: err}
 }
