@@ -127,29 +127,21 @@ func NewSessionToken() (token *SessionToken, err error) {
 // EstablishToken Template method of the steps to establish an AWS session
 // token.
 func (s *SessionToken) EstablishToken() error {
-	deviceAuth, err := s.authorize()
+	clientID := s.config.OIDCAppID
+	deviceAuth, err := s.authorize(clientID)
 	if err != nil {
 		return err
 	}
 
 	s.promptAuthentication(deviceAuth)
 
-	authToken, err := s.fetchAccessToken(deviceAuth)
+	authToken, err := s.fetchAccessToken(clientID, deviceAuth)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.listFedApps(authToken)
-	if errors.As(err, &multipleFedAppsError{}) {
-		return err
-	}
-	// TODO
-	// The OIDC app which the authToken is associated with has the
-	// okta.apps.read scope granted to it if the length of the fed apps are
-	// greater than one. Go into multi fed app mode when that is the case
-	// if len(fedApps) > 0 {
-	// 	return s.multiFedEstablishToken(fedApps)
-	// }
+	// NOTE listFedApps implementation that may be a starting point for multiple
+	// AWS Fed apps listing feature.
 
 	authToken, err = s.fetchSSOWebToken(authToken)
 	if err != nil {
@@ -428,7 +420,10 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 // ListFedApp Lists Okta AWS Fed Apps that are active. Errors after that occur
 // after getting anything other than a 403 on /api/v1/apps will be wrapped as as
 // an error that is related having multiple fed apps available -
-// hasMultipleFedApps.
+// hasMultipleFedApps. Requires assoicated OIDC app has been granted
+// okta.apps.read scope.
+//
+//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
 func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err error) {
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain))
 	if err != nil {
@@ -483,7 +478,7 @@ func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err e
 
 // fetchAccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchAccessToken(deviceAuth *deviceAuthorization) (at *authToken, err error) {
+func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceAuthorization) (at *authToken, err error) {
 	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain)
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
@@ -501,7 +496,7 @@ func (s *SessionToken) fetchAccessToken(deviceAuth *deviceAuthorization) (at *au
 	// else error
 	poll := func() error {
 		data := url.Values{
-			"client_id":   {s.config.OIDCAppID},
+			"client_id":   {oidcClientID},
 			"device_code": {deviceAuth.DeviceCode},
 			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
 		}
@@ -550,12 +545,11 @@ func (s *SessionToken) fetchAccessToken(deviceAuth *deviceAuthorization) (at *au
 
 // authorize see:
 // https://developer.okta.com/docs/reference/api/oidc/#device-authorize
-func (s *SessionToken) authorize() (*deviceAuthorization, error) {
+func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) {
 	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
 	data := url.Values{
-		"client_id": {s.config.OIDCAppID},
-		//"scope":     {"openid okta.apps.sso"},
-		"scope": {"openid okta.apps.sso okta.apps.read"},
+		"client_id": {clientID},
+		"scope":     {"openid okta.apps.sso"},
 	}
 	body := strings.NewReader(data.Encode())
 	req, err := http.NewRequest(http.MethodPost, apiURL, body)
