@@ -140,8 +140,8 @@ func (s *SessionToken) EstablishToken() error {
 		return err
 	}
 
-	// NOTE listFedApps implementation that may be a starting point for multiple
-	// AWS Fed apps listing feature.
+	// NOTE: the listFedApps implementation  may be a starting point for a
+	// future multiple AWS Fed apps listing feature.
 
 	authToken, err = s.fetchSSOWebToken(authToken)
 	if err != nil {
