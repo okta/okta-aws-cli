@@ -2,16 +2,21 @@
 
 Okta authentication in support of AWS CLI operation. The `okta-aws-cli` CLI is
 native to the Okta Identity Engine and its authentication flows. The CLI is not
-able to work on Classic orgs.
+compatible with Okta Classic orgs.
+
+The Okta AWS Federation application is SAML based and the Okta AWS CLI interacts
+with AWS IAM using 
+[AssumeRoleWithSAML](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithSAML.html).
+Okta does not have an OIDC based AWS Federation application at this time.
 
 `okta-aws-cli` handles authentication through Okta and token exchange with AWS
-STS to collect a proper IAM role for the AWS CLI operator. The resulting output
-is in the form of a set made up of  `Access Key ID`, `Secret Access Key`, and
-`Session Token` of [AWS
+STS to collect a proper IAM role for the AWS CLI operator.  The resulting output
+is a set made up of  `Access Key ID`, `Secret Access Key`, and `Session Token`
+of [AWS
 credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-to use as the credentials for the AWS CLI. The Okta AWS CLI expresses the AWS
-credentials as either environment variables or can be appended to an AWS CLI
-credentials file. The `Session Token` has an expiry of 60 minutes.
+for the AWS CLI. The Okta AWS CLI expresses the AWS credentials as either
+environment variables or appended to an AWS CLI credentials file. The `Session
+Token` has an expiry of 60 minutes.
 
 ```shell
 $ eval `okta-aws-cli` && aws s3 ls
@@ -44,7 +49,7 @@ at Applications > [the OIDC app] > General Settings > Grant type .
 
 The pairing with the AWS Federation Application is achieved in the Fed app's
 Sign On Settings. These settings are in the Okta Admin UI at Applications > [the
-AWS Fed app] > Sign On. There are two values that need to be set in the Sign On
+AWS Fed app] > Sign On. There are two values that need to be set on the Sign On
 form. The first is the `Allowed Web SSO Client` value which is the Client ID of
 the OIDC Native Application. The second is `Identity Provider ARN (Required only
 for SAML SSO)` value which is the AWS ARN of the associated IAM Identity
@@ -142,16 +147,16 @@ $ okta-aws-cli --org-domain test.okta.com \
 
 ## Operation
 
-The behavior of the Okta AWS CLI is to be friendly for shell scripting. Output
-of the command that is human oriented is done on `STDERR` and output for the AWS
-CLI that can be consumed in scripting is done on `STDOUT`. This allows for the
-command's results to be `eval`'d into the current shell as `eval` will only make
-use of `STDOUT` values.
+The behavior of the Okta AWS CLI is to be friendly for shell input and
+scripting. Output of the command that is human oriented is done on `STDERR` and
+output for the AWS CLI that can be consumed in scripting is done on `STDOUT`.
+This allows for the command's results to be `eval`'d into the current shell as
+`eval` will only make use of `STDOUT` values.
 
 
 ### Plain usage
 
-Note: example assumes other Okta AWS CLI configuration vales have already been
+Note: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
 ```shell
@@ -177,7 +182,7 @@ $ aws s3 ls
 
 ### Scripted orientated usages
 
-Note: example assumes other Okta AWS CLI configuration vales have already been
+Note: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
 ```shell
@@ -193,7 +198,7 @@ $ aws s3 ls
 
 ### AWS credentials file orientated usage
 
-Note: example assumes other Okta AWS CLI configuration vales have already been
+Note: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
 ```shell
@@ -214,7 +219,7 @@ Wrote profile "test" to /Users/mikemondragon/.aws/credentials
 
 Note: the Okta AWS CLI will only append to the AWS credentials file. Be sure to
 comment out or remove previous named profiles from the credentials file.
-Otherwise an error like the following may occur.
+Otherwise an `Unable to parse config file` error like the following may occur.
 
 ```shell
 aws --profile example s3 ls
@@ -225,13 +230,13 @@ Unable to parse config file: /home/user/.aws/credentials
 ### Help
 
 ```shell
-$ otka-aws-cli --help
+$ okta-aws-cli --help
 ```
 
 ### Version
 
 ```shell
-$ otka-aws-cli --version
+$ okta-aws-cli --version
 ```
 
 ## Comparison
@@ -252,7 +257,7 @@ Classic orgs.
 A simple URL is given to the operator to open in a browser and from there the
 CLI's authentication and authorization is initiated. The Okta AWS CLI doesn't
 prompt for passwords or any other user credentials itself, or offers to store
-credentials on a desktop keychain.
+user credentials on a desktop keychain.
 
 The configuration of the Okta AWS CLI is minimal with only three required
 values: Okta org domain name, OIDC app id, and AWS Fed app ID. There isn't a
