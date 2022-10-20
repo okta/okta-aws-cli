@@ -26,7 +26,7 @@ import (
 )
 
 // Version The version of the CLI
-var Version = "0.0.2"
+var Version = "0.0.3"
 
 // Config A config object for the CLI
 type Config struct {
