@@ -128,7 +128,7 @@ export OKTA_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 export OKTA_AWS_ACCOUNT_FEDERATION_APP_ID=0oa9x1rifa2H6Q5d8325
 ```
 
-### `.env` file varialbes example
+### `.env` file variables example
 
 ```
 OKTA_ORG_DOMAIN=test.okta.com
