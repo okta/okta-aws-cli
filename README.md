@@ -317,5 +317,5 @@ guide](CONTRIBUTING.md) to understand how to structure a contribution.
 
 * [Okta Developer Forum](https://devforum.okta.com/)
 * [Okta Developer Documentation](https://developer.okta.com/)
-* [okta-aws-cli issues](/okta/okta-aws-cli/issues)
-* [okta-aws-cli releases](/okta/okta-aws-cli/releases)
+* [okta-aws-cli issues](https://github.com/okta/okta-aws-cli/issues)
+* [okta-aws-cli releases](https://github.com/okta/okta-aws-cli/releases)
