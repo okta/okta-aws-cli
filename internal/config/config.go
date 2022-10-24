@@ -30,16 +30,17 @@ var Version = "0.0.3"
 
 // Config A config object for the CLI
 type Config struct {
-	OrgDomain      string
-	OIDCAppID      string
-	FedAppID       string
-	AWSIAMIdP      string
-	AWSIAMRole     string
-	Format         string
-	Profile        string
-	QRCode         bool
-	AWSCredentials string
-	HTTPClient     *http.Client
+	OrgDomain          string
+	OIDCAppID          string
+	FedAppID           string
+	AWSIAMIdP          string
+	AWSIAMRole         string
+	AWSSessionDuration int64
+	Format             string
+	Profile            string
+	QRCode             bool
+	AWSCredentials     string
+	HTTPClient         *http.Client
 }
 
 // NewConfig Creates a new config gathering values in this order of precedence:
@@ -48,15 +49,16 @@ type Config struct {
 //  3. .env file
 func NewConfig() *Config {
 	cfg := Config{
-		OrgDomain:      viper.GetString("org-domain"),
-		OIDCAppID:      viper.GetString("oidc-client-id"),
-		FedAppID:       viper.GetString("aws-acct-fed-app-id"),
-		AWSIAMIdP:      viper.GetString("aws-iam-idp"),
-		AWSIAMRole:     viper.GetString("aws-iam-role"),
-		Format:         viper.GetString("format"),
-		Profile:        viper.GetString("profile"),
-		QRCode:         viper.GetBool("qr-code"),
-		AWSCredentials: viper.GetString("aws-credentials"),
+		OrgDomain:          viper.GetString("org-domain"),
+		OIDCAppID:          viper.GetString("oidc-client-id"),
+		FedAppID:           viper.GetString("aws-acct-fed-app-id"),
+		AWSIAMIdP:          viper.GetString("aws-iam-idp"),
+		AWSIAMRole:         viper.GetString("aws-iam-role"),
+		AWSSessionDuration: viper.GetInt64("session-duration"),
+		Format:             viper.GetString("format"),
+		Profile:            viper.GetString("profile"),
+		QRCode:             viper.GetBool("qr-code"),
+		AWSCredentials:     viper.GetString("aws-credentials"),
 	}
 	if cfg.Format == "" {
 		cfg.Format = "env-var"
@@ -81,6 +83,9 @@ func NewConfig() *Config {
 	}
 	if cfg.AWSIAMRole == "" {
 		cfg.AWSIAMRole = viper.GetString("aws_iam_role")
+	}
+	if cfg.AWSSessionDuration == 0 {
+		cfg.AWSSessionDuration = viper.GetInt64("session_duration")
 	}
 	if !cfg.QRCode {
 		cfg.QRCode = viper.GetBool("qr_code")
@@ -109,6 +114,9 @@ func (c *Config) CheckConfig() error {
 	}
 	if c.FedAppID == "" {
 		errors = append(errors, "  AWS Account Federation App ID value is not set")
+	}
+	if c.AWSSessionDuration < 60 || c.AWSSessionDuration > 43200 {
+		errors = append(errors, "  AWS Session Duration must be between 60 and 43200")
 	}
 	if len(errors) > 0 {
 		return fmt.Errorf("%s", strings.Join(errors, "\n"))

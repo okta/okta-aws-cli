@@ -199,7 +199,7 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 	}
 	svc := sts.New(sess)
 	input := &sts.AssumeRoleWithSAMLInput{
-		DurationSeconds: aws.Int64(3600),
+		DurationSeconds: aws.Int64(s.config.AWSSessionDuration),
 		PrincipalArn:    aws.String(iar.idp),
 		RoleArn:         aws.String(iar.role),
 		SAMLAssertion:   aws.String(assertion),
@@ -409,10 +409,10 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 	}
 
 	prompt := `Open the following URL to begin Okta device authorization for the AWS CLI.
-
-%s%s
-
-`
+ 
+ %s%s
+ 
+ `
 
 	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
 }
