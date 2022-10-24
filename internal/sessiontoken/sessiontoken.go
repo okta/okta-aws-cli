@@ -409,10 +409,10 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 	}
 
 	prompt := `Open the following URL to begin Okta device authorization for the AWS CLI.
- 
- %s%s
- 
- `
+
+%s%s
+
+`
 
 	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
 }

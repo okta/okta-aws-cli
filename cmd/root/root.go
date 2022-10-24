@@ -132,9 +132,9 @@ func buildRootCommand() *cobra.Command {
 		Short:   "okta-aws-cli - Okta federated identity for AWS CLI",
 		Long: `okta-aws-cli - Okta federated identity for AWS CLI
  
- Okta authentication for federated identity providers in support of AWS CLI.
- okta-aws-cli handles authentication to the IdP and token exchange with AWS STS 
- to collect a proper IAM role for the AWS CLI operator.`,
+Okta authentication for federated identity providers in support of AWS CLI.
+okta-aws-cli handles authentication to the IdP and token exchange with AWS STS 
+to collect a proper IAM role for the AWS CLI operator.`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			st, err := sessiontoken.NewSessionToken()
@@ -187,29 +187,29 @@ func Execute() {
 
 func resourceUsageTemplate() string {
 	return fmt.Sprintf(`%s:{{if .Runnable}}
-	 {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
-	 {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
- 
- %s
-	 {{.NameAndAliases}}{{end}}{{if .HasExample}}
- 
- %s
- {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
-	 
- %s{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-	 {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
-	 
- %s
- {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
-	 
- %s
- {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
-	 
- %s{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-	 {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
-	 
- Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
- `,
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+%s
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+%s
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+  
+%s{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+  
+%s
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+  
+%s
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+  
+%s{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+  
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`,
 		ansi.Faint("Usage:"),
 		ansi.Faint("Aliases:"),
 		ansi.Faint("Examples:"),
