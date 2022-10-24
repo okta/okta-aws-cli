@@ -199,7 +199,7 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 	}
 	svc := sts.New(sess)
 	input := &sts.AssumeRoleWithSAMLInput{
-		DurationSeconds: aws.Int64(3600),
+		DurationSeconds: aws.Int64(s.config.AWSSessionDuration),
 		PrincipalArn:    aws.String(iar.idp),
 		RoleArn:         aws.String(iar.role),
 		SAMLAssertion:   aws.String(assertion),

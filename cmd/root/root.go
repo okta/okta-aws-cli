@@ -88,6 +88,13 @@ func init() {
 			envVar: "AWS_IAM_ROLE",
 		},
 		{
+			name:   "session-duration",
+			short:  "s",
+			value:  "3600",
+			usage:  "Session duration for role.",
+			envVar: "AWS_SESSION_DURATION",
+		},
+		{
 			name:   "profile",
 			short:  "p",
 			value:  "default",
@@ -124,7 +131,7 @@ func buildRootCommand() *cobra.Command {
 		Use:     "okta-aws-cli",
 		Short:   "okta-aws-cli - Okta federated identity for AWS CLI",
 		Long: `okta-aws-cli - Okta federated identity for AWS CLI
-
+ 
 Okta authentication for federated identity providers in support of AWS CLI.
 okta-aws-cli handles authentication to the IdP and token exchange with AWS STS 
 to collect a proper IAM role for the AWS CLI operator.`,
