@@ -339,7 +339,8 @@ func (s *SessionToken) fetchSAMLAssertion(at *authToken) (assertion string, err 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("fetching SAML assertion received API response %q", resp.Status)
 	}
-	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	bodyBytes, _ := io.Copy(resp.Body)
 	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return assertion, err
@@ -384,7 +385,7 @@ func (s *SessionToken) fetchSSOWebToken(at *authToken) (token *authToken, err er
 		return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
 	}
 
-	bodyBytes, _ := io.ReadAll(resp.Body)
+	bodyBytes, _ := io.Copy(resp.Body)
 	token = &authToken{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(token)
 	if err != nil {
@@ -454,7 +455,7 @@ func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err e
 	}
 	var bodyBytes []byte
 	var oktaApps []oktaApplication
-	bodyBytes, err = io.ReadAll(resp.Body)
+	bodyBytes, err = io.Copy(resp.Body)
 	if err != nil {
 		return apps, newMultipleFedAppsError(err)
 	}
@@ -504,7 +505,7 @@ func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceA
 		req.Body = io.NopCloser(body)
 
 		resp, err := s.config.HTTPClient.Do(req)
-		bodyBytes, _ = io.ReadAll(resp.Body)
+		bodyBytes, _ = io.Copy(resp.Body)
 		if err != nil {
 			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
 		}
@@ -574,7 +575,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	}
 
 	var da deviceAuthorization
-	bodyBytes, _ := io.ReadAll(resp.Body)
+	bodyBytes, _ := io.Copy(resp.Body)
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&da)
 	if err != nil {
 		return nil, err
