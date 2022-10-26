@@ -37,7 +37,7 @@ $ eval `okta-aws-cli` && aws s3 ls
 ## Requirements
 
 The Okta AWS CLI requires an OIE organization and an [OIDC Native
-Application](https://developer.okta.com/blog/2023/11/12/native-sso) paired with
+Application](https://developer.okta.com/blog/2021/11/12/native-sso) paired with
 an [Okta AWS Federation integration
 application](https://www.okta.com/integrations/aws-account-federation/). The
 Okta AWS Fed app is itself paired with an [AWS IAM identity
