@@ -36,6 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mdp/qrterminal"
+	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
 
 	"github.com/okta/okta-aws-cli/internal/agent"
@@ -415,6 +416,8 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 `
 
 	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
+
+	brwsr.OpenURL(da.VerificationURIComplete)
 }
 
 // ListFedApp Lists Okta AWS Fed Apps that are active. Errors after that occur
