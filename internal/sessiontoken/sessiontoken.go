@@ -417,7 +417,11 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 
 	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
 
-	brwsr.OpenURL(da.VerificationURIComplete)
+	if s.config.OpenBrowser {
+		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
+			fmt.Printf("Failed to open activation URL with system browser: %v\n", err)
+		}
+	}
 }
 
 // ListFedApp Lists Okta AWS Fed Apps that are active. Errors after that occur

@@ -99,6 +99,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Output format | FORMAT | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
 | Profile | PROFILE | `--profile [value]` | Default is `default`  |
 | Display QR Code | QR_CODE | `--qr-code` | `yes` if flag is present  |
+| Automatically open the activation URL with the system web browser | OPEN_BROWSER | `--open-browser` | `yes` if flag is present  |
 | Alternate AWS credentials file path | AWS_CREDENTIALS | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
 
 ### Allowed Web SSO Client

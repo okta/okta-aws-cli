@@ -122,6 +122,13 @@ func init() {
 			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", pstr.AWSCredentials),
 			envVar: "AWS_CREDENTIALS",
 		},
+		{
+			name:   "open-browser",
+			short:  "b",
+			value:  false,
+			usage:  "Automatically open the activation URL with the system web browser",
+			envVar: "OPEN_BROWSER",
+		},
 	}
 }
 
