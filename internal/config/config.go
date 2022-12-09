@@ -91,6 +91,13 @@ func NewConfig() *Config {
 		cfg.QRCode = viper.GetBool("qr_code")
 	}
 
+	// There is always a default aws credentials path set in root.go's init
+	// function so overwrite the config value if the operator is attempting to
+	// set it by ENV VAR value.
+	if viper.GetString("aws_credentials") != "" {
+		cfg.AWSCredentials = viper.GetString("aws_credentials")
+	}
+
 	tr := &http.Transport{
 		IdleConnTimeout: 30 * time.Second,
 	}
