@@ -77,14 +77,14 @@ func init() {
 			name:   "aws-iam-idp",
 			short:  "i",
 			value:  "",
-			usage:  "IAM Identity Provider ARN",
+			usage:  "Preset IAM Identity Provider ARN",
 			envVar: "AWS_IAM_IDP",
 		},
 		{
 			name:   "aws-iam-role",
 			short:  "r",
 			value:  "",
-			usage:  "IAM Role ARN",
+			usage:  "Preset IAM Role ARN",
 			envVar: "AWS_IAM_ROLE",
 		},
 		{

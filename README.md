@@ -93,8 +93,8 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Okta Org Domain | OKTA_ORG_DOMAIN | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID | OKTA_OIDC_CLIENT_ID | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
 | Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | `--aws-acct-fed-app-id [value]` | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
-| AWS IAM Identity Provider ARN | AWS_IAM_IDP | `--aws-iam-idp [value]` | The preferred IAM Identity Provider |
-| AWS IAM Role ARN to assume | AWS_IAM_ROLE | `--aws-iam-role [value]` | The preferred IAM role for the given IAM Identity Provider |
+| Preset the AWS IAM Identity Provider ARN | AWS_IAM_IDP | `--aws-iam-idp [value]` | Presets the IdP list to this preferred IAM Identity Provider |
+| Preset the AWS IAM Role ARN to assume | AWS_IAM_ROLE | `--aws-iam-role [value]` | Presets the role list to this preferred IAM role for the given IAM Identity Provider |
 | AWS Session Duration | AWS_SESSION_DURATION | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
 | Output format | FORMAT | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
 | Profile | PROFILE | `--profile [value]` | Default is `default`  |
