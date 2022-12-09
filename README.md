@@ -285,10 +285,10 @@ Run source code locally
 go run cmd/okta-aws-cli/main.go
 ```
 
-Make file help
+Install tools that the Makefile uses like `gofumpt` and `golint`
 
 ```
-make help
+make tools
 ```
 
 Building
