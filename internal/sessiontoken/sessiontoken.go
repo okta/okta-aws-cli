@@ -333,13 +333,18 @@ func (s *SessionToken) fetchSAMLAssertion(at *authToken) (assertion string, err 
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
+
 	if err != nil {
 		return assertion, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetching SAML assertion received API response %q", resp.Status)
-	}
+
+	defer resp.Body.Close()
 	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("fetching SAML assertion received API response %q - %q", resp.Status, string(bodyBytes))
+	}
+
 	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return assertion, err
@@ -377,14 +382,18 @@ func (s *SessionToken) fetchSSOWebToken(at *authToken) (token *authToken, err er
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
+
+	defer resp.Body.Close()
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
+		return nil, fmt.Errorf("fetching SSO web token received API response %q - %q", resp.Status, string(bodyBytes))
 	}
 
-	bodyBytes, _ := io.ReadAll(resp.Body)
 	token = &authToken{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(token)
 	if err != nil {
@@ -444,20 +453,30 @@ func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err e
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
 	resp, err := s.config.HTTPClient.Do(req)
+
+	if err != nil {
+		return apps, newMultipleFedAppsError(err)
+	}
+
+	defer resp.Body.Close()
+
 	if resp.StatusCode == http.StatusForbidden {
 		return apps, err
 	}
 
 	// Any errors after this point should be considered related to having multiple fed apps
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		return apps, newMultipleFedAppsError(err)
 	}
-	var bodyBytes []byte
-	var oktaApps []oktaApplication
-	bodyBytes, err = io.ReadAll(resp.Body)
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+
 	if err != nil {
 		return apps, newMultipleFedAppsError(err)
 	}
+
+	var oktaApps []oktaApplication
+
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&oktaApps)
 	if err != nil {
 		return apps, newMultipleFedAppsError(err)
@@ -504,10 +523,14 @@ func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceA
 		req.Body = io.NopCloser(body)
 
 		resp, err := s.config.HTTPClient.Do(req)
-		bodyBytes, _ = io.ReadAll(resp.Body)
+
 		if err != nil {
 			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
 		}
+
+		defer resp.Body.Close()
+		bodyBytes, _ = io.ReadAll(resp.Body)
+
 		if resp.StatusCode == http.StatusOK {
 			// done
 			return nil
@@ -526,6 +549,7 @@ func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceA
 		}
 
 		return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API status %q %q", resp.Status, string(bodyBytes)))
+
 	}
 
 	bOff := boff.NewBackoff(context.Background())
@@ -564,8 +588,12 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	defer resp.Body.Close()
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("authorize received API response %q", resp.Status)
+		return nil, fmt.Errorf("authorize received API response %q - %q", resp.Status, string(bodyBytes))
 	}
 
 	ct := resp.Header.Get(contentType)
@@ -574,7 +602,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	}
 
 	var da deviceAuthorization
-	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&da)
 	if err != nil {
 		return nil, err
