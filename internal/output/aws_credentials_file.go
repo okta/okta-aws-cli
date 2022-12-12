@@ -17,12 +17,73 @@
 package output
 
 import (
-	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/pkg/errors"
+	"gopkg.in/ini.v1"
 )
+
+// ensureConfigExists verify that the config file exists
+func ensureConfigExists(filename string, profile string) error {
+	if _, err := os.Stat(filename); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+
+			dir := filepath.Dir(filename)
+
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				return err
+			}
+
+			// create an base config file
+			err = os.WriteFile(filename, []byte("["+profile+"]"), 0600)
+			if err != nil {
+				return err
+			}
+
+		}
+		return err
+	}
+	return nil
+}
+
+func createAndSaveProfile(filename, profile string, awsCreds *aws.Credential) error {
+
+	dirPath := filepath.Dir(filename)
+
+	err := os.Mkdir(dirPath, 0700)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create %s directory", dirPath)
+	}
+
+	_, err = os.Create(filename)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create configuration")
+	}
+
+	return saveProfile(filename, profile, awsCreds)
+}
+
+func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
+	config, err := ini.Load(filename)
+	if err != nil {
+		return err
+	}
+	iniProfile, err := config.NewSection(profile)
+	if err != nil {
+		return err
+	}
+
+	err = iniProfile.ReflectFrom(awsCreds)
+	if err != nil {
+		return err
+	}
+
+	return config.SaveTo(filename)
+}
 
 // AWSCredentialsFile AWS credentials file output formatter
 type AWSCredentialsFile struct{}
@@ -35,29 +96,13 @@ func NewAWSCredentialsFile() *AWSCredentialsFile {
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
 func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error {
-	f, err := os.OpenFile(c.AWSCredentials, os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
+	filename := c.AWSCredentials
+	profile := c.Profile
+
+	err := ensureConfigExists(filename, profile)
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		return createAndSaveProfile(filename, profile, ac)
 	}
-	defer func() {
-		_ = f.Close()
-	}()
 
-	creds := `
-[%s]
-aws_access_key_id = %s
-aws_secret_access_key = %s
-aws_session_token = %s
-
-`
-	creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken)
-	_, err = f.WriteString(creds)
-	if err != nil {
-		return err
-	}
-	_ = f.Sync()
-
-	fmt.Fprintf(os.Stderr, "Wrote profile %q to %s\n", c.Profile, c.AWSCredentials)
-
-	return nil
+	return saveProfile(filename, profile, ac)
 }

@@ -9,12 +9,14 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mdp/qrterminal v1.0.1
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tidwall/pretty v1.2.0
 	golang.org/x/net v0.0.0-20220907135653-1e95f45603a7
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
@@ -38,7 +40,6 @@ require (
 	github.com/subosito/gotenv v1.4.1 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/qr v0.2.0 // indirect
