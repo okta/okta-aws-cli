@@ -239,20 +239,24 @@ func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *i
 	}
 
 	var idp string
-	prompt := &survey.Select{
-		Message: "Choose an IdP:",
-		Options: idps,
-	}
-	if s.config.AWSIAMIdP != "" {
-		prompt.Default = s.config.AWSIAMIdP
-	}
 
-	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-	if err != nil {
-		return nil, fmt.Errorf("error asking for IdP selection: %w", err)
-	}
-	if idp == "" {
-		return nil, errors.New("failed to select IdP value")
+	if s.config.AWSIAMIdP != "" {
+		idp = s.config.AWSIAMIdP
+	} else if len(idps) == 1 {
+		idp = idps[0]
+	} else {
+		prompt := &survey.Select{
+			Message: "Choose an IdP:",
+			Options: idps,
+		}
+
+		err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return nil, fmt.Errorf("error asking for IdP selection: %w", err)
+		}
+		if idp == "" {
+			return nil, errors.New("failed to select IdP value")
+		}
 	}
 
 	roles := idpRoles[idp]
@@ -262,19 +266,23 @@ func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *i
 
 	var role string
 	// survey for role
-	prompt = &survey.Select{
-		Message: "Choose a Role:",
-		Options: roles,
-	}
+
 	if s.config.AWSIAMRole != "" {
-		prompt.Default = s.config.AWSIAMRole
-	}
-	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-	if err != nil {
-		return nil, fmt.Errorf("error asking for role selection: %w", err)
-	}
-	if role == "" {
-		return nil, fmt.Errorf("no roles chosen for provider %q", idp)
+		role = s.config.AWSIAMRole
+	} else if len(roles) == 1 {
+		role = roles[0]
+	} else {
+		prompt := &survey.Select{
+			Message: "Choose a Role:",
+			Options: roles,
+		}
+		err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return nil, fmt.Errorf("error asking for role selection: %w", err)
+		}
+		if role == "" {
+			return nil, fmt.Errorf("no roles chosen for provider %q", idp)
+		}
 	}
 
 	iar = &idpAndRole{
