@@ -67,6 +67,12 @@ URL below. Then follow the directions in that wizard.
 
 ## Configuration
 
+**Note**: If your AWS IAM IdP is in a non-commerical region, such as GovCloud,
+the environmental variable
+[`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+should be set
+[accordingly](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-region).
+
 At a minimum the Okta AWS CLI requires three configuration values. These are the
 values for the [Okta Org
 domain](https://developer.okta.com/docs/guides/find-your-domain/main/), the
