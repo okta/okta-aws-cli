@@ -90,6 +90,12 @@ func NewConfig() *Config {
 	if !cfg.QRCode {
 		cfg.QRCode = viper.GetBool("qr_code")
 	}
+	// correct org domain if it's in admin form
+	orgDomain := strings.Replace(cfg.OrgDomain, "-admin", "", -1)
+	if orgDomain != cfg.OrgDomain {
+		fmt.Printf("Warning: proactively correcting org domain %q to non-admin form %q.\n\n", cfg.OrgDomain, orgDomain)
+		cfg.OrgDomain = orgDomain
+	}
 
 	// There is always a default aws credentials path set in root.go's init
 	// function so overwrite the config value if the operator is attempting to
