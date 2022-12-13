@@ -35,7 +35,7 @@ func NewAWSCredentialsFile() *AWSCredentialsFile {
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
 func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error {
-	f, err := os.OpenFile(c.AWSCredentials, os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(c.AWSCredentials, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
