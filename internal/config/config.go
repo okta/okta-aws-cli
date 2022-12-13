@@ -40,6 +40,7 @@ type Config struct {
 	Profile            string
 	QRCode             bool
 	AWSCredentials     string
+	OpenBrowser        bool
 	HTTPClient         *http.Client
 }
 
@@ -58,6 +59,7 @@ func NewConfig() *Config {
 		Format:             viper.GetString("format"),
 		Profile:            viper.GetString("profile"),
 		QRCode:             viper.GetBool("qr-code"),
+		OpenBrowser:        viper.GetBool("open-browser"),
 		AWSCredentials:     viper.GetString("aws-credentials"),
 	}
 	if cfg.Format == "" {
