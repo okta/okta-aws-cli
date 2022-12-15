@@ -127,9 +127,6 @@ func (c *Config) CheckConfig() error {
 	if c.OIDCAppID == "" {
 		errors = append(errors, "  OIDC App ID value is not set")
 	}
-	if c.FedAppID == "" {
-		errors = append(errors, "  AWS Account Federation App ID value is not set")
-	}
 	if c.AWSSessionDuration < 60 || c.AWSSessionDuration > 43200 {
 		errors = append(errors, "  AWS Session Duration must be between 60 and 43200")
 	}
