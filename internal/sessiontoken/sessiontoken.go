@@ -65,13 +65,16 @@ type SessionToken struct {
 	config *config.Config
 }
 
-// authToken Encapsulates an Okta Token
+// accessToken Encapsulates an Okta access token
 // https://developer.okta.com/docs/reference/api/oidc/#token
-type authToken struct {
-	AccessToken string `json:"access_token,omitempty"`
-	IDToken     string `json:"id_token,omitempty"`
-	TokenType   string `json:"token_type,omitempty"`
-	Scope       string `json:"scope,omitempty"`
+type accessToken struct {
+	AccessToken  string `json:"access_token,omitempty"`
+	IDToken      string `json:"id_token,omitempty"`
+	TokenType    string `json:"token_type,omitempty"`
+	Scope        string `json:"scope,omitempty"`
+	ExpiresIn    int64  `json:"expires_in,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	DeviceSecret string `json:"device_secret,omitempty"`
 }
 
 // deviceAuthorization Encapsulates Okta API result to
@@ -100,6 +103,12 @@ type oktaApplication struct {
 	} `json:"settings"`
 }
 
+type assertionArtifact struct {
+	fedApp   *oktaApplication
+	fedAppID string
+	idpARN   string
+}
+
 // apiError Wrapper for Okta API error
 type apiError struct {
 	Error            string `json:"error,omitempty"`
@@ -110,6 +119,15 @@ type apiError struct {
 type idpAndRole struct {
 	idp  string
 	role string
+}
+
+var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
+	options.Stdio = terminal.Stdio{
+		In:  os.Stdin,
+		Out: os.Stderr,
+		Err: os.Stderr,
+	}
+	return nil
 }
 
 // NewSessionToken Creates a new session token.
@@ -136,20 +154,67 @@ func (s *SessionToken) EstablishToken() error {
 
 	s.promptAuthentication(deviceAuth)
 
-	authToken, err := s.fetchAccessToken(clientID, deviceAuth)
+	at, err := s.fetchAccessToken(clientID, deviceAuth)
 	if err != nil {
 		return err
 	}
 
-	// NOTE: the listFedApps implementation  may be a starting point for a
-	// future multiple AWS Fed apps listing feature.
-
-	authToken, err = s.fetchSSOWebToken(authToken)
+	apps, err := s.listFedApps(clientID, at)
 	if err != nil {
 		return err
 	}
 
-	assertion, err := s.fetchSAMLAssertion(authToken)
+	if len(apps) == 0 && s.config.FedAppID != "" {
+
+		// Alternate path where operator's OIDC app doesn't have okta.apps.read grant
+
+		return s.establishTokenWithFedAppID(clientID, at)
+	}
+	if len(apps) == 0 {
+		return fmt.Errorf("there aren't any AWS Federation Applications associated with OIDC App %q, check if it has %q scope and is the allowed web SSO client for an AWS Federation app", clientID, "okta.apps.read")
+	}
+
+	artifacts := make([]*assertionArtifact, len(apps))
+	for i, app := range apps {
+		artifact := assertionArtifact{
+			fedApp:   app,
+			fedAppID: app.ID,
+			idpARN:   app.Settings.App.IdentityProviderARN,
+		}
+
+		artifacts[i] = &artifact
+	}
+
+	artifact, err := s.promptForIdp(artifacts)
+	if err != nil {
+		return err
+	}
+
+	iar, assertion, err := s.promptForRole(clientID, artifact, at)
+	if err != nil {
+		return err
+	}
+
+	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
+	if err != nil {
+		return err
+	}
+
+	err = s.renderCredential(ac)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SessionToken) establishTokenWithFedAppID(clientID string, at *accessToken) error {
+	at, err := s.fetchSSOWebToken(clientID, s.config.FedAppID, at)
+	if err != nil {
+		return err
+	}
+
+	assertion, err := s.fetchSAMLAssertion(at)
 	if err != nil {
 		return err
 	}
@@ -218,6 +283,89 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 	return credential, nil
 }
 
+// promptForIdp UX to prompt operator for the AWS idp ARN and return the associated assertion artifact
+func (s *SessionToken) promptForIdp(artifacts []*assertionArtifact) (artifact *assertionArtifact, err error) {
+	idps := make([]string, len(artifacts))
+	for i, a := range artifacts {
+		idps[i] = a.idpARN
+	}
+
+	if len(idps) == 0 {
+		return nil, errors.New("no IdPs to choose from")
+	}
+
+	var idp string
+	prompt := &survey.Select{
+		Message: "Choose an IdP:",
+		Options: idps,
+	}
+	if s.config.AWSIAMIdP != "" {
+		prompt.Default = s.config.AWSIAMIdP
+	}
+
+	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return nil, fmt.Errorf("error asking for IdP selection: %w", err)
+	}
+	if idp == "" {
+		return nil, errors.New("failed to select IdP value")
+	}
+
+	for _, artifact = range artifacts {
+		if artifact.idpARN == idp {
+			return artifact, nil
+		}
+	}
+	return nil, errors.New("failed to set artifact")
+}
+
+func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifact, at *accessToken) (iar *idpAndRole, assertion string, err error) {
+
+	swt, err := s.fetchSSOWebToken(clientID, artifact.fedAppID, at)
+	if err != nil {
+		return
+	}
+
+	assertion, err = s.fetchSAMLAssertion(swt)
+	if err != nil {
+		return
+	}
+
+	idpRolesMap, err := s.extractIDPAndRolesMapFromAssertion(assertion)
+	if err != nil {
+		return
+	}
+	idp := artifact.idpARN
+
+	roles := idpRolesMap[idp]
+	if len(roles) == 0 {
+		return nil, assertion, fmt.Errorf("provider %q has no roles to choose from", idp)
+	}
+
+	var role string
+	// survey for role
+	prompt := &survey.Select{
+		Message: "Choose a Role:",
+		Options: roles,
+	}
+	if s.config.AWSIAMRole != "" {
+		prompt.Default = s.config.AWSIAMRole
+	}
+	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return nil, assertion, fmt.Errorf("error asking for role selection: %w", err)
+	}
+	if role == "" {
+		return nil, assertion, fmt.Errorf("no roles chosen for provider %q", idp)
+	}
+
+	iar = &idpAndRole{
+		idp:  idp,
+		role: role,
+	}
+	return
+}
+
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
 // will be utilized.
 func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *idpAndRole, err error) {
@@ -228,15 +376,6 @@ func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *i
 
 	if len(idps) == 0 {
 		return nil, errors.New("no IdPs to choose from")
-	}
-
-	stderrIsOutAskOpt := func(options *survey.AskOptions) error {
-		options.Stdio = terminal.Stdio{
-			In:  os.Stdin,
-			Out: os.Stderr,
-			Err: os.Stderr,
-		}
-		return nil
 	}
 
 	var idp string
@@ -330,7 +469,7 @@ func (s *SessionToken) extractIDPAndRolesMapFromAssertion(encoded string) (irmap
 }
 
 // fetchSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
-func (s *SessionToken) fetchSAMLAssertion(at *authToken) (assertion string, err error) {
+func (s *SessionToken) fetchSAMLAssertion(at *accessToken) (assertion string, err error) {
 	params := url.Values{"token": {at.AccessToken}}
 	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", s.config.OrgDomain, params.Encode())
 
@@ -367,18 +506,18 @@ func (s *SessionToken) fetchSAMLAssertion(at *authToken) (assertion string, err 
 
 // fetchSSOWebToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchSSOWebToken(at *authToken) (token *authToken, err error) {
+func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *accessToken) (token *accessToken, err error) {
 	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain)
 
 	data := url.Values{
-		"client_id":            {s.config.OIDCAppID},
+		"client_id":            {clientID},
 		"actor_token":          {at.AccessToken},
 		"actor_token_type":     {"urn:ietf:params:oauth:token-type:access_token"},
 		"subject_token":        {at.IDToken},
 		"subject_token_type":   {"urn:ietf:params:oauth:token-type:id_token"},
 		"grant_type":           {"urn:ietf:params:oauth:grant-type:token-exchange"},
 		"requested_token_type": {"urn:okta:oauth:token-type:web_sso_token"},
-		"audience":             {fmt.Sprintf("urn:okta:apps:%s", s.config.FedAppID)},
+		"audience":             {fmt.Sprintf("urn:okta:apps:%s", awsFedAppID)},
 	}
 	body := strings.NewReader(data.Encode())
 
@@ -403,7 +542,8 @@ func (s *SessionToken) fetchSSOWebToken(at *authToken) (token *authToken, err er
 		return nil, fmt.Errorf("fetching SSO web token received API response %q - %q", resp.Status, string(bodyBytes))
 	}
 
-	token = &authToken{}
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	token = &accessToken{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(token)
 	if err != nil {
 		return nil, err
@@ -445,10 +585,8 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 // after getting anything other than a 403 on /api/v1/apps will be wrapped as as
 // an error that is related having multiple fed apps available -
 // hasMultipleFedApps. Requires assoicated OIDC app has been granted
-// okta.apps.read scope.
-//
-//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
-func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err error) {
+// okta.apps.read to its scope.
+func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*oktaApplication, err error) {
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain))
 	if err != nil {
 		return apps, err
@@ -497,14 +635,19 @@ func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err e
 		return apps, newMultipleFedAppsError(err)
 	}
 
-	for _, app := range oktaApps {
+	apps = make([]*oktaApplication, 0)
+	for i, app := range oktaApps {
 		if app.Name != amazonAWS {
 			continue
 		}
 		if app.Status != "ACTIVE" {
 			continue
 		}
-		apps = append(apps, app)
+		if app.Settings.App.WebSSOClientID != clientID {
+			continue
+		}
+		oa := oktaApps[i]
+		apps = append(apps, &oa)
 	}
 
 	return
@@ -512,7 +655,7 @@ func (s *SessionToken) listFedApps(at *authToken) (apps []oktaApplication, err e
 
 // fetchAccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceAuthorization) (at *authToken, err error) {
+func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAuthorization) (at *accessToken, err error) {
 	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain)
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
@@ -530,7 +673,7 @@ func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceA
 	// else error
 	poll := func() error {
 		data := url.Values{
-			"client_id":   {oidcClientID},
+			"client_id":   {clientID},
 			"device_code": {deviceAuth.DeviceCode},
 			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
 		}
@@ -573,7 +716,7 @@ func (s *SessionToken) fetchAccessToken(oidcClientID string, deviceAuth *deviceA
 		return nil, err
 	}
 
-	at = &authToken{}
+	at = &accessToken{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(at)
 	if err != nil {
 		return nil, err
@@ -588,7 +731,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain)
 	data := url.Values{
 		"client_id": {clientID},
-		"scope":     {"openid okta.apps.sso"},
+		"scope":     {"openid okta.apps.sso okta.apps.read"},
 	}
 	body := strings.NewReader(data.Encode())
 	req, err := http.NewRequest(http.MethodPost, apiURL, body)
