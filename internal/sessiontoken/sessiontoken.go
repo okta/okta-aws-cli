@@ -552,13 +552,17 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 		}
 	}
 
-	prompt := `Open the following URL to begin Okta device authorization for the AWS CLI.
+	prompt := `%s the following URL to begin Okta device authorization for the AWS CLI.
 
 %s%s
 
 `
+	openMsg := "Open"
+	if s.config.OpenBrowser {
+		openMsg = "System web browser will open"
+	}
 
-	fmt.Fprintf(os.Stderr, prompt, qrCode, da.VerificationURIComplete)
+	fmt.Fprintf(os.Stderr, prompt, openMsg, qrCode, da.VerificationURIComplete)
 
 	if s.config.OpenBrowser {
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
