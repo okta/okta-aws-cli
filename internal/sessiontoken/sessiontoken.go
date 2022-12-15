@@ -64,6 +64,10 @@ const (
 	idpValueNotSelectedError = "failed to select IdP value"
 	askRoleError             = "error asking for role selection: %w"
 	noRolesError             = "no roles chosen for provider %q"
+	chooseIDP                = "Choose an IdP:"
+	chooseRole               = "Choose a Role:"
+	idpSelected              = "IdP: %s\n"
+	roleSelected             = "Role: %s\n"
 )
 
 // SessionToken Encapsulates the work of getting an AWS Session Token
@@ -176,7 +180,13 @@ func (s *SessionToken) EstablishToken() error {
 		return s.establishTokenWithFedAppID(clientID, at)
 	}
 	if len(apps) == 0 {
-		return fmt.Errorf("there aren't any AWS Federation Applications associated with OIDC App %q, check if it has %q scope and is the allowed web SSO client for an AWS Federation app", clientID, "okta.apps.read")
+		errMsg := `
+There aren't any AWS Federation Applications associated with OIDC App %q.
+Check if it has %q scope and is the allowed web SSO client for an AWS
+Federation app. Or, invoke okta-aws-cli including the client ID of the
+AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
+		`
+		return fmt.Errorf(errMsg, clientID, "okta.apps.read")
 	}
 
 	artifacts := make([]*assertionArtifact, len(apps))
@@ -190,12 +200,12 @@ func (s *SessionToken) EstablishToken() error {
 		artifacts[i] = &artifact
 	}
 
-	artifact, err := s.promptForIdp(artifacts)
+	artifact, err := s.selectArtifactForIdp(artifacts)
 	if err != nil {
 		return err
 	}
 
-	iar, assertion, err := s.promptForRole(clientID, artifact, at)
+	iar, assertion, err := s.selectAssertion(clientID, artifact, at)
 	if err != nil {
 		return err
 	}
@@ -288,32 +298,16 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 	return credential, nil
 }
 
-// promptForIdp UX to prompt operator for the AWS idp ARN and return the associated assertion artifact
-func (s *SessionToken) promptForIdp(artifacts []*assertionArtifact) (artifact *assertionArtifact, err error) {
+// selectArtifactForIdp UX to prompt operator for the AWS idp ARN and return the associated assertion artifact
+func (s *SessionToken) selectArtifactForIdp(artifacts []*assertionArtifact) (artifact *assertionArtifact, err error) {
 	idps := make([]string, len(artifacts))
 	for i, a := range artifacts {
 		idps[i] = a.idpARN
 	}
 
-	if len(idps) == 0 {
-		return nil, errors.New(noIDPsError)
-	}
-
-	var idp string
-	prompt := &survey.Select{
-		Message: "Choose an IdP:",
-		Options: idps,
-	}
-	if s.config.AWSIAMIdP != "" {
-		prompt.Default = s.config.AWSIAMIdP
-	}
-
-	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	idp, err := s.promptForIDP(idps)
 	if err != nil {
-		return nil, fmt.Errorf(askIDPError, err)
-	}
-	if idp == "" {
-		return nil, errors.New(idpValueNotSelectedError)
+		return nil, err
 	}
 
 	for _, artifact = range artifacts {
@@ -324,7 +318,7 @@ func (s *SessionToken) promptForIdp(artifacts []*assertionArtifact) (artifact *a
 	return nil, errors.New("failed to set artifact")
 }
 
-func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifact, at *accessToken) (iar *idpAndRole, assertion string, err error) {
+func (s *SessionToken) selectAssertion(clientID string, artifact *assertionArtifact, at *accessToken) (iar *idpAndRole, assertion string, err error) {
 	swt, err := s.fetchSSOWebToken(clientID, artifact.fedAppID, at)
 	if err != nil {
 		return
@@ -342,25 +336,9 @@ func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifac
 	idp := artifact.idpARN
 
 	roles := idpRolesMap[idp]
-	if len(roles) == 0 {
-		return nil, assertion, fmt.Errorf(noRoleError, idp)
-	}
-
-	var role string
-	// survey for role
-	prompt := &survey.Select{
-		Message: "Choose a Role:",
-		Options: roles,
-	}
-	if s.config.AWSIAMRole != "" {
-		prompt.Default = s.config.AWSIAMRole
-	}
-	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	role, err := s.promptForRole(idp, roles)
 	if err != nil {
-		return nil, assertion, fmt.Errorf(askRoleError, err)
-	}
-	if role == "" {
-		return nil, assertion, fmt.Errorf(noRolesError, idp)
+		return nil, "", err
 	}
 
 	iar = &idpAndRole{
@@ -370,6 +348,62 @@ func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifac
 	return
 }
 
+// promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
+func (s *SessionToken) promptForRole(idp string, roles []string) (role string, err error) {
+	switch {
+	case s.config.AWSIAMRole != "":
+		role = s.config.AWSIAMRole
+		fmt.Fprintf(os.Stderr, roleSelected, role)
+	case len(roles) == 1:
+		role = roles[0]
+		fmt.Fprintf(os.Stderr, roleSelected, role)
+	default:
+		prompt := &survey.Select{
+			Message: chooseRole,
+			Options: roles,
+		}
+		err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return "", fmt.Errorf(askRoleError, err)
+		}
+		if role == "" {
+			return "", fmt.Errorf(noRolesError, idp)
+		}
+	}
+
+	return role, nil
+}
+
+// promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs
+func (s *SessionToken) promptForIDP(idps []string) (idp string, err error) {
+	if len(idps) == 0 {
+		return idp, errors.New(noIDPsError)
+	}
+
+	switch {
+	case s.config.AWSIAMIdP != "":
+		idp = s.config.AWSIAMIdP
+		fmt.Fprintf(os.Stderr, idpSelected, idp)
+	case len(idps) == 1:
+		idp = idps[0]
+		fmt.Fprintf(os.Stderr, idpSelected, idp)
+	default:
+		prompt := &survey.Select{
+			Message: chooseIDP,
+			Options: idps,
+		}
+		err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return idp, fmt.Errorf(askIDPError, err)
+		}
+		if idp == "" {
+			return idp, errors.New(idpValueNotSelectedError)
+		}
+	}
+
+	return idp, nil
+}
+
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
 // will be utilized.
 func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *idpAndRole, err error) {
@@ -377,48 +411,15 @@ func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *i
 	for idp := range idpRoles {
 		idps = append(idps, idp)
 	}
-
-	if len(idps) == 0 {
-		return nil, errors.New(noIDPsError)
-	}
-
-	var idp string
-	prompt := &survey.Select{
-		Message: "Choose an IdP:",
-		Options: idps,
-	}
-	if s.config.AWSIAMIdP != "" {
-		prompt.Default = s.config.AWSIAMIdP
-	}
-
-	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	idp, err := s.promptForIDP(idps)
 	if err != nil {
-		return nil, fmt.Errorf(askIDPError, err)
-	}
-	if idp == "" {
-		return nil, errors.New(idpValueNotSelectedError)
+		return nil, err
 	}
 
 	roles := idpRoles[idp]
-	if len(roles) == 0 {
-		return nil, fmt.Errorf(noRoleError, idp)
-	}
-
-	var role string
-	// survey for role
-	prompt = &survey.Select{
-		Message: "Choose a Role:",
-		Options: roles,
-	}
-	if s.config.AWSIAMRole != "" {
-		prompt.Default = s.config.AWSIAMRole
-	}
-	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	role, err := s.promptForRole(idp, roles)
 	if err != nil {
-		return nil, fmt.Errorf(askRoleError, err)
-	}
-	if role == "" {
-		return nil, fmt.Errorf(noRolesError, idp)
+		return nil, err
 	}
 
 	iar = &idpAndRole{
@@ -552,7 +553,7 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 		}
 	}
 
-	prompt := `%s the following URL to begin Okta device authorization for the AWS CLI.
+	prompt := `%s the following URL to begin Okta device authorization for the AWS CLI
 
 %s%s
 
@@ -566,7 +567,7 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 
 	if s.config.OpenBrowser {
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
-			fmt.Printf("Failed to open activation URL with system browser: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to open activation URL with system browser: %v\n", err)
 		}
 	}
 }
