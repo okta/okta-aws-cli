@@ -25,8 +25,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Version The version of the CLI
-var Version = "0.0.4"
+const (
+	// Version The version of the CLI
+	Version      = "0.0.4"
+	awsCrentials = "aws_credentials"
+)
 
 // Config A config object for the CLI
 type Config struct {
@@ -102,8 +105,8 @@ func NewConfig() *Config {
 	// There is always a default aws credentials path set in root.go's init
 	// function so overwrite the config value if the operator is attempting to
 	// set it by ENV VAR value.
-	if viper.GetString("aws_credentials") != "" {
-		cfg.AWSCredentials = viper.GetString("aws_credentials")
+	if viper.GetString(awsCrentials) != "" {
+		cfg.AWSCredentials = viper.GetString(awsCrentials)
 	}
 
 	tr := &http.Transport{

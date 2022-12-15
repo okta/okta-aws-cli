@@ -48,16 +48,22 @@ import (
 )
 
 const (
-	amazonAWS               = "amazon_aws"
-	accept                  = "Accept"
-	applicationJSON         = "application/json"
-	applicationXWwwForm     = "application/x-www-form-urlencoded"
-	contentType             = "Content-Type"
-	userAgent               = "User-Agent"
-	nameKey                 = "name"
-	saml2Attribute          = "saml2:attribute"
-	samlAttributesRole      = "https://aws.amazon.com/SAML/Attributes/Role"
-	oauthV1TokenEndpointFmt = "https://%s/oauth2/v1/token"
+	amazonAWS                = "amazon_aws"
+	accept                   = "Accept"
+	applicationJSON          = "application/json"
+	applicationXWwwForm      = "application/x-www-form-urlencoded"
+	contentType              = "Content-Type"
+	userAgent                = "User-Agent"
+	nameKey                  = "name"
+	saml2Attribute           = "saml2:attribute"
+	samlAttributesRole       = "https://aws.amazon.com/SAML/Attributes/Role"
+	oauthV1TokenEndpointFmt  = "https://%s/oauth2/v1/token"
+	askIDPError              = "error asking for IdP selection: %w"
+	noRoleError              = "provider %q has no roles to choose from"
+	noIDPsError              = "no IdPs to choose from"
+	idpValueNotSelectedError = "failed to select IdP value"
+	askRoleError             = "error asking for role selection: %w"
+	noRolesError             = "no roles chosen for provider %q"
 )
 
 // SessionToken Encapsulates the work of getting an AWS Session Token
@@ -165,9 +171,8 @@ func (s *SessionToken) EstablishToken() error {
 	}
 
 	if len(apps) == 0 && s.config.FedAppID != "" {
-
-		// Alternate path where operator's OIDC app doesn't have okta.apps.read grant
-
+		// Alternate path where operator's OIDC app doesn't have okta.apps.read
+		// grant but operator knows their AWS Fed app ID
 		return s.establishTokenWithFedAppID(clientID, at)
 	}
 	if len(apps) == 0 {
@@ -291,7 +296,7 @@ func (s *SessionToken) promptForIdp(artifacts []*assertionArtifact) (artifact *a
 	}
 
 	if len(idps) == 0 {
-		return nil, errors.New("no IdPs to choose from")
+		return nil, errors.New(noIDPsError)
 	}
 
 	var idp string
@@ -305,10 +310,10 @@ func (s *SessionToken) promptForIdp(artifacts []*assertionArtifact) (artifact *a
 
 	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
 	if err != nil {
-		return nil, fmt.Errorf("error asking for IdP selection: %w", err)
+		return nil, fmt.Errorf(askIDPError, err)
 	}
 	if idp == "" {
-		return nil, errors.New("failed to select IdP value")
+		return nil, errors.New(idpValueNotSelectedError)
 	}
 
 	for _, artifact = range artifacts {
@@ -320,7 +325,6 @@ func (s *SessionToken) promptForIdp(artifacts []*assertionArtifact) (artifact *a
 }
 
 func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifact, at *accessToken) (iar *idpAndRole, assertion string, err error) {
-
 	swt, err := s.fetchSSOWebToken(clientID, artifact.fedAppID, at)
 	if err != nil {
 		return
@@ -339,7 +343,7 @@ func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifac
 
 	roles := idpRolesMap[idp]
 	if len(roles) == 0 {
-		return nil, assertion, fmt.Errorf("provider %q has no roles to choose from", idp)
+		return nil, assertion, fmt.Errorf(noRoleError, idp)
 	}
 
 	var role string
@@ -353,10 +357,10 @@ func (s *SessionToken) promptForRole(clientID string, artifact *assertionArtifac
 	}
 	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
 	if err != nil {
-		return nil, assertion, fmt.Errorf("error asking for role selection: %w", err)
+		return nil, assertion, fmt.Errorf(askRoleError, err)
 	}
 	if role == "" {
-		return nil, assertion, fmt.Errorf("no roles chosen for provider %q", idp)
+		return nil, assertion, fmt.Errorf(noRolesError, idp)
 	}
 
 	iar = &idpAndRole{
@@ -375,54 +379,46 @@ func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *i
 	}
 
 	if len(idps) == 0 {
-		return nil, errors.New("no IdPs to choose from")
+		return nil, errors.New(noIDPsError)
 	}
 
 	var idp string
-
+	prompt := &survey.Select{
+		Message: "Choose an IdP:",
+		Options: idps,
+	}
 	if s.config.AWSIAMIdP != "" {
-		idp = s.config.AWSIAMIdP
-	} else if len(idps) == 1 {
-		idp = idps[0]
-	} else {
-		prompt := &survey.Select{
-			Message: "Choose an IdP:",
-			Options: idps,
-		}
+		prompt.Default = s.config.AWSIAMIdP
+	}
 
-		err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-		if err != nil {
-			return nil, fmt.Errorf("error asking for IdP selection: %w", err)
-		}
-		if idp == "" {
-			return nil, errors.New("failed to select IdP value")
-		}
+	err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return nil, fmt.Errorf(askIDPError, err)
+	}
+	if idp == "" {
+		return nil, errors.New(idpValueNotSelectedError)
 	}
 
 	roles := idpRoles[idp]
 	if len(roles) == 0 {
-		return nil, fmt.Errorf("provider %q has no roles to choose from", idp)
+		return nil, fmt.Errorf(noRoleError, idp)
 	}
 
 	var role string
 	// survey for role
-
+	prompt = &survey.Select{
+		Message: "Choose a Role:",
+		Options: roles,
+	}
 	if s.config.AWSIAMRole != "" {
-		role = s.config.AWSIAMRole
-	} else if len(roles) == 1 {
-		role = roles[0]
-	} else {
-		prompt := &survey.Select{
-			Message: "Choose a Role:",
-			Options: roles,
-		}
-		err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-		if err != nil {
-			return nil, fmt.Errorf("error asking for role selection: %w", err)
-		}
-		if role == "" {
-			return nil, fmt.Errorf("no roles chosen for provider %q", idp)
-		}
+		prompt.Default = s.config.AWSIAMRole
+	}
+	err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return nil, fmt.Errorf(askRoleError, err)
+	}
+	if role == "" {
+		return nil, fmt.Errorf(noRolesError, idp)
 	}
 
 	iar = &idpAndRole{
@@ -481,18 +477,13 @@ func (s *SessionToken) fetchSAMLAssertion(at *accessToken) (assertion string, er
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
-
 	if err != nil {
 		return assertion, err
 	}
-
-	defer resp.Body.Close()
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetching SAML assertion received API response %q - %q", resp.Status, string(bodyBytes))
+		return "", fmt.Errorf("fetching SAML assertion received API response %q", resp.Status)
 	}
-
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return assertion, err
@@ -530,16 +521,11 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
-
-	defer resp.Body.Close()
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching SSO web token received API response %q - %q", resp.Status, string(bodyBytes))
+		return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
 	}
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
@@ -589,7 +575,7 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*oktaApplication, err error) {
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain))
 	if err != nil {
-		return apps, err
+		return nil, err
 	}
 	params := url.Values{}
 	params.Add("limit", "200")
@@ -598,7 +584,7 @@ func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*ok
 	apiURL.RawQuery = params.Encode()
 	req, err := http.NewRequest(http.MethodGet, apiURL.String(), nil)
 	if err != nil {
-		return apps, err
+		return nil, err
 	}
 
 	req.Header.Add(accept, applicationJSON)
@@ -606,33 +592,24 @@ func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*ok
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
 	resp, err := s.config.HTTPClient.Do(req)
-
-	if err != nil {
-		return apps, newMultipleFedAppsError(err)
-	}
-
-	defer resp.Body.Close()
-
 	if resp.StatusCode == http.StatusForbidden {
-		return apps, err
+		return nil, err
 	}
 
-	// Any errors after this point should be considered related to having multiple fed apps
-	if resp.StatusCode != http.StatusOK {
-		return apps, newMultipleFedAppsError(err)
+	// Any errors after this point should be considered related to when the OIDC
+	// app can read multiple fed apps
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return nil, newMultipleFedAppsError(err)
 	}
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return apps, newMultipleFedAppsError(err)
-	}
-
+	var bodyBytes []byte
 	var oktaApps []oktaApplication
-
+	bodyBytes, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, newMultipleFedAppsError(err)
+	}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&oktaApps)
 	if err != nil {
-		return apps, newMultipleFedAppsError(err)
+		return nil, newMultipleFedAppsError(err)
 	}
 
 	apps = make([]*oktaApplication, 0)
@@ -681,14 +658,10 @@ func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAutho
 		req.Body = io.NopCloser(body)
 
 		resp, err := s.config.HTTPClient.Do(req)
-
+		bodyBytes, _ = io.ReadAll(resp.Body)
 		if err != nil {
 			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
 		}
-
-		defer resp.Body.Close()
-		bodyBytes, _ = io.ReadAll(resp.Body)
-
 		if resp.StatusCode == http.StatusOK {
 			// done
 			return nil
@@ -707,7 +680,6 @@ func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAutho
 		}
 
 		return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API status %q %q", resp.Status, string(bodyBytes)))
-
 	}
 
 	bOff := boff.NewBackoff(context.Background())
@@ -746,12 +718,8 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	defer resp.Body.Close()
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("authorize received API response %q - %q", resp.Status, string(bodyBytes))
+		return nil, fmt.Errorf("authorize received API response %q", resp.Status)
 	}
 
 	ct := resp.Header.Get(contentType)
@@ -760,7 +728,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	}
 
 	var da deviceAuthorization
-
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&da)
 	if err != nil {
 		return nil, err
