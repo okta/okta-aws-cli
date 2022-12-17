@@ -1,0 +1,81 @@
+digraph D {
+
+  graph [rankdir="LR"]
+
+  okta_aws_cli [label="okta-aws-cli" fillcolor=grey style=filled];
+
+  oauth_app [label="OIDC Native app\n(okta.apps.read grant)"];
+
+  okta_aws_cli -> oauth_app [label = "Client ID for\nOIDC Native app"];
+
+  aws_fed_app_1 [label="OIN AWS\nFederation app\n#1"];
+  aws_fed_app_2 [label="OIN AWS\nFederation app\n#2"];
+  aws_fed_app_3 [label="OIN AWS\nFederation app\n#3"];
+
+  oauth_app -> aws_fed_app_1 // [arrowhead=none];
+  oauth_app -> aws_fed_app_2 // [arrowhead=none];
+  oauth_app -> aws_fed_app_3 // [arrowhead=none];
+
+  aws_iam_idp_1 [shape=box label = "AWS IAM IdP #1\l\"s3 operations\""];
+  aws_iam_idp_2 [shape=box label = "AWS IAM IdP #2\l\"ec2 operations\""];
+  aws_iam_idp_3 [shape=box label = "AWS IAM IdP #3\l\"admin operations\""];
+
+  aws_fed_app_1 -> aws_iam_idp_1 ;
+  aws_fed_app_2 -> aws_iam_idp_2 ;
+  aws_fed_app_3 -> aws_iam_idp_3 ;
+
+  aws_iam_role_1 [shape=box label="AWS IAM Role #1\n\"s3 read\""];
+  aws_iam_role_2 [shape=box label="AWS IAM Role #2\n\"s3 r/w\""];
+  aws_iam_role_3 [shape=box label="AWS IAM Role #3\n\"ec2 all\""];
+  aws_iam_role_4 [shape=box label="AWS IAM Role #4\n\"aws admin\""];
+
+  aws_iam_idp_1 -> aws_iam_role_1 ;
+  aws_iam_idp_1 -> aws_iam_role_2 ;
+  aws_iam_idp_2 -> aws_iam_role_3 ;
+  aws_iam_idp_3 -> aws_iam_role_4 ;
+
+  aws_iam_permission_1 [shape=box style=filled fillcolor=cyan2 label="AWS IAM Permission\ns3 read"];
+  aws_iam_permission_2 [shape=box style=filled fillcolor=green label="AWS IAM Permission\ns3 r/w"];
+  aws_iam_permission_3 [shape=box style=filled fillcolor=steelblue2 label="AWS IAM Permission\nec2 all"];
+  aws_iam_permission_4 [shape=box style=filled fillcolor=yellow label="AWS IAM Permission\neks all"];
+  aws_iam_permission_5 [shape=box style=filled fillcolor=pink label="AWS IAM Permission\nλ all"];
+
+  aws_iam_role_1 -> aws_iam_permission_1 [style=bold color=cyan2 ];
+  aws_iam_role_2 -> aws_iam_permission_2 [style=bold color=green ];
+  aws_iam_role_3 -> aws_iam_permission_3 [style=bold color=steelblue2 ];
+  aws_iam_role_4 -> aws_iam_permission_2 [style=bold color=green ];
+  aws_iam_role_4 -> aws_iam_permission_3 [style=bold color=steelblue2 ];
+  aws_iam_role_4 -> aws_iam_permission_4 [style=bold color=yellow ];
+  aws_iam_role_4 -> aws_iam_permission_5 [style=bold color=pink ];
+
+  aws_iam_role_1 -> aws_iam [style=bold color="#ff9900"];
+  aws_iam_role_2 -> aws_iam [style=bold color="#ff9900"];
+  aws_iam_role_3 -> aws_iam [style=bold color="#ff9900"];
+  aws_iam_role_4 -> aws_iam [style=bold color="#ff9900"];
+
+  aws_iam [label = "AWS IAM" shape=polygon fillcolor="#ff9900" style=filled];
+  aws_iam -> okta_aws_cli [style=bold dir=backward label="credentials:\l  AWS_ACCESS_KEY_ID\l  AWS_SECRET_ACCESS_KEY\l  AWS_SESSION_TOKEN\l" color="#ff9900"];
+
+  box [shape=box label="AWS items"]
+  oval [label="Okta items"]
+
+  {
+    rank=same 
+    aws_iam
+    aws_iam_role_1
+    aws_iam_role_2
+    aws_iam_role_3
+    aws_iam_role_4
+  }
+
+  {
+    rankdir=TB
+    rank=same 
+    okta_aws_cli
+    oval
+    box
+  }
+
+  //{ rank=same oauth_app aws_fed_app_1 }
+  //{ rank=same aws_iam }
+}
