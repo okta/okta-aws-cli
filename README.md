@@ -45,11 +45,16 @@ provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_cr
 
 The OIDC Native Application requires Grant Types `Authorization Code`, `Device
 Authorization` , and `Token Exchange`. These settings are in the Okta Admin UI
-at Applications > [the OIDC app] > General Settings > Grant type .
+at `Applications > [the OIDC app] > General Settings > Grant type`.
 
+ If [Multiple AWS environments](#multiple-aws-environments) (see below) are to
+ be supported by a single OIDC application, the OIDC app must have the
+ `okta.apps.read` grant. Apps read and other application grants are configured
+ at `Applications > [the OIDC app] > Okta API Scopes` in the Okta Admin UI.
+ 
 The pairing with the AWS Federation Application is achieved in the Fed app's
-Sign On Settings. These settings are in the Okta Admin UI at Applications > [the
-AWS Fed app] > Sign On. There are two values that need to be set on the Sign On
+Sign On Settings. These settings are in the Okta Admin UI at `Applications > [the
+AWS Fed app] > Sign On`. There are two values that need to be set on the Sign On
 form. The first is the `Allowed Web SSO Client` value which is the Client ID of
 the OIDC Native Application. The second is `Identity Provider ARN (Required only
 for SAML SSO)` value which is the AWS ARN of the associated IAM Identity
@@ -65,6 +70,31 @@ URL below. Then follow the directions in that wizard.
 
 `https://saml-doc.okta.com/SAML_Docs/How-to-Configure-SAML-2.0-for-Amazon-Web-Service.html?baseAdminUrl=https://[ADMIN_DOMAIN]&app=amazon_aws&instanceId=[CLIENT_ID]`
 
+### Multiple AWS environments
+
+To support multiple AWS environments, associate additional AWS Federation
+applications with the OIDC app. The following is an illustration of the
+association of objects that make up this kind of configuration.
+
+![okta-aws-cli supporting multiple AWS environments](./doc/multi-aws-environments.jpg)
+
+* All AWS Federation apps have the OIDC native app as their Allowed Web SSO client
+* Fed App #1 is linked with an IAM IdP that has two Roles, one for S3 read, and one for S3 read/write
+* Fed App #2 is linked to an IdP and Role dedicated to ec2 operations
+* Fed App #3 is oriented for an administrator is comprised of an IdP and Role with many different permissions
+
+#### Example select from multiple IdPs
+
+![select IdP](./doc/example-select-idp.png)
+
+#### Example select from multiple Roles
+
+![select Role](./doc/example-select-role.png)
+
+#### Example creds consumed for S3 operations
+
+![conclusion](./doc/example-conclusion.png)
+
 ## Configuration
 
 **Note**: If your AWS IAM IdP is in a non-commerical region, such as GovCloud,
@@ -73,14 +103,16 @@ the environmental variable
 should be set
 [accordingly](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-region).
 
-At a minimum the Okta AWS CLI requires three configuration values. These are the
+At a minimum the Okta AWS CLI requires two configuration values. These are the
 values for the [Okta Org
-domain](https://developer.okta.com/docs/guides/find-your-domain/main/), the
+domain](https://developer.okta.com/docs/guides/find-your-domain/main/), and the
 client ID of the [OIDC Native
-Application](https://developer.okta.com/blog/2021/11/12/native-sso), and the
-client ID of the [Okta AWS
+Application](https://developer.okta.com/blog/2021/11/12/native-sso).
+
+If the OIDC Native App doesn't also have the `okta.apps.read` grant the client
+ID of the [Okta AWS
 Federation](https://www.okta.com/integrations/aws-account-federation/)
-integration application.
+integration application is also required.
 
 An optional output format value can be configured. Default output format is as
 [environment
@@ -96,17 +128,17 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 
 | Name | ENV var and .env file value | Command line flag | Description |
 |-------|-----------------------------|-------------------|-------------|
-| Okta Org Domain | OKTA_ORG_DOMAIN | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
-| OIDC Client ID | OKTA_OIDC_CLIENT_ID | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
-| Okta AWS Account Federation integration app ID | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | `--aws-acct-fed-app-id [value]` | See [AWS Account Federation integration app](#aws-account-federation-integration-app) |
-| Preset the AWS IAM Identity Provider ARN | AWS_IAM_IDP | `--aws-iam-idp [value]` | Presets the IdP list to this preferred IAM Identity Provider |
-| Preset the AWS IAM Role ARN to assume | AWS_IAM_ROLE | `--aws-iam-role [value]` | Presets the role list to this preferred IAM role for the given IAM Identity Provider |
-| AWS Session Duration | AWS_SESSION_DURATION | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
-| Output format | FORMAT | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
-| Profile | PROFILE | `--profile [value]` | Default is `default`  |
-| Display QR Code | QR_CODE | `--qr-code` | `yes` if flag is present  |
-| Automatically open the activation URL with the system web browser | OPEN_BROWSER | `--open-browser` | `yes` if flag is present  |
-| Alternate AWS credentials file path | AWS_CREDENTIALS | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
+| Okta Org Domain (**required**) | OKTA_ORG_DOMAIN | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
+| OIDC Client ID (**required**) | OKTA_OIDC_CLIENT_ID | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
+| Okta AWS Account Federation integration app ID (optional) | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | `--aws-acct-fed-app-id [value]` | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason |
+| Preselect the AWS IAM Identity Provider ARN (optional) | AWS_IAM_IDP | `--aws-iam-idp [value]` | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. |
+| Preselects the AWS IAM Role ARN to assume (optional) | AWS_IAM_ROLE | `--aws-iam-role [value]` | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. If there are other Roles available they will not be listed. |
+| AWS Session Duration (optional) | AWS_SESSION_DURATION | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
+| Output format (optional) | FORMAT | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
+| Profile (optional) | PROFILE | `--profile [value]` | Default is `default`  |
+| Display QR Code (optional) | QR_CODE | `--qr-code` | `yes` if flag is present  |
+| Automatically open the activation URL with the system web browser (optional) | OPEN_BROWSER | `--open-browser` | `yes` if flag is present  |
+| Alternate AWS credentials file path (optional) | AWS_CREDENTIALS | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
 
 ### Allowed Web SSO Client
 
@@ -133,7 +165,6 @@ Example: `0oa9x1rifa2H6Q5d8325`
 ```shell
 export OKTA_ORG_DOMAIN=test.okta.com
 export OKTA_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
-export OKTA_AWS_ACCOUNT_FEDERATION_APP_ID=0oa9x1rifa2H6Q5d8325
 ```
 
 ### `.env` file variables example
@@ -141,10 +172,19 @@ export OKTA_AWS_ACCOUNT_FEDERATION_APP_ID=0oa9x1rifa2H6Q5d8325
 ```
 OKTA_ORG_DOMAIN=test.okta.com
 OKTA_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
-OKTA_AWS_ACCOUNT_FEDERATION_APP_ID=0oa9x1rifa2H6Q5d8325
 ```
 
 ### Command line flags example
+
+#### OIDC client has `okta.apps.read` grant
+
+```shell
+
+$ okta-aws-cli --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7
+```
+
+#### OIDC client **does not** have `okta.apps.read` grant
 
 ```shell
 
@@ -267,11 +307,11 @@ CLI's authentication and authorization is initiated. The Okta AWS CLI doesn't
 prompt for passwords or any other user credentials itself, or offers to store
 user credentials on a desktop keychain.
 
-The configuration of the Okta AWS CLI is minimal with only three required
-values: Okta org domain name, OIDC app id, and AWS Fed app ID. There isn't a
-need for a configuration prompt to run for initialization and there isn't a
-need for a multi-lined configuration file that is dropped somewhere in the
-user's `$HOME` directory to operate the CLI.
+The configuration of the Okta AWS CLI is minimal with only two required values:
+Okta org domain name, and OIDC app id. There isn't a need for a configuration
+prompt to run for initialization and there isn't a need for a multi-lined
+configuration file that is dropped somewhere in the user's `$HOME` directory to
+operate the CLI.
 
 The Okta CLI is CLI flag and environment variable oriented and its default
 output is as environment variables. It can write to an AWS credentials file but
