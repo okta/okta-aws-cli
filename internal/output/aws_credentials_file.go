@@ -17,6 +17,7 @@
 package output
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -30,42 +31,25 @@ import (
 func ensureConfigExists(filename string, profile string) error {
 	if _, err := os.Stat(filename); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-
 			dir := filepath.Dir(filename)
 
+			// create the aws config dir
 			err = os.MkdirAll(dir, os.ModePerm)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "unable to create AWS credentials directory %q", dir)
 			}
 
 			// create an base config file
-			err = os.WriteFile(filename, []byte("["+profile+"]"), 0600)
+			err = os.WriteFile(filename, []byte("["+profile+"]"), 0o600)
 			if err != nil {
 				return err
 			}
-
+			fmt.Fprintf(os.Stderr, "Created credentials file %q\n", filename)
+			return nil
 		}
 		return err
 	}
 	return nil
-}
-
-func createAndSaveProfile(filename, profile string, awsCreds *aws.Credential) error {
-
-	dirPath := filepath.Dir(filename)
-
-	err := os.Mkdir(dirPath, 0700)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create %s directory", dirPath)
-	}
-
-	f, err := os.OpenFile(filename, os.O_CREATE, 0o600)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create configuration")
-	}
-	f.Close()
-
-	return saveProfile(filename, profile, awsCreds)
 }
 
 func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
@@ -83,7 +67,13 @@ func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
 		return err
 	}
 
-	return config.SaveTo(filename)
+	err = config.SaveTo(filename)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "Updated credentials file %q\n", filename)
+	return nil
 }
 
 // AWSCredentialsFile AWS credentials file output formatter
@@ -101,8 +91,8 @@ func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error 
 	profile := c.Profile
 
 	err := ensureConfigExists(filename, profile)
-	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return createAndSaveProfile(filename, profile, ac)
+	if err != nil {
+		return err
 	}
 
 	return saveProfile(filename, profile, ac)
