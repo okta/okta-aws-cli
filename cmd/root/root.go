@@ -129,6 +129,13 @@ func init() {
 			usage:  "Automatically open the activation URL with the system web browser",
 			envVar: "OPEN_BROWSER",
 		},
+		{
+			name:   "write-aws-credentials",
+			short:  "z",
+			value:  false,
+			usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertantly remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
+			envVar: "WRITE_AWS_CREDENTIALS",
+		},
 	}
 }
 

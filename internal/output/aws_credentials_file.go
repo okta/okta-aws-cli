@@ -44,7 +44,7 @@ func ensureConfigExists(filename string, profile string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "Created credentials file %q\n", filename)
+			fmt.Fprintf(os.Stderr, "Created credentials file %q with profile %q.\n", filename, profile)
 			return nil
 		}
 		return err
@@ -53,16 +53,7 @@ func ensureConfigExists(filename string, profile string) error {
 }
 
 func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
-	config, err := ini.Load(filename)
-	if err != nil {
-		return err
-	}
-	iniProfile, err := config.NewSection(profile)
-	if err != nil {
-		return err
-	}
-
-	err = iniProfile.ReflectFrom(awsCreds)
+	config, err := updateConfig(filename, profile, awsCreds)
 	if err != nil {
 		return err
 	}
@@ -72,8 +63,24 @@ func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "Updated credentials file %q\n", filename)
+	fmt.Fprintf(os.Stderr, "Updated profile %q in credentials file %q.\n", profile, filename)
 	return nil
+}
+
+func updateConfig(filename, profile string, awsCreds *aws.Credential) (config *ini.File, err error) {
+	config, err = ini.Load(filename)
+	if err != nil {
+		return
+	}
+
+	iniProfile, err := config.NewSection(profile)
+	if err != nil {
+		return
+	}
+
+	err = iniProfile.ReflectFrom(awsCreds)
+
+	return
 }
 
 // AWSCredentialsFile AWS credentials file output formatter
@@ -87,6 +94,41 @@ func NewAWSCredentialsFile() *AWSCredentialsFile {
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
 func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error {
+	if c.WriteAWSCredentials {
+		return e.writeConfig(c, ac)
+	}
+
+	return e.appendConfig(c, ac)
+}
+
+func (e *AWSCredentialsFile) appendConfig(c *config.Config, ac *aws.Credential) error {
+	f, err := os.OpenFile(c.AWSCredentials, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	creds := `
+[%s]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+aws_session_token = %s
+`
+	creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken)
+	_, err = f.WriteString(creds)
+	if err != nil {
+		return err
+	}
+	_ = f.Sync()
+
+	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", c.Profile, c.AWSCredentials)
+
+	return nil
+}
+
+func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) error {
 	filename := c.AWSCredentials
 	profile := c.Profile
 
