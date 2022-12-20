@@ -97,8 +97,6 @@ func NewAWSCredentialsFile() *AWSCredentialsFile {
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
 func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error {
-<<<<<<< HEAD
-=======
 	filename := c.AWSCredentials
 	profile := c.Profile
 
