@@ -133,7 +133,7 @@ func init() {
 			name:   "write-aws-credentials",
 			short:  "z",
 			value:  false,
-			usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertantly remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
+			usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertently remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
 			envVar: "WRITE_AWS_CREDENTIALS",
 		},
 	}

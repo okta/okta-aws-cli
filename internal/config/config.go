@@ -27,7 +27,7 @@ import (
 
 const (
 	// Version The version of the CLI
-	Version      = "0.0.4"
+	Version      = "0.1.0"
 	awsCrentials = "aws_credentials"
 )
 

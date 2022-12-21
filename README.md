@@ -25,6 +25,7 @@ $ eval `okta-aws-cli` && aws s3 ls
 ```
 
 * [Requirements](#requirements)
+* [Recommendations](#recommendations)
 * [Configuration](#configuration)
 * [Operation](#operation)
 * Comparison
@@ -73,8 +74,9 @@ URL below. Then follow the directions in that wizard.
 ### Multiple AWS environments
 
 To support multiple AWS environments, associate additional AWS Federation
-applications with the OIDC app. The following is an illustration of the
-association of objects that make up this kind of configuration.
+applications with the OIDC app The OIDC app **must** have the `okta.apps.read`
+grant. The following is an illustration of the association of objects that make
+up this kind of configuration.
 
 ![okta-aws-cli supporting multiple AWS environments](./doc/multi-aws-environments.jpg)
 
@@ -95,9 +97,16 @@ association of objects that make up this kind of configuration.
 
 ![conclusion](./doc/example-conclusion.png)
 
+## Recommendations
+
+We recommend that the AWS Federation Application and OIDC native application
+have equivalent policies if not share the same policy. If the AWS Federation
+app has more stringent assurance requirements than the OIDC app a `400 Bad
+Request` API error is likely to occur.
+
 ## Configuration
 
-**Note**: If your AWS IAM IdP is in a non-commerical region, such as GovCloud,
+**Note**: If your AWS IAM IdP is in a non-commercial region, such as GovCloud,
 the environmental variable
 [`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 should be set
@@ -139,7 +148,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Display QR Code (optional) | QR_CODE | `--qr-code` | `true` if flag is present  |
 | Automatically open the activation URL with the system web browser (optional) | OPEN_BROWSER | `--open-browser` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | AWS_CREDENTIALS | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertantly remove dangling comments and extraneous formatting from the creds file. | WRITE_AWS_CREDENTIALS | `--write-aws-credentials` | `true` if flag is present  |
+| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | WRITE_AWS_CREDENTIALS | `--write-aws-credentials` | `true` if flag is present  |
 
 ### Allowed Web SSO Client
 
