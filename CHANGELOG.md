@@ -4,13 +4,13 @@
 
 First GA release
 
-# NEW FEATURES
+### NEW FEATURES
 
 * Auto pop system web browser to device authorization form when `--open-browser` CLI flag is present - PR [#21](https://github.com/okta/okta-aws-cli/pull/21)
   * Thanks [@kda-jt](https://github.com/kda-jt), [@monde](https://github.com/monde)!
 * Full multiple AWS Federation Applications support - see [README - Multiple AWS environments](https://github.com/okta/okta-aws-cli/#multiple-aws-environments) - [#28](https://github.com/okta/okta-aws-cli/pull/28)
   * Thanks [@monde](https://github.com/monde)!
-* Write/update (instead of append) AWS Crendentials file when `--write-aws-credentials` CLI flag is present - PR [#30](https://github.com/okta/okta-aws-cli/pull/30)
+* Write/update (instead of append) AWS Credentials file when `--write-aws-credentials` CLI flag is present - PR [#30](https://github.com/okta/okta-aws-cli/pull/30)
   * Thanks [@ctennis](https://github.com/ctennis), [@monde](https://github.com/monde)!
 
 ### ENHANCEMENTS
