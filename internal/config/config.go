@@ -113,6 +113,10 @@ func NewConfig() *Config {
 	if !cfg.WriteAWSCredentials {
 		cfg.WriteAWSCredentials = viper.GetBool("write_aws_credentials")
 	}
+	if cfg.WriteAWSCredentials {
+		// writing aws creds option implies "aws-credentials" format
+		cfg.Format = "aws-credentials"
+	}
 
 	tr := &http.Transport{
 		IdleConnTimeout: 30 * time.Second,
