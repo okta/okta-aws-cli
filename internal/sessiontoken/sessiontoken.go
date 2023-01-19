@@ -274,7 +274,8 @@ func (s *SessionToken) renderCredential(ac *oaws.Credential) error {
 // fetchAWSCredentialWithSAMLRole Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
 func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
-	sess, err := session.NewSession()
+	awsCfg := aws.NewConfig().WithHTTPClient(s.config.HTTPClient)
+	sess, err := session.NewSession(awsCfg)
 	if err != nil {
 		return nil, err
 	}

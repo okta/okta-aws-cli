@@ -137,18 +137,19 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 
 | Name | ENV var and .env file value | Command line flag | Description |
 |-------|-----------------------------|-------------------|-------------|
-| Okta Org Domain (**required**) | OKTA_ORG_DOMAIN | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
-| OIDC Client ID (**required**) | OKTA_OIDC_CLIENT_ID | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
-| Okta AWS Account Federation integration app ID (optional) | OKTA_AWS_ACCOUNT_FEDERATION_APP_ID | `--aws-acct-fed-app-id [value]` | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason |
-| Preselect the AWS IAM Identity Provider ARN (optional) | AWS_IAM_IDP | `--aws-iam-idp [value]` | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. |
-| Preselects the AWS IAM Role ARN to assume (optional) | AWS_IAM_ROLE | `--aws-iam-role [value]` | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. If there are other Roles available they will not be listed. |
-| AWS Session Duration (optional) | AWS_SESSION_DURATION | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
-| Output format (optional) | FORMAT | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
-| Profile (optional) | PROFILE | `--profile [value]` | Default is `default`  |
-| Display QR Code (optional) | QR_CODE | `--qr-code` | `true` if flag is present  |
-| Automatically open the activation URL with the system web browser (optional) | OPEN_BROWSER | `--open-browser` | `true` if flag is present  |
-| Alternate AWS credentials file path (optional) | AWS_CREDENTIALS | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | WRITE_AWS_CREDENTIALS | `--write-aws-credentials` | `true` if flag is present  |
+| Okta Org Domain (**required**) | `OKTA_ORG_DOMAIN` | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
+| OIDC Client ID (**required**) | `OKTA_OIDC_CLIENT_ID` | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
+| Okta AWS Account Federation integration app ID (optional) | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `--aws-acct-fed-app-id [value]` | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason |
+| Preselect the AWS IAM Identity Provider ARN (optional) | `AWS_IAM_IDP` | `--aws-iam-idp [value]` | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. |
+| Preselects the AWS IAM Role ARN to assume (optional) | `AWS_IAM_ROLE` | `--aws-iam-role [value]` | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. If there are other Roles available they will not be listed. |
+| AWS Session Duration (optional) | `AWS_SESSION_DURATION` | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
+| Output format (optional) | `FORMAT` | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
+| Profile (optional) | `PROFILE` | `--profile [value]` | Default is `default`  |
+| Display QR Code (optional) | `QR_CODE` | `--qr-code` | `true` if flag is present  |
+| Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER` | `--open-browser` | `true` if flag is present  |
+| Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
+| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS` | `--write-aws-credentials` | `true` if flag is present  |
+| Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS` | `--debug-api-calls` | `true` if flag is present  |
 
 ### Allowed Web SSO Client
 

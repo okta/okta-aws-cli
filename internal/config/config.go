@@ -45,6 +45,7 @@ type Config struct {
 	AWSCredentials      string
 	WriteAWSCredentials bool
 	OpenBrowser         bool
+	DebugAPICalls       bool
 	HTTPClient          *http.Client
 }
 
@@ -66,6 +67,7 @@ func NewConfig() *Config {
 		OpenBrowser:         viper.GetBool("open-browser"),
 		AWSCredentials:      viper.GetString("aws-credentials"),
 		WriteAWSCredentials: viper.GetBool("write-aws-credentials"),
+		DebugAPICalls:       viper.GetBool("debug-api-calls"),
 	}
 	if cfg.Format == "" {
 		cfg.Format = "env-var"
@@ -118,11 +120,11 @@ func NewConfig() *Config {
 		cfg.Format = "aws-credentials"
 	}
 
-	tr := &http.Transport{
-		IdleConnTimeout: 30 * time.Second,
+	if !cfg.DebugAPICalls {
+		cfg.DebugAPICalls = viper.GetBool("debug-api-calls")
 	}
 	httpClient := &http.Client{
-		Transport: tr,
+		Transport: newConfigTransport(cfg.DebugAPICalls),
 		Timeout:   time.Second * time.Duration(60),
 	}
 	cfg.HTTPClient = httpClient

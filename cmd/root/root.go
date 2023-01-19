@@ -136,6 +136,13 @@ func init() {
 			usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertently remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
 			envVar: "WRITE_AWS_CREDENTIALS",
 		},
+		{
+			name:   "debug-api-calls",
+			short:  "x",
+			value:  false,
+			usage:  "Verbosely print all API calls/responses to the screen",
+			envVar: "DEBUG_API_CALLS",
+		},
 	}
 }
 
