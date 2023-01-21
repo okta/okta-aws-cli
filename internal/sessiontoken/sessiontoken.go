@@ -527,7 +527,22 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
+		} else {
+			errStruct := struct {
+				Error            string `json:"error"`
+				ErrorDescription string `json:"error_description"`
+			}{}
+			err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&errStruct)
+			if err != nil {
+				return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
+			} else {
+				return nil, fmt.Errorf("fetching SSO web token received API response %q\nerror: %q, description: %q\n",
+					resp.Status, errStruct.Error, errStruct.ErrorDescription)
+			}
+		}
 	}
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
