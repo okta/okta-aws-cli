@@ -218,6 +218,8 @@ This allows for the command's results to be `eval`'d into the current shell as
 Note: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
+Note: output will be in `setx` statements if the runtime is Windows.
+
 ```shell
 $ okta-aws-cli
 Open the following URL to begin Okta device authorization for the AWS CLI.
