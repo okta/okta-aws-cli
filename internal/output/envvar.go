@@ -18,6 +18,7 @@ package output
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -34,8 +35,12 @@ func NewEnvVar() *EnvVar {
 // Output Satisfies the Outputter interface and outputs AWS credentials as shell
 // export statements to STDOUT
 func (e *EnvVar) Output(c *config.Config, ac *aws.Credential) error {
-	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", ac.AccessKeyID)
-	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", ac.SecretAccessKey)
-	fmt.Printf("export AWS_SESSION_TOKEN=%s\n", ac.SessionToken)
+	export := "export"
+	if runtime.GOOS == "windows" {
+		export = "setx"
+	}
+	fmt.Printf("%s AWS_ACCESS_KEY_ID=%s\n", export, ac.AccessKeyID)
+	fmt.Printf("%s AWS_SECRET_ACCESS_KEY=%s\n", export, ac.SecretAccessKey)
+	fmt.Printf("%s AWS_SESSION_TOKEN=%s\n", export, ac.SessionToken)
 	return nil
 }
