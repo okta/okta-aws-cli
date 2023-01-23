@@ -10,18 +10,35 @@ with AWS IAM using
 Okta does not have an OIDC based AWS Federation application at this time.
 
 `okta-aws-cli` handles authentication through Okta and token exchange with AWS
-STS to collect a proper IAM role for the AWS CLI operator.  The resulting output
-is a set made up of  `Access Key ID`, `Secret Access Key`, and `Session Token`
-of [AWS
+STS to collect a proper IAM role for the AWS CLI operator.  The resulting
+output is a set made up of  `Access Key ID`, `Secret Access Key`, and `Session
+Token` of [AWS
 credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for the AWS CLI. The Okta AWS CLI expresses the AWS credentials as either
-environment variables or appended to an AWS CLI credentials file. The `Session
-Token` has an expiry of 60 minutes.
+[environment
+variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+or appended to an AWS CLI [credentials
+file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+The `Session Token` has an expiry of 60 minutes.
 
 ```shell
+# *nix, export statements
+$ okta-aws-cli
+export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
+export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
+
+# *nix, eval export ENV vars into current shell
 $ eval `okta-aws-cli` && aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
+
+rem Windows setx statements
+C:\> okta-aws-cli
+setx AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
+setx AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+setx AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
+
 ```
 
 * [Requirements](#requirements)
