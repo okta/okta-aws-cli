@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 (January 24, 2023)
+
+### ENHANCEMENTS
+
+* `setx` output when in Windows environment [#49](https://github.com/okta/okta-aws-cli/pull/49), thanks [@monde](https://github.com/monde)!
+* `--write-aws-credentials` implies output format `aws-credentials` [#40](https://github.com/okta/okta-aws-cli/pull/40), thanks [@monde](https://github.com/monde)!
+* Verbose HTTP API call/resonse logging with `--debug-api-calls` flag [#43](https://github.com/okta/okta-aws-cli/pull/43), thanks [@monde](https://github.com/monde)!
+* Return underlying Error if present in fetchWebSSO() [#47](https://github.com/okta/okta-aws-cli/pull/47), thanks [@emanor-okta](https://github.com/emanor-okta)!
+
+### BUG FIXES
+
+* Fix setting/getting IDP ARN value when Role Value Pattern is used on AWS Federation App [#51](https://github.com/okta/okta-aws-cli/pull/51), thanks [@monde](https://github.com/monde)!
+* Accept `OPEN_BROWSER`, `WRITE_AWS_CREDENTALS` env vars  [#50](https://github.com/okta/okta-aws-cli/pull/50), thanks [@monde](https://github.com/monde)!
+
 ## 0.1.0 (December 21, 2022)
 
 First GA release
