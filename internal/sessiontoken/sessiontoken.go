@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -65,13 +66,21 @@ const (
 	noRolesError             = "no roles chosen for provider %q"
 	chooseIDP                = "Choose an IdP:"
 	chooseRole               = "Choose a Role:"
-	idpSelected              = "IdP: %s\n"
-	roleSelected             = "Role: %s\n"
+	idpSelectedTemplate      = `  {{color "default+hb"}}IdP: {{color "reset"}}{{color "cyan"}}{{ .IdP }}{{color "reset"}}`
+	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 )
+
+type idpTemplateData struct {
+	IDP string
+}
+type roleTemplateData struct {
+	Role string
+}
 
 // SessionToken Encapsulates the work of getting an AWS Session Token
 type SessionToken struct {
-	config *config.Config
+	config                *config.Config
+	fedAppAlreadySelected bool
 }
 
 // accessToken Encapsulates an Okta access token
@@ -110,12 +119,6 @@ type oktaApplication struct {
 			WebSSOClientID      string `json:"webSSOAllowedClient"`
 		} `json:"app"`
 	} `json:"settings"`
-}
-
-type assertionArtifact struct {
-	fedApp   *oktaApplication
-	fedAppID string
-	idpARN   string
 }
 
 // apiError Wrapper for Okta API error
@@ -168,15 +171,14 @@ func (s *SessionToken) EstablishToken() error {
 		return err
 	}
 
+	if s.config.FedAppID != "" {
+		// Alternate path when operator knows their AWS Fed app ID
+		return s.establishTokenWithFedAppID(clientID, s.config.FedAppID, at)
+	}
+
 	apps, err := s.listFedApps(clientID, at)
 	if err != nil {
 		return err
-	}
-
-	if len(apps) == 0 && s.config.FedAppID != "" {
-		// Alternate path where operator's OIDC app doesn't have okta.apps.read
-		// grant but operator knows their AWS Fed app ID
-		return s.establishTokenWithFedAppID(clientID, at)
 	}
 	if len(apps) == 0 {
 		errMsg := `
@@ -188,42 +190,54 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		return fmt.Errorf(errMsg, clientID, "okta.apps.read")
 	}
 
-	artifacts := make([]*assertionArtifact, len(apps))
-	for i, app := range apps {
-		artifact := assertionArtifact{
-			fedApp:   app,
-			fedAppID: app.ID,
-			idpARN:   app.Settings.App.IdentityProviderARN,
+	var fedAppID string
+	if len(apps) == 1 {
+		// only one app, we don't need to prompt selection of idp / fed app
+		fedAppID = apps[0].ID
+	} else {
+		// Here, we do want to prompt for selection of the Fed App.
+		// If the app is making use of "Role value pattern" on AWS settings we
+		// won't get the real ARN until we establish the web sso token.
+		s.fedAppAlreadySelected = true
+		fedAppID, err = s.selectFedApp(apps)
+		if err != nil {
+			return err
 		}
-
-		artifacts[i] = &artifact
 	}
 
-	artifact, err := s.selectArtifactForIdp(artifacts)
-	if err != nil {
-		return err
-	}
-
-	iar, assertion, err := s.selectAssertion(clientID, artifact, at)
-	if err != nil {
-		return err
-	}
-
-	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
-	if err != nil {
-		return err
-	}
-
-	err = s.renderCredential(ac)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.establishTokenWithFedAppID(clientID, fedAppID, at)
 }
 
-func (s *SessionToken) establishTokenWithFedAppID(clientID string, at *accessToken) error {
-	at, err := s.fetchSSOWebToken(clientID, s.config.FedAppID, at)
+func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
+	idps := make(map[string]*oktaApplication)
+	choices := make([]string, len(apps))
+	var selected string
+	for i, app := range apps {
+		choice := app.Label
+		if app.Settings.App.IdentityProviderARN != "" {
+			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
+		}
+		choices[i] = choice
+		idps[choice] = app
+	}
+
+	prompt := &survey.Select{
+		Message: chooseIDP,
+		Options: choices,
+	}
+	err := survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return "", fmt.Errorf(askIDPError, err)
+	}
+	if selected == "" {
+		return "", errors.New(idpValueNotSelectedError)
+	}
+
+	return idps[selected].ID, nil
+}
+
+func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *accessToken) error {
+	at, err := s.fetchSSOWebToken(clientID, fedAppID, at)
 	if err != nil {
 		return err
 	}
@@ -298,65 +312,24 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 	return credential, nil
 }
 
-// selectArtifactForIdp UX to prompt operator for the AWS idp ARN and return the associated assertion artifact
-func (s *SessionToken) selectArtifactForIdp(artifacts []*assertionArtifact) (artifact *assertionArtifact, err error) {
-	idps := make([]string, len(artifacts))
-	for i, a := range artifacts {
-		idps[i] = a.idpARN
-	}
-
-	idp, err := s.promptForIDP(idps)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, artifact = range artifacts {
-		if artifact.idpARN == idp {
-			return artifact, nil
-		}
-	}
-	return nil, errors.New("failed to set artifact")
-}
-
-func (s *SessionToken) selectAssertion(clientID string, artifact *assertionArtifact, at *accessToken) (iar *idpAndRole, assertion string, err error) {
-	swt, err := s.fetchSSOWebToken(clientID, artifact.fedAppID, at)
-	if err != nil {
-		return
-	}
-
-	assertion, err = s.fetchSAMLAssertion(swt)
-	if err != nil {
-		return
-	}
-
-	idpRolesMap, err := s.extractIDPAndRolesMapFromAssertion(assertion)
-	if err != nil {
-		return
-	}
-	idp := artifact.idpARN
-
-	roles := idpRolesMap[idp]
-	role, err := s.promptForRole(idp, roles)
-	if err != nil {
-		return nil, "", err
-	}
-
-	iar = &idpAndRole{
-		idp:  idp,
-		role: role,
-	}
-	return
-}
-
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
 func (s *SessionToken) promptForRole(idp string, roles []string) (role string, err error) {
 	switch {
-	case s.config.AWSIAMRole != "":
-		role = s.config.AWSIAMRole
-		fmt.Fprintf(os.Stderr, roleSelected, role)
-	case len(roles) == 1:
-		role = roles[0]
-		fmt.Fprintf(os.Stderr, roleSelected, role)
+	case len(roles) == 1 || s.config.AWSIAMRole != "":
+		if s.config.AWSIAMRole != "" {
+			role = s.config.AWSIAMRole
+		} else {
+			role = roles[0]
+
+		}
+		roleData := roleTemplateData{
+			Role: role,
+		}
+		rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
+		if err != nil {
+			return idp, err
+		}
+		fmt.Fprintln(os.Stderr, rich)
 	default:
 		prompt := &survey.Select{
 			Message: chooseRole,
@@ -374,19 +347,33 @@ func (s *SessionToken) promptForRole(idp string, roles []string) (role string, e
 	return role, nil
 }
 
-// promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs
+// promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
+// If the fedApp has already been selected via an ask one survey we don't need
+// to pretty print out the IdP name again.
 func (s *SessionToken) promptForIDP(idps []string) (idp string, err error) {
 	if len(idps) == 0 {
 		return idp, errors.New(noIDPsError)
 	}
 
 	switch {
-	case s.config.AWSIAMIdP != "":
-		idp = s.config.AWSIAMIdP
-		fmt.Fprintf(os.Stderr, idpSelected, idp)
-	case len(idps) == 1:
-		idp = idps[0]
-		fmt.Fprintf(os.Stderr, idpSelected, idp)
+	case len(idps) == 1 || s.config.AWSIAMIdP != "":
+		if s.config.AWSIAMIdP != "" {
+			idp = s.config.AWSIAMIdP
+		} else {
+			idp = idps[0]
+		}
+		if s.fedAppAlreadySelected {
+			return idp, nil
+		}
+
+		idpData := idpTemplateData{
+			IDP: idp,
+		}
+		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
+		if err != nil {
+			return idp, err
+		}
+		fmt.Fprintln(os.Stderr, rich)
 	default:
 		prompt := &survey.Select{
 			Message: chooseIDP,
@@ -574,9 +561,8 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 
 // ListFedApp Lists Okta AWS Fed Apps that are active. Errors after that occur
 // after getting anything other than a 403 on /api/v1/apps will be wrapped as as
-// an error that is related having multiple fed apps available -
-// hasMultipleFedApps. Requires assoicated OIDC app has been granted
-// okta.apps.read to its scope.
+// an error that is related having multiple fed apps available.  Requires
+// assoicated OIDC app has been granted okta.apps.read to its scope.
 func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*oktaApplication, err error) {
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain))
 	if err != nil {
