@@ -71,7 +71,7 @@ const (
 )
 
 type idpTemplateData struct {
-	IdP string
+	IDP string
 }
 type roleTemplateData struct {
 	Role string
@@ -367,7 +367,7 @@ func (s *SessionToken) promptForIDP(idps []string) (idp string, err error) {
 		}
 
 		idpData := idpTemplateData{
-			IdP: idp,
+			IDP: idp,
 		}
 		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
 		if err != nil {
