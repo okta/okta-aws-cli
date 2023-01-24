@@ -10,18 +10,35 @@ with AWS IAM using
 Okta does not have an OIDC based AWS Federation application at this time.
 
 `okta-aws-cli` handles authentication through Okta and token exchange with AWS
-STS to collect a proper IAM role for the AWS CLI operator.  The resulting output
-is a set made up of  `Access Key ID`, `Secret Access Key`, and `Session Token`
-of [AWS
+STS to collect a proper IAM role for the AWS CLI operator.  The resulting
+output is a set made up of  `Access Key ID`, `Secret Access Key`, and `Session
+Token` of [AWS
 credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for the AWS CLI. The Okta AWS CLI expresses the AWS credentials as either
-environment variables or appended to an AWS CLI credentials file. The `Session
-Token` has an expiry of 60 minutes.
+[environment
+variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+or appended to an AWS CLI [credentials
+file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+The `Session Token` has an expiry of 60 minutes.
 
 ```shell
+# *nix, export statements
+$ okta-aws-cli
+export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
+export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
+
+# *nix, eval export ENV vars into current shell
 $ eval `okta-aws-cli` && aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
+
+rem Windows setx statements
+C:\> okta-aws-cli
+setx AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
+setx AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+setx AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
+
 ```
 
 * [Requirements](#requirements)
@@ -145,11 +162,11 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | AWS Session Duration (optional) | `AWS_SESSION_DURATION` | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
 | Output format (optional) | `FORMAT` | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
 | Profile (optional) | `PROFILE` | `--profile [value]` | Default is `default`  |
-| Display QR Code (optional) | `QR_CODE` | `--qr-code` | `true` if flag is present  |
-| Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER` | `--open-browser` | `true` if flag is present  |
+| Display QR Code (optional) | `QR_CODE=true` | `--qr-code` | `true` if flag is present  |
+| Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS` | `--write-aws-credentials` | `true` if flag is present  |
-| Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS` | `--debug-api-calls` | `true` if flag is present  |
+| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 
 ### Allowed Web SSO Client
 
@@ -217,6 +234,8 @@ This allows for the command's results to be `eval`'d into the current shell as
 
 Note: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
+
+Note: output will be in `setx` statements if the runtime is Windows.
 
 ```shell
 $ okta-aws-cli

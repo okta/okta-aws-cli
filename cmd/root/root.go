@@ -28,7 +28,6 @@ import (
 	"github.com/okta/okta-aws-cli/internal/ansi"
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/sessiontoken"
-	pstr "github.com/okta/okta-aws-cli/pkg/strings"
 )
 
 const (
@@ -53,95 +52,95 @@ func init() {
 
 	flags = []flag{
 		{
-			name:   "org-domain",
+			name:   config.OrgDomainFlag,
 			short:  "o",
 			value:  "",
 			usage:  "Okta Org Domain",
-			envVar: "OKTA_ORG_DOMAIN",
+			envVar: config.OktaOrgDomainEnvVar,
 		},
 		{
-			name:   "oidc-client-id",
+			name:   config.OIDCClientIDFlag,
 			short:  "c",
 			value:  "",
 			usage:  "OIDC Client ID",
-			envVar: "OKTA_OIDC_CLIENT_ID",
+			envVar: config.OktaOIDCClientIDEnvVar,
 		},
 		{
-			name:   "aws-acct-fed-app-id",
+			name:   config.AWSAcctFedAppIDFlag,
 			short:  "a",
 			value:  "",
 			usage:  "AWS Account Federation app ID",
-			envVar: "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID",
+			envVar: config.OktaAWSAccountFederationAppIDEnvVar,
 		},
 		{
-			name:   "aws-iam-idp",
+			name:   config.AWSIAMIdPFlag,
 			short:  "i",
 			value:  "",
 			usage:  "Preset IAM Identity Provider ARN",
-			envVar: "AWS_IAM_IDP",
+			envVar: config.AWSIAMIdPEnvVar,
 		},
 		{
-			name:   "aws-iam-role",
+			name:   config.AWSIAMRoleFlag,
 			short:  "r",
 			value:  "",
 			usage:  "Preset IAM Role ARN",
-			envVar: "AWS_IAM_ROLE",
+			envVar: config.AWSIAMRoleEnvVar,
 		},
 		{
-			name:   "session-duration",
+			name:   config.SessionDurationFlag,
 			short:  "s",
 			value:  "3600",
 			usage:  "Session duration for role.",
-			envVar: "AWS_SESSION_DURATION",
+			envVar: config.AWSSessionDurationEnvVar,
 		},
 		{
-			name:   "profile",
+			name:   config.ProfileFlag,
 			short:  "p",
 			value:  "default",
 			usage:  "AWS Profile",
-			envVar: "PROFILE",
+			envVar: config.ProfileEnvVar,
 		},
 		{
-			name:   "format",
+			name:   config.FormatFlag,
 			short:  "f",
 			value:  "env-var",
 			usage:  "Output format. [env-var|aws-credentials]",
-			envVar: "FORMAT",
+			envVar: config.FormatEnvVar,
 		},
 		{
-			name:   "qr-code",
+			name:   config.QRCodeFlag,
 			short:  "q",
 			value:  false,
 			usage:  "Print QR Code of activation URL",
-			envVar: "QR_CODE",
+			envVar: config.QRCodeEnvVar,
 		},
 		{
-			name:   "aws-credentials",
+			name:   config.AWSCredentialsFlag,
 			short:  "w",
 			value:  awsCredentialsFilename,
-			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", pstr.AWSCredentials),
-			envVar: "AWS_CREDENTIALS",
+			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", config.AWSCredentialsFormat),
+			envVar: config.AWSCredentialsEnvVar,
 		},
 		{
-			name:   "open-browser",
+			name:   config.OpenBrowserFlag,
 			short:  "b",
 			value:  false,
 			usage:  "Automatically open the activation URL with the system web browser",
-			envVar: "OPEN_BROWSER",
+			envVar: config.OpenBrowserEnvVar,
 		},
 		{
-			name:   "write-aws-credentials",
+			name:   config.WriteAWSCredentialsFlag,
 			short:  "z",
 			value:  false,
 			usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertently remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
-			envVar: "WRITE_AWS_CREDENTIALS",
+			envVar: config.WriteAWSCredentialsEnvVar,
 		},
 		{
-			name:   "debug-api-calls",
+			name:   config.DebugAPICallsFlag,
 			short:  "x",
 			value:  false,
 			usage:  "Verbosely print all API calls/responses to the screen",
-			envVar: "DEBUG_API_CALLS",
+			envVar: config.DebugAPICallsEnvVar,
 		},
 	}
 }
