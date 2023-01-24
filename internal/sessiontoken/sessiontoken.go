@@ -79,7 +79,8 @@ type roleTemplateData struct {
 
 // SessionToken Encapsulates the work of getting an AWS Session Token
 type SessionToken struct {
-	config *config.Config
+	config         *config.Config
+	fedAppSelected bool
 }
 
 // accessToken Encapsulates an Okta access token
@@ -172,7 +173,7 @@ func (s *SessionToken) EstablishToken() error {
 
 	if s.config.FedAppID != "" {
 		// Alternate path when operator knows their AWS Fed app ID
-		return s.establishTokenWithFedAppID(false, clientID, s.config.FedAppID, at)
+		return s.establishTokenWithFedAppID(clientID, s.config.FedAppID, at)
 	}
 
 	apps, err := s.listFedApps(clientID, at)
@@ -190,8 +191,6 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 	}
 
 	var fedAppID string
-	var fedAppAlreadySelected bool
-
 	if len(apps) == 1 {
 		// only one app, we don't need to prompt selection
 		fedAppID = apps[0].ID
@@ -199,14 +198,14 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		// Here, we do want to prompt for selection of the Fed App.
 		// If the app is making use of "Role value pattern" on AWS settings we
 		// won't get the real ARN until we establish the web sso token.
-		fedAppAlreadySelected = true
+		s.fedAppSelected = true
 		fedAppID, err = s.selectFedApp(apps)
 		if err != nil {
 			return err
 		}
 	}
 
-	return s.establishTokenWithFedAppID(fedAppAlreadySelected, clientID, fedAppID, at)
+	return s.establishTokenWithFedAppID(clientID, fedAppID, at)
 }
 
 func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
@@ -237,7 +236,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	return idps[selected].ID, nil
 }
 
-func (s *SessionToken) establishTokenWithFedAppID(fedAppAlreadySelected bool, clientID, fedAppID string, at *accessToken) error {
+func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *accessToken) error {
 	at, err := s.fetchSSOWebToken(clientID, fedAppID, at)
 	if err != nil {
 		return err
@@ -253,7 +252,7 @@ func (s *SessionToken) establishTokenWithFedAppID(fedAppAlreadySelected bool, cl
 		return err
 	}
 
-	iar, err := s.promptForIdpAndRole(fedAppAlreadySelected, idpRolesMap)
+	iar, err := s.promptForIdpAndRole(idpRolesMap)
 	if err != nil {
 		return err
 	}
@@ -356,7 +355,7 @@ func (s *SessionToken) promptForRole(idp string, roles []string) (role string, e
 // promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
-func (s *SessionToken) promptForIDP(fedAppAlreadySelected bool, idps []string) (idp string, err error) {
+func (s *SessionToken) promptForIDP(idps []string) (idp string, err error) {
 	if len(idps) == 0 {
 		return idp, errors.New(noIDPsError)
 	}
@@ -364,7 +363,7 @@ func (s *SessionToken) promptForIDP(fedAppAlreadySelected bool, idps []string) (
 	switch {
 	case s.config.AWSIAMIdP != "":
 		idp = s.config.AWSIAMIdP
-		if fedAppAlreadySelected {
+		if s.fedAppSelected {
 			return idp, nil
 		}
 
@@ -378,7 +377,7 @@ func (s *SessionToken) promptForIDP(fedAppAlreadySelected bool, idps []string) (
 		fmt.Fprintln(os.Stderr, rich)
 	case len(idps) == 1:
 		idp = idps[0]
-		if fedAppAlreadySelected {
+		if s.fedAppSelected {
 			return idp, nil
 		}
 
@@ -409,12 +408,12 @@ func (s *SessionToken) promptForIDP(fedAppAlreadySelected bool, idps []string) (
 
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
 // will be utilized.
-func (s *SessionToken) promptForIdpAndRole(fedAppAlreadySelected bool, idpRoles map[string][]string) (iar *idpAndRole, err error) {
+func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *idpAndRole, err error) {
 	idps := make([]string, 0, len(idpRoles))
 	for idp := range idpRoles {
 		idps = append(idps, idp)
 	}
-	idp, err := s.promptForIDP(fedAppAlreadySelected, idps)
+	idp, err := s.promptForIDP(idps)
 	if err != nil {
 		return nil, err
 	}
