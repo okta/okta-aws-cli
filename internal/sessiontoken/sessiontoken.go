@@ -316,11 +316,9 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 func (s *SessionToken) promptForRole(idp string, roles []string) (role string, err error) {
 	switch {
 	case len(roles) == 1 || s.config.AWSIAMRole != "":
-		if s.config.AWSIAMRole != "" {
-			role = s.config.AWSIAMRole
-		} else {
+		role = s.config.AWSIAMRole
+		if len(roles) == 1 {
 			role = roles[0]
-
 		}
 		roleData := roleTemplateData{
 			Role: role,
@@ -357,9 +355,8 @@ func (s *SessionToken) promptForIDP(idps []string) (idp string, err error) {
 
 	switch {
 	case len(idps) == 1 || s.config.AWSIAMIdP != "":
-		if s.config.AWSIAMIdP != "" {
-			idp = s.config.AWSIAMIdP
-		} else {
+		idp = s.config.AWSIAMIdP
+		if len(idps) == 1 {
 			idp = idps[0]
 		}
 		if s.fedAppAlreadySelected {
@@ -515,18 +512,18 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
+		baseErrStr := "fetching SSO web token received API response %q"
 		if err != nil {
-			return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
+			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
 		var apiErr apiError
 		err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&apiErr)
 		if err != nil {
-			return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
+			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
-		return nil, fmt.Errorf("fetching SSO web token received API response %q, error: %q, description: %q",
-			resp.Status, apiErr.Error, apiErr.ErrorDescription)
+		return nil, fmt.Errorf(baseErrStr+", error: %q, description: %q", resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
 	bodyBytes, _ := io.ReadAll(resp.Body)

@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	// Version foo
-	Version = "0.1.0"
+	// Version app version
+	Version = "0.2.0"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
