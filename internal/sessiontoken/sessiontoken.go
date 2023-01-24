@@ -44,7 +44,6 @@ import (
 	boff "github.com/okta/okta-aws-cli/internal/backoff"
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/output"
-	pstr "github.com/okta/okta-aws-cli/pkg/strings"
 )
 
 const (
@@ -261,7 +260,7 @@ func (s *SessionToken) establishTokenWithFedAppID(clientID string, at *accessTok
 func (s *SessionToken) renderCredential(ac *oaws.Credential) error {
 	var o output.Outputter
 	switch s.config.Format {
-	case pstr.AWSCredentials:
+	case config.AWSCredentialsFormat:
 		o = output.NewAWSCredentialsFile()
 	default:
 		o = output.NewEnvVar()

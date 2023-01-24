@@ -162,11 +162,11 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | AWS Session Duration (optional) | `AWS_SESSION_DURATION` | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
 | Output format (optional) | `FORMAT` | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
 | Profile (optional) | `PROFILE` | `--profile [value]` | Default is `default`  |
-| Display QR Code (optional) | `QR_CODE` | `--qr-code` | `true` if flag is present  |
-| Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER` | `--open-browser` | `true` if flag is present  |
+| Display QR Code (optional) | `QR_CODE=true` | `--qr-code` | `true` if flag is present  |
+| Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS` | `--write-aws-credentials` | `true` if flag is present  |
-| Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS` | `--debug-api-calls` | `true` if flag is present  |
+| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 
 ### Allowed Web SSO Client
 

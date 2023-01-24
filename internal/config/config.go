@@ -26,9 +26,67 @@ import (
 )
 
 const (
-	// Version The version of the CLI
-	Version      = "0.1.0"
-	awsCrentials = "aws_credentials"
+	// Version foo
+	Version = "0.1.0"
+
+	// AWSCredentialsFormat format const
+	AWSCredentialsFormat = "aws-credentials"
+	// EnvVarFormat format const
+	EnvVarFormat = "env-var"
+
+	// AWSAcctFedAppIDFlag cli flag const
+	AWSAcctFedAppIDFlag = "aws-acct-fed-app-id"
+	// AWSCredentialsFlag cli flag const
+	AWSCredentialsFlag = "aws-credentials"
+	// AWSIAMIdPFlag cli flag const
+	AWSIAMIdPFlag = "aws-iam-idp"
+	// AWSIAMRoleFlag cli flag const
+	AWSIAMRoleFlag = "aws-iam-role"
+	// DebugAPICallsFlag cli flag const
+	DebugAPICallsFlag = "debug-api-calls"
+	// FormatFlag cli flag const
+	FormatFlag = "format"
+	// OIDCClientIDFlag cli flag const
+	OIDCClientIDFlag = "oidc-client-id"
+	// OpenBrowserFlag cli flag const
+	OpenBrowserFlag = "open-browser"
+	// OrgDomainFlag cli flag const
+	OrgDomainFlag = "org-domain"
+	// ProfileFlag cli flag const
+	ProfileFlag = "profile"
+	// QRCodeFlag cli flag const
+	QRCodeFlag = "qr-code"
+	// SessionDurationFlag cli flag const
+	SessionDurationFlag = "session-duration"
+	// WriteAWSCredentialsFlag cli flag const
+	WriteAWSCredentialsFlag = "write-aws-credentials"
+
+	// AWSCredentialsEnvVar env var const
+	AWSCredentialsEnvVar = "AWS_CREDENTIALS"
+	// AWSIAMIdPEnvVar env var const
+	AWSIAMIdPEnvVar = "AWS_IAM_IDP"
+	// AWSIAMRoleEnvVar env var const
+	AWSIAMRoleEnvVar = "AWS_IAM_ROLE"
+	// AWSSessionDurationEnvVar env var const
+	AWSSessionDurationEnvVar = "AWS_SESSION_DURATION"
+	// FormatEnvVar env var const
+	FormatEnvVar = "FORMAT"
+	// OktaOIDCClientIDEnvVar env var const
+	OktaOIDCClientIDEnvVar = "OKTA_OIDC_CLIENT_ID"
+	// OktaOrgDomainEnvVar env var const
+	OktaOrgDomainEnvVar = "OKTA_ORG_DOMAIN"
+	// OktaAWSAccountFederationAppIDEnvVar env var const
+	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
+	// OpenBrowserEnvVar env var const
+	OpenBrowserEnvVar = "OPEN_BROWSER"
+	// ProfileEnvVar env var const
+	ProfileEnvVar = "PROFILE"
+	// QRCodeEnvVar env var const
+	QRCodeEnvVar = "QR_CODE"
+	// WriteAWSCredentialsEnvVar env var const
+	WriteAWSCredentialsEnvVar = "WRITE_AWS_CREDENTIALS"
+	// DebugAPICallsEnvVar env var const
+	DebugAPICallsEnvVar = "DEBUG_API_CALLS"
 )
 
 // Config A config object for the CLI
@@ -55,22 +113,22 @@ type Config struct {
 //  3. .env file
 func NewConfig() *Config {
 	cfg := Config{
-		OrgDomain:           viper.GetString("org-domain"),
-		OIDCAppID:           viper.GetString("oidc-client-id"),
-		FedAppID:            viper.GetString("aws-acct-fed-app-id"),
-		AWSIAMIdP:           viper.GetString("aws-iam-idp"),
-		AWSIAMRole:          viper.GetString("aws-iam-role"),
-		AWSSessionDuration:  viper.GetInt64("session-duration"),
-		Format:              viper.GetString("format"),
-		Profile:             viper.GetString("profile"),
-		QRCode:              viper.GetBool("qr-code"),
-		OpenBrowser:         viper.GetBool("open-browser"),
-		AWSCredentials:      viper.GetString("aws-credentials"),
-		WriteAWSCredentials: viper.GetBool("write-aws-credentials"),
-		DebugAPICalls:       viper.GetBool("debug-api-calls"),
+		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
+		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
+		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
+		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
+		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
+		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
+		Format:              viper.GetString(FormatFlag),
+		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
+		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
+		OrgDomain:           viper.GetString(OrgDomainFlag),
+		Profile:             viper.GetString(ProfileFlag),
+		QRCode:              viper.GetBool(QRCodeFlag),
+		WriteAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
 	}
 	if cfg.Format == "" {
-		cfg.Format = "env-var"
+		cfg.Format = EnvVarFormat
 	}
 	if cfg.Profile == "" {
 		cfg.Profile = "default"
@@ -79,25 +137,25 @@ func NewConfig() *Config {
 	// Viper binds ENV VARs to a lower snake version, set the configs with them
 	// if they haven't already been set by cli flag binding.
 	if cfg.OrgDomain == "" {
-		cfg.OrgDomain = viper.GetString("okta_org_domain")
+		cfg.OrgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
 	}
 	if cfg.OIDCAppID == "" {
-		cfg.OIDCAppID = viper.GetString("okta_oidc_client_id")
+		cfg.OIDCAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
 	}
 	if cfg.FedAppID == "" {
-		cfg.FedAppID = viper.GetString("okta_aws_account_federation_app_id")
+		cfg.FedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
 	}
 	if cfg.AWSIAMIdP == "" {
-		cfg.AWSIAMIdP = viper.GetString("aws_iam_idp")
+		cfg.AWSIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
 	}
 	if cfg.AWSIAMRole == "" {
-		cfg.AWSIAMRole = viper.GetString("aws_iam_role")
+		cfg.AWSIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
 	}
 	if cfg.AWSSessionDuration == 0 {
-		cfg.AWSSessionDuration = viper.GetInt64("session_duration")
+		cfg.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
 	}
 	if !cfg.QRCode {
-		cfg.QRCode = viper.GetBool("qr_code")
+		cfg.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
 	}
 	// correct org domain if it's in admin form
 	orgDomain := strings.Replace(cfg.OrgDomain, "-admin", "", -1)
@@ -109,19 +167,23 @@ func NewConfig() *Config {
 	// There is always a default aws credentials path set in root.go's init
 	// function so overwrite the config value if the operator is attempting to
 	// set it by ENV VAR value.
-	if viper.GetString(awsCrentials) != "" {
-		cfg.AWSCredentials = viper.GetString(awsCrentials)
+	if viper.GetString(downCase(AWSCredentialsEnvVar)) != "" {
+		cfg.AWSCredentials = viper.GetString(downCase(AWSCredentialsEnvVar))
 	}
 	if !cfg.WriteAWSCredentials {
-		cfg.WriteAWSCredentials = viper.GetBool("write_aws_credentials")
+		cfg.WriteAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
 	}
 	if cfg.WriteAWSCredentials {
 		// writing aws creds option implies "aws-credentials" format
-		cfg.Format = "aws-credentials"
+		cfg.Format = AWSCredentialsFormat
+	}
+
+	if !cfg.OpenBrowser {
+		cfg.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
 
 	if !cfg.DebugAPICalls {
-		cfg.DebugAPICalls = viper.GetBool("debug-api-calls")
+		cfg.DebugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
 	}
 	httpClient := &http.Client{
 		Transport: newConfigTransport(cfg.DebugAPICalls),
@@ -149,4 +211,9 @@ func (c *Config) CheckConfig() error {
 	}
 
 	return nil
+}
+
+// downCase ToLower all alpha chars e.g. HELLO_WORLD -> hello_world
+func downCase(s string) string {
+	return strings.ToLower(s)
 }
