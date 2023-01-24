@@ -538,11 +538,7 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 			return nil, fmt.Errorf("fetching SSO web token received API response %q", resp.Status)
 		}
 
-<<<<<<< HEAD
 		return nil, fmt.Errorf("fetching SSO web token received API response %q, error: %q, description: %q",
-=======
-		return nil, fmt.Errorf("fetching SSO web token received API response %q\nerror: %q, description: %q\n",
->>>>>>> 6e3357744d9880de7d2949151d144223223b7859
 			resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
