@@ -66,7 +66,7 @@ const (
 	noRolesError             = "no roles chosen for provider %q"
 	chooseIDP                = "Choose an IdP:"
 	chooseRole               = "Choose a Role:"
-	idpSelectedTemplate      = `  {{color "default+hb"}}IdP: {{color "reset"}}{{color "cyan"}}{{ .IdP }}{{color "reset"}}`
+	idpSelectedTemplate      = `  {{color "default+hb"}}IdP: {{color "reset"}}{{color "cyan"}}{{ .IDP }}{{color "reset"}}`
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 )
 

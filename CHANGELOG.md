@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (January 24, 2023)
+
+### BUG FIXES
+
+* Fix IdP text rendering bug caused by linting changes [#54](https://github.com/okta/okta-aws-cli/pull/54), thanks [@monde](https://github.com/monde)!
+
 ## 0.2.0 (January 24, 2023)
 
 ### ENHANCEMENTS
