@@ -317,6 +317,7 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
+		Expiration:      *svcResp.Credentials.Expiration,
 	}
 	return credential, nil
 }
