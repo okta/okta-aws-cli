@@ -294,6 +294,7 @@ Wrote profile "test" to /Users/mikemondragon/.aws/credentials
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
 ```
+Note: Writing to the AWS credentials file will include the `x_security_token_expires` value in RFC3339 format. This allows tools dependent on valid AWS credentials to validate if they are expired or not, and potentially trigger a refresh if needed.
 
 Note: the Okta AWS CLI will only append to the AWS credentials file. Be sure to
 comment out or remove previous named profiles from the credentials file.
