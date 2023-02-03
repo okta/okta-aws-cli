@@ -252,20 +252,45 @@ func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at 
 		return err
 	}
 
-	iar, err := s.promptForIdpAndRole(idpRolesMap)
-	if err != nil {
-		return err
+	s.config.WriteAWSCredentials = true
+	s.config.Format = config.AWSCredentialsFormat
+	for k, v := range idpRolesMap {
+		fmt.Println("IDP: ROLES")
+		fmt.Println("k:", k, "v:", v)
+		for _, role := range v {
+			res1 := strings.Split(role, "role/")
+			s.config.Profile = res1[1]
+			fmt.Println("-------")
+			fmt.Println("Fetching Creds For Role:", role)
+			fmt.Println("Profile:", res1[1])
+			iar := &idpAndRole{
+				idp:  k,
+				role: role,
+			}
+			ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
+			if err != nil {
+				return err
+			}
+			s.renderCredential(ac)
+
+		}
+
 	}
 
-	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
-	if err != nil {
-		return err
-	}
-
-	err = s.renderCredential(ac)
-	if err != nil {
-		return err
-	}
+	//	iar, err := s.promptForIdpAndRole(idpRolesMap)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	err = s.renderCredential(ac)
+	//	if err != nil {
+	//		return err
+	//	}
 
 	return nil
 }
