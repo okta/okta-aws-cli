@@ -17,8 +17,8 @@
 package output
 
 import (
-	"github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/pkg/aws"
+	"github.com/okta/okta-aws-cli/pkg/config"
 )
 
 // Outputter Interface to output AWS credentials in different formats.

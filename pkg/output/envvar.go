@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/pkg/aws"
+	"github.com/okta/okta-aws-cli/pkg/config"
 )
 
 // EnvVar Environment Variable output formatter

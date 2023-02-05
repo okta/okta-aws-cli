@@ -40,11 +40,11 @@ import (
 	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
 
-	"github.com/okta/okta-aws-cli/internal/agent"
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	boff "github.com/okta/okta-aws-cli/internal/backoff"
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/output"
+	"github.com/okta/okta-aws-cli/pkg/agent"
+	oaws "github.com/okta/okta-aws-cli/pkg/aws"
+	boff "github.com/okta/okta-aws-cli/pkg/backoff"
+	"github.com/okta/okta-aws-cli/pkg/config"
+	"github.com/okta/okta-aws-cli/pkg/output"
 )
 
 const (

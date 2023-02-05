@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/pkg/aws"
+	"github.com/okta/okta-aws-cli/pkg/config"
 	"github.com/pkg/errors"
 	"gopkg.in/ini.v1"
 )
