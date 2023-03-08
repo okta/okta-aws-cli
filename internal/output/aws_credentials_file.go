@@ -40,6 +40,8 @@ func ensureConfigExists(filename string, profile string) error {
 			}
 
 			// create an base config file
+			fmt.Println("writing to file: ", filename)
+			fmt.Println("writing profile: ", profile)
 			err = os.WriteFile(filename, []byte("["+profile+"]"), 0o600)
 			if err != nil {
 				return err
