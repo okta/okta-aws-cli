@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -77,10 +78,48 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential) (config *i
 	if err != nil {
 		return
 	}
-
 	err = iniProfile.ReflectFrom(awsCreds)
+	if err != nil {
+		return
+	}
 
-	return
+	return updateINI(config, profile)
+}
+
+// updateIni will comment out any keys that are not "aws_access_key_id",
+// "aws_secret_access_key", or "aws_session_token"
+func updateINI(config *ini.File, profile string) (*ini.File, error) {
+	ignore := []string{
+		"aws_access_key_id",
+		"aws_secret_access_key",
+		"aws_session_token",
+	}
+	section := config.Section(profile)
+	comments := []string{}
+	for _, name := range section.KeyStrings() {
+		if contains(ignore, name) {
+			continue
+		}
+		if len(name) > 0 && string(name[0]) == "#" {
+			continue
+		}
+
+		key, err := section.GetKey(name)
+		if err != nil {
+			continue
+		}
+
+		// The named key is in the profile but it's not utilized by
+		// okta-aws-cli. Therefore comment it out but do not delete.
+		_, _ = section.NewKey(fmt.Sprintf("# %s", name), key.Value())
+		section.DeleteKey(name)
+		comments = append(comments, name)
+	}
+	if len(comments) > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: Commented out %q profile keys \"%s\". Uncomment if third party tools use these values.\n", profile, strings.Join(comments, "\", \""))
+	}
+
+	return config, nil
 }
 
 // AWSCredentialsFile AWS credentials file output formatter
@@ -138,4 +177,14 @@ func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) e
 	}
 
 	return saveProfile(filename, profile, ac)
+}
+
+func contains(ignore []string, name string) bool {
+	for _, v := range ignore {
+		if v == name {
+			return true
+		}
+	}
+
+	return false
 }
