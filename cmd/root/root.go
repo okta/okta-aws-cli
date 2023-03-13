@@ -206,7 +206,7 @@ func Execute() {
 }
 
 func resourceUsageTemplate() string {
-	return fmt.Sprintf(`%s:{{if .Runnable}}
+	return fmt.Sprintf(`%s{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
