@@ -275,9 +275,9 @@ func (s *SessionToken) renderCredential(ac *oaws.Credential) error {
 	var o output.Outputter
 	switch s.config.Format {
 	case config.AWSCredentialsFormat:
-		o = output.NewAWSCredentialsFile()
+		o = output.NewAWSCredentialsFile(s.config.LegacyAWSVariables)
 	default:
-		o = output.NewEnvVar()
+		o = output.NewEnvVar(s.config.LegacyAWSVariables)
 		fmt.Fprintf(os.Stderr, "\n")
 	}
 

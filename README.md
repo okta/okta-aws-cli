@@ -166,6 +166,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
 | (Over)write the given profile to the AWS credentials file (optional). WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `LEGACY_AWS_VARIABLES=true` | `--legacy-aws-variables` | `true` if flag is present  |
 | Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 
 ### Allowed Web SSO Client

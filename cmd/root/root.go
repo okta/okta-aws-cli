@@ -136,6 +136,13 @@ func init() {
 			envVar: config.WriteAWSCredentialsEnvVar,
 		},
 		{
+			name:   config.LegacyAWSVariablesFlag,
+			short:  "l",
+			value:  false,
+			usage:  "Emit deprecated AWS Security Token value. WARNING: AWS CLI deprecated this value in November 2014 and is no longer documented",
+			envVar: config.LegacyAWSVariablesEnvVar,
+		},
+		{
 			name:   config.DebugAPICallsFlag,
 			short:  "x",
 			value:  false,
