@@ -165,7 +165,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Display QR Code (optional) | `QR_CODE=true` | `--qr-code` | `true` if flag is present  |
 | Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| (Over)write the given profile to the AWS credentials file (optional). WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
 | Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 
 ### Allowed Web SSO Client
@@ -344,9 +344,9 @@ configuration file that is dropped somewhere in the user's `$HOME` directory to
 operate the CLI.
 
 The Okta CLI is CLI flag and environment variable oriented and its default
-output is as environment variables. It can write to an AWS credentials file but
-only in append mode. It never risks interpreting and re-writing the AWS
-credentials file potentially corrupting other valuable credentials saved there.
+output is as environment variables. It can also write to AWS credentials file.
+The default writing option is an apped operation and can be explicitly set to
+overwrite previous values for a profile with the `--write-aws-credentials` flag.
 
 ### Versent saml2aws
 
