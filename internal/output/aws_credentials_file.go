@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -52,8 +53,8 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
-	config, err := updateConfig(filename, profile, awsCreds)
+func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars bool) error {
+	config, err := updateConfig(filename, profile, awsCreds, legacyVars)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func saveProfile(filename, profile string, awsCreds *aws.Credential) error {
 	return nil
 }
 
-func updateConfig(filename, profile string, awsCreds *aws.Credential) (config *ini.File, err error) {
+func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars bool) (config *ini.File, err error) {
 	config, err = ini.Load(filename)
 	if err != nil {
 		return
@@ -77,18 +78,77 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential) (config *i
 	if err != nil {
 		return
 	}
+	var creds interface{}
+	if legacyVars {
+		creds = &aws.LegacyCredential{
+			AccessKeyID:     awsCreds.AccessKeyID,
+			SecretAccessKey: awsCreds.SecretAccessKey,
+			SessionToken:    awsCreds.SessionToken,
+			SecurityToken:   awsCreds.SessionToken,
+		}
+	} else {
+		creds = awsCreds
+	}
+	err = iniProfile.ReflectFrom(creds)
+	if err != nil {
+		return
+	}
 
-	err = iniProfile.ReflectFrom(awsCreds)
+	return updateINI(config, profile, legacyVars)
+}
 
-	return
+// updateIni will comment out any keys that are not "aws_access_key_id",
+// "aws_secret_access_key", or "aws_session_token"
+func updateINI(config *ini.File, profile string, legacyVars bool) (*ini.File, error) {
+	ignore := []string{
+		"aws_access_key_id",
+		"aws_secret_access_key",
+		"aws_session_token",
+	}
+	if legacyVars {
+		ignore = append(ignore, "aws_security_token")
+	}
+	section := config.Section(profile)
+	comments := []string{}
+	for _, name := range section.KeyStrings() {
+		if contains(ignore, name) {
+			continue
+		}
+		if len(name) > 0 && string(name[0]) == "#" {
+			continue
+		}
+
+		key, err := section.GetKey(name)
+		if err != nil {
+			continue
+		}
+
+		// The named key is in the profile but it's not utilized by
+		// okta-aws-cli. Therefore comment it out but do not delete.
+		_, _ = section.NewKey(fmt.Sprintf("# %s", name), key.Value())
+		section.DeleteKey(name)
+		comments = append(comments, name)
+	}
+	if len(comments) > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: Commented out %q profile keys \"%s\". Uncomment if third party tools use these values.\n", profile, strings.Join(comments, "\", \""))
+	}
+	if legacyVars {
+		fmt.Fprintf(os.Stderr, "WARNING: %q includes legacy variable \"aws_security_token\". Update tools making use of this deprecated value.", profile)
+	}
+
+	return config, nil
 }
 
 // AWSCredentialsFile AWS credentials file output formatter
-type AWSCredentialsFile struct{}
+type AWSCredentialsFile struct {
+	LegacyAWSVariables bool
+}
 
 // NewAWSCredentialsFile Creates a new
-func NewAWSCredentialsFile() *AWSCredentialsFile {
-	return &AWSCredentialsFile{}
+func NewAWSCredentialsFile(legacyVars bool) *AWSCredentialsFile {
+	return &AWSCredentialsFile{
+		LegacyAWSVariables: legacyVars,
+	}
 }
 
 // Output Satisfies the Outputter interface and appends AWS credentials to
@@ -110,13 +170,26 @@ func (e *AWSCredentialsFile) appendConfig(c *config.Config, ac *aws.Credential) 
 		_ = f.Close()
 	}()
 
-	creds := `
+	var creds string
+
+	if e.LegacyAWSVariables {
+		creds = `
+[%s]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+aws_session_token = %s
+aws_security_token = %s
+`
+		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken)
+	} else {
+		creds = `
 [%s]
 aws_access_key_id = %s
 aws_secret_access_key = %s
 aws_session_token = %s
 `
-	creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken)
+		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken)
+	}
 	_, err = f.WriteString(creds)
 	if err != nil {
 		return err
@@ -137,5 +210,15 @@ func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) e
 		return err
 	}
 
-	return saveProfile(filename, profile, ac)
+	return saveProfile(filename, profile, ac, e.LegacyAWSVariables)
+}
+
+func contains(ignore []string, name string) bool {
+	for _, v := range ignore {
+		if v == name {
+			return true
+		}
+	}
+
+	return false
 }

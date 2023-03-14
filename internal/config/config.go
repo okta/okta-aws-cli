@@ -60,6 +60,8 @@ const (
 	SessionDurationFlag = "session-duration"
 	// WriteAWSCredentialsFlag cli flag const
 	WriteAWSCredentialsFlag = "write-aws-credentials"
+	// LegacyAWSVariablesFlag cli flag const
+	LegacyAWSVariablesFlag = "legacy-aws-variables"
 
 	// AWSCredentialsEnvVar env var const
 	AWSCredentialsEnvVar = "AWS_CREDENTIALS"
@@ -87,6 +89,8 @@ const (
 	WriteAWSCredentialsEnvVar = "WRITE_AWS_CREDENTIALS"
 	// DebugAPICallsEnvVar env var const
 	DebugAPICallsEnvVar = "DEBUG_API_CALLS"
+	// LegacyAWSVariablesEnvVar env var const
+	LegacyAWSVariablesEnvVar = "LEGACY_AWS_VARIABLES"
 )
 
 // Config A config object for the CLI
@@ -104,6 +108,7 @@ type Config struct {
 	WriteAWSCredentials bool
 	OpenBrowser         bool
 	DebugAPICalls       bool
+	LegacyAWSVariables  bool
 	HTTPClient          *http.Client
 }
 
@@ -120,6 +125,7 @@ func NewConfig() *Config {
 		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
 		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
 		Format:              viper.GetString(FormatFlag),
+		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
 		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
 		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
@@ -177,13 +183,14 @@ func NewConfig() *Config {
 		// writing aws creds option implies "aws-credentials" format
 		cfg.Format = AWSCredentialsFormat
 	}
-
 	if !cfg.OpenBrowser {
 		cfg.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
-
 	if !cfg.DebugAPICalls {
 		cfg.DebugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
+	}
+	if !cfg.LegacyAWSVariables {
+		cfg.LegacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
 	}
 	httpClient := &http.Client{
 		Transport: newConfigTransport(cfg.DebugAPICalls),
