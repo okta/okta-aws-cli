@@ -22,6 +22,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
 	"time"
 )
@@ -80,14 +81,17 @@ type configTransport struct {
 }
 
 func newConfigTransport(debug bool) *configTransport {
-	ct := configTransport{
-		rt: &http.Transport{
-			IdleConnTimeout: 30 * time.Second,
-			Proxy:           http.ProxyFromEnvironment,
-		},
-		debug: debug,
+	rt := &http.Transport{
+		IdleConnTimeout: 30 * time.Second,
+	}
+	if os.Getenv("HTTPS_PROXY") != "" || os.Getenv("HTTP_PROXY") != "" {
+		rt.Proxy = http.ProxyFromEnvironment
 	}
 
+	ct := configTransport{
+		rt:    rt,
+		debug: debug,
+	}
 	return &ct
 }
 
