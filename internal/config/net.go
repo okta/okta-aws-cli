@@ -83,6 +83,7 @@ func newConfigTransport(debug bool) *configTransport {
 	ct := configTransport{
 		rt: &http.Transport{
 			IdleConnTimeout: 30 * time.Second,
+			Proxy:           http.ProxyFromEnvironment,
 		},
 		debug: debug,
 	}
