@@ -157,8 +157,11 @@ func NewConfig() *Config {
 	if cfg.AWSIAMRole == "" {
 		cfg.AWSIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
 	}
-	if cfg.AWSSessionDuration == 0 {
-		cfg.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	// duration has a default of 3600 from CLI flags, but if the env var version
+	// is not 0 then prefer it
+	duration := viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	if duration != 0 {
+		cfg.AWSSessionDuration = duration
 	}
 	if !cfg.QRCode {
 		cfg.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
