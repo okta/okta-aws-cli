@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -163,10 +164,27 @@ func NewConfig() *Config {
 	if !cfg.QRCode {
 		cfg.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
 	}
+
 	// correct org domain if it's in admin form
 	orgDomain := strings.Replace(cfg.OrgDomain, "-admin", "", -1)
 	if orgDomain != cfg.OrgDomain {
-		fmt.Printf("Warning: proactively correcting org domain %q to non-admin form %q.\n\n", cfg.OrgDomain, orgDomain)
+		fmt.Printf("WARNING: proactively correcting org domain %q to non-admin form %q.\n\n", cfg.OrgDomain, orgDomain)
+		cfg.OrgDomain = orgDomain
+	}
+	if strings.HasPrefix(cfg.OrgDomain, "http") {
+		u, err := url.Parse(cfg.OrgDomain)
+		// try to help correct org domain value if parsing occurs correctly,
+		// else let the CLI error out else where
+		if err == nil {
+			orgDomain = u.Hostname()
+			fmt.Printf("WARNING: proactively correcting URL format org domain %q value to hostname only form %q.\n\n", cfg.OrgDomain, orgDomain)
+			cfg.OrgDomain = orgDomain
+		}
+	}
+	if strings.HasSuffix(cfg.OrgDomain, "/") {
+		orgDomain = string([]byte(cfg.OrgDomain)[0 : len(cfg.OrgDomain)-1])
+		// try to help correct malformed org domain value
+		fmt.Printf("WARNING: proactively correcting malformed org domain %q value to hostname only form %q.\n\n", cfg.OrgDomain, orgDomain)
 		cfg.OrgDomain = orgDomain
 	}
 
