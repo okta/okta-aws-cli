@@ -169,6 +169,13 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `LEGACY_AWS_VARIABLES=true` | `--legacy-aws-variables` | `true` if flag is present  |
 | Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 
+NOTE: If
+[`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+is set in the `.env` file it will be promoted into the okta-aws-cli runtime if
+it isn't also already set as an ENV VAR. This will allow operators making use of
+an `.env` file have to have proper AWS API behavior in spefific regions, for
+instance in US govcloud and other non-North America regions.
+
 ### Allowed Web SSO Client
 
 This is the "Allowed Web SSO Client" value from the "Sign On" settings of an
