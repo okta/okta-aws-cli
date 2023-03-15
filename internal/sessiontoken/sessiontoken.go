@@ -152,6 +152,9 @@ func NewSessionToken() (token *SessionToken, err error) {
 	token = &SessionToken{
 		config: config,
 	}
+	if token.isClassicOrg() {
+		return nil, fmt.Errorf("%q is a Classic org, okta-aws-cli is an-OIE only tool", config.OrgDomain)
+	}
 	return token, nil
 }
 
@@ -801,4 +804,45 @@ func apiErr(bodyBytes []byte) (ae *apiError, err error) {
 	ae = &apiError{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
 	return
+}
+
+type oktaOrganization struct {
+	ID       string      `json:"id"`
+	Pipeline string      `json:"pipeline"`
+	Links    interface{} `json:"_links,omitempty"`
+	Settings interface{} `json:"settings,omitempty"`
+}
+
+// isClassicOrg Conduct simple check of well known endpoint to determine if the
+// org is a classic org. Will soft fail on errors.
+func (s *SessionToken) isClassicOrg() bool {
+	apiURL := fmt.Sprintf("https://%s/.well-known/okta-organization", s.config.OrgDomain)
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	if err != nil {
+		return false
+	}
+	req.Header.Add(accept, applicationJSON)
+	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+
+	resp, err := s.config.HTTPClient.Do(req)
+	if err != nil {
+		return false
+	}
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	org := &oktaOrganization{}
+	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(org)
+	if err != nil {
+		return false
+	}
+
+	// v1 == Classic, idx == OIE
+	if org.Pipeline == "v1" {
+		return true
+	}
+
+	return false
 }
