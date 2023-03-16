@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ import (
 
 const (
 	// Version app version
-	Version = "0.2.1"
+	Version = "0.3.0"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
@@ -60,6 +61,8 @@ const (
 	SessionDurationFlag = "session-duration"
 	// WriteAWSCredentialsFlag cli flag const
 	WriteAWSCredentialsFlag = "write-aws-credentials"
+	// LegacyAWSVariablesFlag cli flag const
+	LegacyAWSVariablesFlag = "legacy-aws-variables"
 
 	// AWSCredentialsEnvVar env var const
 	AWSCredentialsEnvVar = "AWS_CREDENTIALS"
@@ -87,6 +90,8 @@ const (
 	WriteAWSCredentialsEnvVar = "WRITE_AWS_CREDENTIALS"
 	// DebugAPICallsEnvVar env var const
 	DebugAPICallsEnvVar = "DEBUG_API_CALLS"
+	// LegacyAWSVariablesEnvVar env var const
+	LegacyAWSVariablesEnvVar = "LEGACY_AWS_VARIABLES"
 )
 
 // Config A config object for the CLI
@@ -104,6 +109,7 @@ type Config struct {
 	WriteAWSCredentials bool
 	OpenBrowser         bool
 	DebugAPICalls       bool
+	LegacyAWSVariables  bool
 	HTTPClient          *http.Client
 }
 
@@ -120,6 +126,7 @@ func NewConfig() *Config {
 		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
 		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
 		Format:              viper.GetString(FormatFlag),
+		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
 		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
 		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
@@ -151,16 +158,36 @@ func NewConfig() *Config {
 	if cfg.AWSIAMRole == "" {
 		cfg.AWSIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
 	}
-	if cfg.AWSSessionDuration == 0 {
-		cfg.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	// duration has a default of 3600 from CLI flags, but if the env var version
+	// is not 0 then prefer it
+	duration := viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	if duration != 0 {
+		cfg.AWSSessionDuration = duration
 	}
 	if !cfg.QRCode {
 		cfg.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
 	}
+
 	// correct org domain if it's in admin form
 	orgDomain := strings.Replace(cfg.OrgDomain, "-admin", "", -1)
 	if orgDomain != cfg.OrgDomain {
-		fmt.Printf("Warning: proactively correcting org domain %q to non-admin form %q.\n\n", cfg.OrgDomain, orgDomain)
+		fmt.Printf("WARNING: proactively correcting org domain %q to non-admin form %q.\n\n", cfg.OrgDomain, orgDomain)
+		cfg.OrgDomain = orgDomain
+	}
+	if strings.HasPrefix(cfg.OrgDomain, "http") {
+		u, err := url.Parse(cfg.OrgDomain)
+		// try to help correct org domain value if parsing occurs correctly,
+		// else let the CLI error out else where
+		if err == nil {
+			orgDomain = u.Hostname()
+			fmt.Printf("WARNING: proactively correcting URL format org domain %q value to hostname only form %q.\n\n", cfg.OrgDomain, orgDomain)
+			cfg.OrgDomain = orgDomain
+		}
+	}
+	if strings.HasSuffix(cfg.OrgDomain, "/") {
+		orgDomain = string([]byte(cfg.OrgDomain)[0 : len(cfg.OrgDomain)-1])
+		// try to help correct malformed org domain value
+		fmt.Printf("WARNING: proactively correcting malformed org domain %q value to hostname only form %q.\n\n", cfg.OrgDomain, orgDomain)
 		cfg.OrgDomain = orgDomain
 	}
 
@@ -177,13 +204,14 @@ func NewConfig() *Config {
 		// writing aws creds option implies "aws-credentials" format
 		cfg.Format = AWSCredentialsFormat
 	}
-
 	if !cfg.OpenBrowser {
 		cfg.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
-
 	if !cfg.DebugAPICalls {
 		cfg.DebugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
+	}
+	if !cfg.LegacyAWSVariables {
+		cfg.LegacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
 	}
 	httpClient := &http.Client{
 		Transport: newConfigTransport(cfg.DebugAPICalls),

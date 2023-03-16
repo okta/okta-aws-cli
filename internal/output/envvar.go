@@ -25,22 +25,35 @@ import (
 )
 
 // EnvVar Environment Variable output formatter
-type EnvVar struct{}
+type EnvVar struct {
+	LegacyAWSVariables bool
+}
 
 // NewEnvVar Creates a new EnvVar
-func NewEnvVar() *EnvVar {
-	return &EnvVar{}
+func NewEnvVar(legacyVars bool) *EnvVar {
+	return &EnvVar{
+		LegacyAWSVariables: legacyVars,
+	}
 }
 
 // Output Satisfies the Outputter interface and outputs AWS credentials as shell
 // export statements to STDOUT
 func (e *EnvVar) Output(c *config.Config, ac *aws.Credential) error {
-	export := "export"
 	if runtime.GOOS == "windows" {
-		export = "setx"
+		fmt.Printf("setx AWS_ACCESS_KEY_ID %s\n", ac.AccessKeyID)
+		fmt.Printf("setx AWS_SECRET_ACCESS_KEY %s\n", ac.SecretAccessKey)
+		fmt.Printf("setx AWS_SESSION_TOKEN %s\n", ac.SessionToken)
+		if e.LegacyAWSVariables {
+			fmt.Printf("setx AWS_SECURITY_TOKEN %s\n", ac.SessionToken)
+		}
+	} else {
+		fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", ac.AccessKeyID)
+		fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", ac.SecretAccessKey)
+		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", ac.SessionToken)
+		if e.LegacyAWSVariables {
+			fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", ac.SessionToken)
+		}
 	}
-	fmt.Printf("%s AWS_ACCESS_KEY_ID=%s\n", export, ac.AccessKeyID)
-	fmt.Printf("%s AWS_SECRET_ACCESS_KEY=%s\n", export, ac.SecretAccessKey)
-	fmt.Printf("%s AWS_SESSION_TOKEN=%s\n", export, ac.SessionToken)
+
 	return nil
 }
