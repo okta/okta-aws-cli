@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -180,8 +180,9 @@ aws_access_key_id = %s
 aws_secret_access_key = %s
 aws_session_token = %s
 aws_security_token = %s
+x_security_token_expires = %s
 `
-		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken)
+		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
 	} else {
 		creds = `
 [%s]
@@ -190,7 +191,8 @@ aws_secret_access_key = %s
 aws_session_token = %s
 x_security_token_expires = %s
 `
-	creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
+		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
+	}
 	_, err = f.WriteString(creds)
 	if err != nil {
 		return err
