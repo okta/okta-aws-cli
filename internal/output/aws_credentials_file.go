@@ -20,11 +20,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-<<<<<<< HEAD
 	"time"
-=======
 	"strings"
->>>>>>> master
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
