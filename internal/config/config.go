@@ -225,8 +225,9 @@ func NewConfig() *Config {
 // CheckConfig Checks that required configuration variables are set.
 func (c *Config) CheckConfig() error {
 	var errors []string
-	if c.OrgDomain == "" {
-		errors = append(errors, "  Okta Org Domain value is not set")
+	err := validateOrgDomain(c.OrgDomain)
+	if err != nil {
+		errors = append(errors, err.Error())
 	}
 	if c.OIDCAppID == "" {
 		errors = append(errors, "  OIDC App ID value is not set")
@@ -244,4 +245,14 @@ func (c *Config) CheckConfig() error {
 // downCase ToLower all alpha chars e.g. HELLO_WORLD -> hello_world
 func downCase(s string) string {
 	return strings.ToLower(s)
+}
+
+func validateOrgDomain(domain string) error {
+	if domain == "" {
+		return fmt.Errorf(" Okta Org Domain value is not set")
+	}
+	if !(strings.Contains(domain, "okta.com") || strings.Contains(domain, "oktapreview.com")) {
+		return fmt.Errorf(" Okta Org Domain value is invalid")
+	}
+	return nil
 }
