@@ -17,9 +17,20 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestNewConfigVariables(t *testing.T) {
 	t.Skip("Usage of Viper for config variables made this test obsolete.")
+}
+
+func TestT(t *testing.T) {
+	err := validateOrgDomain("")
+	t.Error(err)
+}
+
+func TestZ(t *testing.T) {
+	isContain := strings.Contains("mmondragon-aws-cli-00.oktapreview.com", "oktapreview.com")
+	t.Error(isContain)
 }

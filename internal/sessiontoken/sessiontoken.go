@@ -471,12 +471,10 @@ func (s *SessionToken) fetchSAMLAssertion(at *accessToken) (assertion string, er
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("fetching SAML assertion received API response %q", resp.Status)
 	}
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
+	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return assertion, err
 	}
-
 	if assertion, ok := findSAMLResponse(doc); ok {
 		return assertion, nil
 	}
@@ -514,14 +512,13 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, err := io.ReadAll(resp.Body)
 		baseErrStr := "fetching SSO web token received API response %q"
 		if err != nil {
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
 		var apiErr apiError
-		err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&apiErr)
+		err = json.NewDecoder(resp.Body).Decode(&apiErr)
 		if err != nil {
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
@@ -529,9 +526,8 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 		return nil, fmt.Errorf(baseErrStr+", error: %q, description: %q", resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
-	bodyBytes, _ := io.ReadAll(resp.Body)
 	token = &accessToken{}
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(token)
+	err = json.NewDecoder(resp.Body).Decode(token)
 	if err != nil {
 		return nil, err
 	}
@@ -605,13 +601,9 @@ func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*ok
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return nil, newMultipleFedAppsError(err)
 	}
-	var bodyBytes []byte
+
 	var oktaApps []oktaApplication
-	bodyBytes, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, newMultipleFedAppsError(err)
-	}
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&oktaApps)
+	err = json.NewDecoder(resp.Body).Decode(&oktaApps)
 	if err != nil {
 		return nil, newMultipleFedAppsError(err)
 	}
@@ -732,8 +724,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	}
 
 	var da deviceAuthorization
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&da)
+	err = json.NewDecoder(resp.Body).Decode(&da)
 	if err != nil {
 		return nil, err
 	}
@@ -831,10 +822,8 @@ func (s *SessionToken) isClassicOrg() bool {
 	if resp.StatusCode != http.StatusOK {
 		return false
 	}
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
 	org := &oktaOrganization{}
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(org)
+	err = json.NewDecoder(resp.Body).Decode(org)
 	if err != nil {
 		return false
 	}
