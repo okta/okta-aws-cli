@@ -113,6 +113,7 @@ type Config struct {
 	httpClient          *http.Client
 }
 
+// ConfigAttributes config construction
 type ConfigAttributes struct {
 	OrgDomain           string
 	OIDCAppID           string
@@ -130,7 +131,7 @@ type ConfigAttributes struct {
 	LegacyAWSVariables  bool
 }
 
-// NewConfig Creates a new config gathering values in this order of precedence:
+// CreateConfig Creates a new config gathering values in this order of precedence:
 //  1. CLI flags
 //  2. ENV variables
 //  3. .env file
@@ -142,6 +143,7 @@ func CreateConfig() (*Config, error) {
 	return NewConfig(cfgAttrs)
 }
 
+// NewConfig create config from attributes
 func NewConfig(attrs ConfigAttributes) (*Config, error) {
 	var err error
 	cfg := &Config{
@@ -285,10 +287,12 @@ func downCase(s string) string {
 	return strings.ToLower(s)
 }
 
+// OrgDomain --
 func (c *Config) OrgDomain() string {
 	return c.orgDomain
 }
 
+// SetOrgDomain --
 func (c *Config) SetOrgDomain(domain string) error {
 	if domain == "" {
 		return NewValidationError("Org Domain", "cannot be blank")
@@ -300,10 +304,12 @@ func (c *Config) SetOrgDomain(domain string) error {
 	return nil
 }
 
+// OIDCAppID --
 func (c *Config) OIDCAppID() string {
 	return c.oidcAppID
 }
 
+// SetOIDCAppID --
 func (c *Config) SetOIDCAppID(appID string) error {
 	if appID == "" {
 		return NewValidationError("OIDC App ID", "cannot be blank")
@@ -312,37 +318,45 @@ func (c *Config) SetOIDCAppID(appID string) error {
 	return nil
 }
 
+// FedAppID --
 func (c *Config) FedAppID() string {
 	return c.fedAppID
 }
 
+// SetFedAppID --
 func (c *Config) SetFedAppID(appID string) error {
 	c.fedAppID = appID
 	return nil
 }
 
+// AWSIAMIdP --
 func (c *Config) AWSIAMIdP() string {
 	return c.awsIAMIdP
 }
 
+// SetAWSIAMIdP --
 func (c *Config) SetAWSIAMIdP(idp string) error {
 	c.awsIAMIdP = idp
 	return nil
 }
 
+// AWSIAMRole --
 func (c *Config) AWSIAMRole() string {
 	return c.awsIAMRole
 }
 
+// SetAWSIAMRole --
 func (c *Config) SetAWSIAMRole(role string) error {
 	c.awsIAMRole = role
 	return nil
 }
 
+// AWSSessionDuration --
 func (c *Config) AWSSessionDuration() int64 {
 	return c.awsSessionDuration
 }
 
+// SetAWSSessionDuration --
 func (c *Config) SetAWSSessionDuration(duration int64) error {
 	if duration < 60 || duration > 43200 {
 		return NewValidationError("AWS Session Duration", "must be between 60 and 43200")
@@ -351,82 +365,100 @@ func (c *Config) SetAWSSessionDuration(duration int64) error {
 	return nil
 }
 
+// Format --
 func (c *Config) Format() string {
 	return c.format
 }
 
+// SetFormat --
 func (c *Config) SetFormat(format string) error {
 	c.format = format
 	return nil
 }
 
+// Profile --
 func (c *Config) Profile() string {
 	return c.profile
 }
 
+// SetProfile --
 func (c *Config) SetProfile(profile string) error {
 	c.profile = profile
 	return nil
 }
 
+// QRCode --
 func (c *Config) QRCode() bool {
 	return c.qrCode
 }
 
+// SetQRCode --
 func (c *Config) SetQRCode(qrCode bool) error {
 	c.qrCode = qrCode
 	return nil
 }
 
+// AWSCredentials --
 func (c *Config) AWSCredentials() string {
 	return c.awsCredentials
 }
 
+// SetAWSCredentials --
 func (c *Config) SetAWSCredentials(credentials string) error {
 	c.awsCredentials = credentials
 	return nil
 }
 
+// WriteAWSCredentials --
 func (c *Config) WriteAWSCredentials() bool {
 	return c.writeAWSCredentials
 }
 
+// SetWriteAWSCredentials --
 func (c *Config) SetWriteAWSCredentials(writeCredentials bool) error {
 	c.writeAWSCredentials = writeCredentials
 	return nil
 }
 
+// OpenBrowser --
 func (c *Config) OpenBrowser() bool {
 	return c.openBrowser
 }
 
+// SetOpenBrowser --
 func (c *Config) SetOpenBrowser(openBrowser bool) error {
 	c.openBrowser = openBrowser
 	return nil
 }
 
+// DebugAPICalls --
 func (c *Config) DebugAPICalls() bool {
 	return c.debugAPICalls
 }
 
+// SetDebugAPICalls --
 func (c *Config) SetDebugAPICalls(debugAPICalls bool) error {
 	c.debugAPICalls = debugAPICalls
 	return nil
 }
 
+// LegacyAWSVariables --
 func (c *Config) LegacyAWSVariables() bool {
 	return c.legacyAWSVariables
 }
 
+// SetLegacyAWSVariables --
 func (c *Config) SetLegacyAWSVariables(legacyAWSVariables bool) error {
 	c.legacyAWSVariables = legacyAWSVariables
 	return nil
 }
 
+// HTTPClient --
 func (c *Config) HTTPClient() *http.Client {
 	return c.httpClient
 }
 
+// SetHTTPClient --
 func (c *Config) SetHTTPClient(client *http.Client) error {
 	c.httpClient = client
 	return nil
