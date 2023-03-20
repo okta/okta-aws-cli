@@ -113,8 +113,8 @@ type Config struct {
 	httpClient          *http.Client
 }
 
-// ConfigAttributes config construction
-type ConfigAttributes struct {
+// Attributes config construction
+type Attributes struct {
 	OrgDomain           string
 	OIDCAppID           string
 	FedAppID            string
@@ -144,7 +144,7 @@ func CreateConfig() (*Config, error) {
 }
 
 // NewConfig create config from attributes
-func NewConfig(attrs ConfigAttributes) (*Config, error) {
+func NewConfig(attrs Attributes) (*Config, error) {
 	var err error
 	cfg := &Config{
 		fedAppID:            attrs.FedAppID,
@@ -182,8 +182,8 @@ func NewConfig(attrs ConfigAttributes) (*Config, error) {
 	return cfg, nil
 }
 
-func readConfig() (ConfigAttributes, error) {
-	attrs := ConfigAttributes{
+func readConfig() (Attributes, error) {
+	attrs := Attributes{
 		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
 		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
 		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
