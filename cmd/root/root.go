@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -136,6 +137,13 @@ func init() {
 			envVar: config.WriteAWSCredentialsEnvVar,
 		},
 		{
+			name:   config.LegacyAWSVariablesFlag,
+			short:  "l",
+			value:  false,
+			usage:  "Emit deprecated AWS Security Token value. WARNING: AWS CLI deprecated this value in November 2014 and is no longer documented",
+			envVar: config.LegacyAWSVariablesEnvVar,
+		},
+		{
 			name:   config.DebugAPICallsFlag,
 			short:  "x",
 			value:  false,
@@ -178,6 +186,15 @@ to collect a proper IAM role for the AWS CLI operator.`,
 		viper.SetConfigType("dotenv")
 
 		_ = viper.ReadInConfig()
+
+		// After viper reads in the dotenv file check if AWS_REGION is set
+		// there. The value will be keyed by lower case name. If it is, set
+		// AWS_REGION as an ENV VAR if it hasn't already been.
+		awsRegionEnvVar := "AWS_REGION"
+		vipAwsRegion := viper.GetString(strings.ToLower(awsRegionEnvVar))
+		if vipAwsRegion != "" && os.Getenv(awsRegionEnvVar) == "" {
+			_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
+		}
 	}
 	viper.AutomaticEnv()
 
@@ -206,7 +223,7 @@ func Execute() {
 }
 
 func resourceUsageTemplate() string {
-	return fmt.Sprintf(`%s:{{if .Runnable}}
+	return fmt.Sprintf(`%s{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 

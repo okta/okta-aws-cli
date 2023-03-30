@@ -35,14 +35,15 @@ $ eval `okta-aws-cli` && aws s3 ls
 
 rem Windows setx statements
 C:\> okta-aws-cli
-setx AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
-setx AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-setx AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
+SETX AWS_ACCESS_KEY_ID ASIAUJHVCS6UQC52NOL7
+SETX AWS_SECRET_ACCESS_KEY wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+SETX AWS_SESSION_TOKEN AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
 
 ```
 
 * [Requirements](#requirements)
 * [Recommendations](#recommendations)
+* [Installation](#installation)
 * [Configuration](#configuration)
 * [Operation](#operation)
 * Comparison
@@ -121,6 +122,37 @@ have equivalent policies if not share the same policy. If the AWS Federation
 app has more stringent assurance requirements than the OIDC app a `400 Bad
 Request` API error is likely to occur.
 
+## Installation
+
+### Binaries
+
+Binary releases for combinations of operating systems and architectures are
+posted to the [okta-aws-cli
+releases](https://github.com/okta/okta-aws-cli/releases) section in Github. Each
+release includes CHANGELOG notes for that release.
+
+### OSX/Homebrew
+
+okta-aws-cli is distributed to OSX via [homebrew](https://brew.sh/)
+
+```
+$ brew install okta-aws-cli
+```
+
+### Local build/install
+
+See [Development](#development) section.
+
+TL;DR run directly from source
+```
+$ go run cmd/okta-aws-cli/main.go --help
+```
+
+TL;DR build from source, installed into golang bin directory
+```
+$ make build
+```
+
 ## Configuration
 
 **Note**: If your AWS IAM IdP is in a non-commercial region, such as GovCloud,
@@ -165,8 +197,17 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Display QR Code (optional) | `QR_CODE=true` | `--qr-code` | `true` if flag is present  |
 | Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| Write to the AWS credentials file (optional). Default formatting is to append and not modify the file beyond adding new lines. WARNING: When enabled, writing can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| (Over)write the given profile to the AWS credentials file (optional). WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `LEGACY_AWS_VARIABLES=true` | `--legacy-aws-variables` | `true` if flag is present  |
 | Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
+| HTTP/HTTPS Proxy support | `HTTP_PROXY` or `HTTPS_PROXY` | n/a | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) |
+
+NOTE: If
+[`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+is set in the `.env` file it will be promoted into the okta-aws-cli runtime if
+it isn't also already set as an ENV VAR. This will allow operators making use of
+an `.env` file have to have proper AWS API behavior in spefific regions, for
+instance in US govcloud and other non-North America regions.
 
 ### Allowed Web SSO Client
 
@@ -232,10 +273,14 @@ This allows for the command's results to be `eval`'d into the current shell as
 
 ### Plain usage
 
-Note: example assumes other Okta AWS CLI configuration values have already been
+**NOTE**: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
-Note: output will be in `setx` statements if the runtime is Windows.
+**NOTE**: output will be in `setx` statements if the runtime is Windows.
+
+**NOTE**: okta-aws-cli only needs to be called the first time to gather AWS
+creds. Then called again once those creds have expired. It does not need to be
+called every time before each actual AWS CLI invocation.
 
 ```shell
 $ okta-aws-cli
@@ -260,7 +305,7 @@ $ aws s3 ls
 
 ### Scripted orientated usages
 
-Note: example assumes other Okta AWS CLI configuration values have already been
+**NOTE**: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
 ```shell
@@ -269,6 +314,11 @@ $ eval `okta-aws-cli` && aws s3 ls
 2021-06-10 12:47:11 mah-bucket
 
 $ eval `okta-aws-cli`
+
+$ aws s3 ls
+2018-04-04 11:56:00 test-bucket
+2021-06-10 12:47:11 mah-bucket
+
 $ aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
@@ -276,7 +326,7 @@ $ aws s3 ls
 
 ### AWS credentials file orientated usage
 
-Note: example assumes other Okta AWS CLI configuration values have already been
+**NOTE**: example assumes other Okta AWS CLI configuration values have already been
 set by ENV variables or `.env` file.
 
 ```shell
@@ -295,7 +345,7 @@ Wrote profile "test" to /Users/mikemondragon/.aws/credentials
 2021-06-10 12:47:11 mah-bucket
 ```
 
-Note: the Okta AWS CLI will only append to the AWS credentials file. Be sure to
+**NOTE**: the Okta AWS CLI will only append to the AWS credentials file. Be sure to
 comment out or remove previous named profiles from the credentials file.
 Otherwise an `Unable to parse config file` error like the following may occur.
 
@@ -344,9 +394,9 @@ configuration file that is dropped somewhere in the user's `$HOME` directory to
 operate the CLI.
 
 The Okta CLI is CLI flag and environment variable oriented and its default
-output is as environment variables. It can write to an AWS credentials file but
-only in append mode. It never risks interpreting and re-writing the AWS
-credentials file potentially corrupting other valuable credentials saved there.
+output is as environment variables. It can also write to AWS credentials file.
+The default writing option is an apped operation and can be explicitly set to
+overwrite previous values for a profile with the `--write-aws-credentials` flag.
 
 ### Versent saml2aws
 

@@ -22,6 +22,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
 	"time"
 )
@@ -80,13 +81,23 @@ type configTransport struct {
 }
 
 func newConfigTransport(debug bool) *configTransport {
-	ct := configTransport{
-		rt: &http.Transport{
-			IdleConnTimeout: 30 * time.Second,
-		},
-		debug: debug,
+	// recommended hack for error
+	// "Error: LoadCustomCABundleError: unable to load custom CA bundle, HTTPClient's transport unsupported type"
+	// https://github.com/aws/aws-sdk-go/issues/3618
+	// https://github.com/okta/okta-aws-cli/issues/69
+	_ = os.Unsetenv("AWS_CA_BUNDLE")
+
+	rt := &http.Transport{
+		IdleConnTimeout: 30 * time.Second,
+	}
+	if os.Getenv("HTTPS_PROXY") != "" || os.Getenv("HTTP_PROXY") != "" {
+		rt.Proxy = http.ProxyFromEnvironment
 	}
 
+	ct := configTransport{
+		rt:    rt,
+		debug: debug,
+	}
 	return &ct
 }
 
