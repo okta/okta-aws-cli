@@ -21,7 +21,15 @@ type Credential struct {
 	AccessKeyID     string `ini:"aws_access_key_id"`
 	SecretAccessKey string `ini:"aws_secret_access_key"`
 	SessionToken    string `ini:"aws_session_token"`
+
+	profile string
 }
+
+// SetProfile sets the profile name associated with this AWS credential.
+func (c *Credential) SetProfile(s string) { c.profile = s }
+
+// Profile returns the profile name associated with this AWS credential.
+func (c Credential) Profile() string { return c.profile }
 
 // LegacyCredential Convenience representation of an AWS credential.
 type LegacyCredential struct {

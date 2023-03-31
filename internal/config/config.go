@@ -55,6 +55,8 @@ const (
 	OrgDomainFlag = "org-domain"
 	// ProfileFlag cli flag const
 	ProfileFlag = "profile"
+	// AllProfilesFlag cli flag const
+	AllProfilesFlag = "all-profiles"
 	// QRCodeFlag cli flag const
 	QRCodeFlag = "qr-code"
 	// SessionDurationFlag cli flag const
@@ -84,6 +86,8 @@ const (
 	OpenBrowserEnvVar = "OPEN_BROWSER"
 	// ProfileEnvVar env var const
 	ProfileEnvVar = "PROFILE"
+	// AllProfilesEnvVar env var const
+	AllProfilesEnvVar = "ALL_PROFILES"
 	// QRCodeEnvVar env var const
 	QRCodeEnvVar = "QR_CODE"
 	// WriteAWSCredentialsEnvVar env var const
@@ -104,6 +108,7 @@ type Config struct {
 	awsSessionDuration  int64
 	format              string
 	profile             string
+	allProfiles         bool
 	qrCode              bool
 	awsCredentials      string
 	writeAWSCredentials bool
@@ -123,6 +128,7 @@ type Attributes struct {
 	AWSSessionDuration  int64
 	Format              string
 	Profile             string
+	AllProfiles         bool
 	QRCode              bool
 	AWSCredentials      string
 	WriteAWSCredentials bool
@@ -152,6 +158,7 @@ func NewConfig(attrs Attributes) (*Config, error) {
 		awsIAMRole:          attrs.AWSIAMRole,
 		format:              attrs.Format,
 		profile:             attrs.Profile,
+		allProfiles:         attrs.AllProfiles,
 		qrCode:              attrs.QRCode,
 		awsCredentials:      attrs.AWSCredentials,
 		writeAWSCredentials: attrs.WriteAWSCredentials,
@@ -196,6 +203,7 @@ func readConfig() (Attributes, error) {
 		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
 		Profile:             viper.GetString(ProfileFlag),
+		AllProfiles:         viper.GetBool(AllProfilesFlag),
 		QRCode:              viper.GetBool(QRCodeFlag),
 		WriteAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
 	}
@@ -266,7 +274,7 @@ func readConfig() (Attributes, error) {
 		attrs.WriteAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
 	}
 	// TODU
-	if attrs.WriteAWSCredentials {
+	if attrs.AllProfiles || attrs.WriteAWSCredentials {
 		// writing aws creds option implies "aws-credentials" format
 		attrs.Format = AWSCredentialsFormat
 	}
@@ -384,6 +392,17 @@ func (c *Config) Profile() string {
 // SetProfile --
 func (c *Config) SetProfile(profile string) error {
 	c.profile = profile
+	return nil
+}
+
+// AllProfiles --
+func (c *Config) AllProfiles() bool {
+	return c.allProfiles
+}
+
+// SetAllProfiles --
+func (c *Config) SetAllProfiles(all bool) error {
+	c.allProfiles = all
 	return nil
 }
 

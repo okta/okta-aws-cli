@@ -28,12 +28,15 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mdp/qrterminal"
@@ -254,19 +257,32 @@ func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at 
 		return err
 	}
 
-	iar, err := s.promptForIdpAndRole(idpRolesMap)
-	if err != nil {
-		return err
-	}
+	if !s.config.AllProfiles() {
+		iar, err := s.promptForIdpAndRole(idpRolesMap)
+		if err != nil {
+			return err
+		}
 
-	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
-	if err != nil {
-		return err
-	}
+		ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
+		if err != nil {
+			return err
+		}
 
-	err = s.renderCredential(ac)
-	if err != nil {
-		return err
+		err = s.renderCredential(ac)
+		if err != nil {
+			return err
+		}
+	} else {
+		acs := s.fetchAllAWSCredentialsWithSAMLRole(idpRolesMap, assertion)
+		if err != nil {
+			return err
+		}
+		for ac := range acs {
+			if err := s.renderCredential(ac); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to render credential %s: %s\n", ac.Profile(), err)
+				continue
+			}
+		}
 	}
 
 	return nil
@@ -311,7 +327,72 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
 	}
+
+	var profileName string
+	var roleName string
+	if _, after, found := strings.Cut(iar.role, "/"); found {
+		roleName = "-" + after
+	}
+	if p, err := s.fetchAWSAccountAlias(
+		sess.Copy(&aws.Config{
+			Credentials: credentials.NewStaticCredentials(
+				credential.AccessKeyID,
+				credential.SecretAccessKey,
+				credential.SessionToken,
+			),
+		})); err != nil {
+		profileName = iar.idp
+	} else {
+		profileName = p
+	}
+	credential.SetProfile(profileName + roleName)
+
 	return credential, nil
+}
+
+func (s *SessionToken) fetchAWSAccountAlias(sess *session.Session) (string, error) {
+	svc := iam.New(sess)
+	input := &iam.ListAccountAliasesInput{}
+	svcResp, err := svc.ListAccountAliases(input)
+	if err != nil {
+		return "", err
+	}
+	if len(svcResp.AccountAliases) < 1 {
+		return "", fmt.Errorf("no alias configured for account")
+	}
+	return *svcResp.AccountAliases[0], nil
+}
+
+// fetchAllAWSCredentialsWithSAMLRole Gets all AWS Credentials with an STS Assume Role with SAML AWS API call.
+func (s *SessionToken) fetchAllAWSCredentialsWithSAMLRole(idpRolesMap map[string][]string, assertion string) <-chan *oaws.Credential {
+	c := make(chan *oaws.Credential)
+	var wg sync.WaitGroup
+
+	for idp, roles := range idpRolesMap {
+		for _, role := range roles {
+			iar := &idpAndRole{idp, role}
+			wg.Add(1)
+			go func() error {
+				defer wg.Done()
+				ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
+				if err != nil {
+					fmt.Fprintf(os.Stderr,
+						"failed to fetch AWS creds from role %+v: %s\n", *iar, err)
+					return nil
+				}
+				c <- ac
+				return nil
+			}()
+		}
+	}
+
+	go func() error {
+		wg.Wait()
+		close(c)
+		return nil
+	}()
+
+	return c
 }
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs

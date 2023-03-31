@@ -170,6 +170,11 @@ func (e *AWSCredentialsFile) appendConfig(c *config.Config, ac *aws.Credential) 
 		_ = f.Close()
 	}()
 
+	profile := ac.Profile()
+	if len(profile) == 0 {
+		profile = c.Profile()
+	}
+
 	var creds string
 
 	if e.LegacyAWSVariables {
@@ -180,7 +185,7 @@ aws_secret_access_key = %s
 aws_session_token = %s
 aws_security_token = %s
 `
-		creds = fmt.Sprintf(creds, c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken)
+		creds = fmt.Sprintf(creds, profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken)
 	} else {
 		creds = `
 [%s]
@@ -188,7 +193,7 @@ aws_access_key_id = %s
 aws_secret_access_key = %s
 aws_session_token = %s
 `
-		creds = fmt.Sprintf(creds, c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken)
+		creds = fmt.Sprintf(creds, profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken)
 	}
 	_, err = f.WriteString(creds)
 	if err != nil {
@@ -196,14 +201,17 @@ aws_session_token = %s
 	}
 	_ = f.Sync()
 
-	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", c.Profile(), c.AWSCredentials())
+	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", profile, c.AWSCredentials())
 
 	return nil
 }
 
 func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) error {
 	filename := c.AWSCredentials()
-	profile := c.Profile()
+	profile := ac.Profile()
+	if len(profile) == 0 {
+		profile = c.Profile()
+	}
 
 	err := ensureConfigExists(filename, profile)
 	if err != nil {

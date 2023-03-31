@@ -102,6 +102,12 @@ func init() {
 			envVar: config.ProfileEnvVar,
 		},
 		{
+			name:   config.AllProfilesFlag,
+			value:  false,
+			usage:  "Collect and write all profiles",
+			envVar: config.AllProfilesEnvVar,
+		},
+		{
 			name:   config.FormatFlag,
 			short:  "f",
 			value:  "env-var",
