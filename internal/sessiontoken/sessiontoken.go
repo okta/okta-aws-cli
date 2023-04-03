@@ -372,24 +372,22 @@ func (s *SessionToken) fetchAllAWSCredentialsWithSAMLRole(idpRolesMap map[string
 		for _, role := range roles {
 			iar := &idpAndRole{idp, role}
 			wg.Add(1)
-			go func() error {
+			go func() {
 				defer wg.Done()
 				ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
 				if err != nil {
 					fmt.Fprintf(os.Stderr,
 						"failed to fetch AWS creds from role %+v: %s\n", *iar, err)
-					return nil
+					return
 				}
 				c <- ac
-				return nil
 			}()
 		}
 	}
 
-	go func() error {
+	go func() {
 		wg.Wait()
 		close(c)
-		return nil
 	}()
 
 	return c
