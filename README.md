@@ -180,11 +180,11 @@ that can be used for the AWS CLI configuration. Output can also be expressed as
 values](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for AWS CLI configuration.
 
-Configuration can be done with environment variables, an `.env` file, command line flags, or a combination of the three.
+Configuration can be done with environment variables, an `.env` file, a configuration `~/.okta-aws-cli` file, command line flags, or a combination of the four.
 
 Also see the CLI's online help `$ okta-aws-cli --help`
 
-| Name | ENV var and .env file value | Command line flag | Description |
+| Name | ENV var and .env/configuration file value | Command line flag | Description |
 |-------|-----------------------------|-------------------|-------------|
 | Okta Org Domain (**required**) | `OKTA_ORG_DOMAIN` | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID (**required**) | `OKTA_OIDC_CLIENT_ID` | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
@@ -204,7 +204,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 
 NOTE: If
 [`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
-is set in the `.env` file it will be promoted into the okta-aws-cli runtime if
+is set in the `.env`/`~/.okta-aws-cli` file it will be promoted into the okta-aws-cli runtime if
 it isn't also already set as an ENV VAR. This will allow operators making use of
 an `.env` file have to have proper AWS API behavior in spefific regions, for
 instance in US govcloud and other non-North America regions.
@@ -236,7 +236,7 @@ export OKTA_ORG_DOMAIN=test.okta.com
 export OKTA_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 ```
 
-### `.env` file variables example
+### `.env`/`~/.okta-aws-cli` file variables example
 
 ```
 OKTA_ORG_DOMAIN=test.okta.com
@@ -274,7 +274,7 @@ This allows for the command's results to be `eval`'d into the current shell as
 ### Plain usage
 
 **NOTE**: example assumes other Okta AWS CLI configuration values have already been
-set by ENV variables or `.env` file.
+set by ENV variables or `.env`/`~/.okta-aws-cli` file.
 
 **NOTE**: output will be in `setx` statements if the runtime is Windows.
 
@@ -306,7 +306,7 @@ $ aws s3 ls
 ### Scripted orientated usages
 
 **NOTE**: example assumes other Okta AWS CLI configuration values have already been
-set by ENV variables or `.env` file.
+set by ENV variables or `.env`/`~/.okta-aws-cli` file.
 
 ```shell
 $ eval `okta-aws-cli` && aws s3 ls
@@ -327,7 +327,7 @@ $ aws s3 ls
 ### AWS credentials file orientated usage
 
 **NOTE**: example assumes other Okta AWS CLI configuration values have already been
-set by ENV variables or `.env` file.
+set by ENV variables or `.env`/`~/.okta-aws-cli` file.
 
 ```shell
 $ okta-aws-cli --profile test --format aws-credentials && \

@@ -33,6 +33,7 @@ import (
 
 const (
 	dotEnvFilename = ".env"
+	configFilename = ".okta-aws-cli"
 )
 
 type flag struct {
@@ -153,6 +154,26 @@ func init() {
 	}
 }
 
+func readEnvFromFile(path, filename string) {
+	filePath := filepath.Join(path, filename)
+	if _, err := os.Stat(filePath); err == nil || !errors.Is(err, os.ErrNotExist) {
+		viper.AddConfigPath(path)
+		viper.SetConfigName(filename)
+		viper.SetConfigType("dotenv")
+
+		_ = viper.ReadInConfig()
+
+		// After viper reads in the dotenv file check if AWS_REGION is set
+		// there. The value will be keyed by lower case name. If it is, set
+		// AWS_REGION as an ENV VAR if it hasn't already been.
+		awsRegionEnvVar := "AWS_REGION"
+		vipAwsRegion := viper.GetString(strings.ToLower(awsRegionEnvVar))
+		if vipAwsRegion != "" && os.Getenv(awsRegionEnvVar) == "" {
+			_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
+		}
+	}
+}
+
 func buildRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Version: config.Version,
@@ -179,23 +200,11 @@ to collect a proper IAM role for the AWS CLI operator.`,
 	}
 	// bind env vars via dotenv if it exists
 	path, _ := os.Getwd()
-	dotEnv := filepath.Join(path, dotEnvFilename)
-	if _, err := os.Stat(dotEnv); err == nil || !errors.Is(err, os.ErrNotExist) {
-		viper.AddConfigPath(path)
-		viper.SetConfigName(dotEnvFilename)
-		viper.SetConfigType("dotenv")
+	readEnvFromFile(path, dotEnvFilename)
+	// bind env vars via config file if it exists
+	userHomeDir, _ := os.UserHomeDir()
+	readEnvFromFile(userHomeDir, configFilename)
 
-		_ = viper.ReadInConfig()
-
-		// After viper reads in the dotenv file check if AWS_REGION is set
-		// there. The value will be keyed by lower case name. If it is, set
-		// AWS_REGION as an ENV VAR if it hasn't already been.
-		awsRegionEnvVar := "AWS_REGION"
-		vipAwsRegion := viper.GetString(strings.ToLower(awsRegionEnvVar))
-		if vipAwsRegion != "" && os.Getenv(awsRegionEnvVar) == "" {
-			_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
-		}
-	}
 	viper.AutomaticEnv()
 
 	// bind cli flags
