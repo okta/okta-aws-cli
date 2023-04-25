@@ -388,10 +388,7 @@ prompt for passwords or any other user credentials itself, or offers to store
 user credentials on a desktop keychain.
 
 The configuration of the Okta AWS CLI is minimal with only two required values:
-Okta org domain name, and OIDC app id. There isn't a need for a configuration
-prompt to run for initialization and there isn't a need for a multi-lined
-configuration file that is dropped somewhere in the user's `$HOME` directory to
-operate the CLI.
+Okta org domain name, and OIDC app id.
 
 The Okta CLI is CLI flag and environment variable oriented and its default
 output is as environment variables. It can also write to AWS credentials file.
