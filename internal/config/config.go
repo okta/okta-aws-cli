@@ -18,12 +18,16 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -111,6 +115,13 @@ type Config struct {
 	debugAPICalls       bool
 	legacyAWSVariables  bool
 	httpClient          *http.Client
+}
+
+// OktaYamlConfig represents config settings from $HOME/.okta/okta.yaml
+type OktaYamlConfig struct {
+	AWSCLI struct {
+		IDPS map[string]string `yaml:"idps"`
+	} `yaml:"awscli"`
 }
 
 // Attributes config construction
@@ -462,4 +473,29 @@ func (c *Config) HTTPClient() *http.Client {
 func (c *Config) SetHTTPClient(client *http.Client) error {
 	c.httpClient = client
 	return nil
+}
+
+// OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
+func OktaConfig() (config *OktaYamlConfig, err error) {
+	cUser, err := user.Current()
+	if err != nil {
+		return
+	}
+	if cUser.HomeDir == "" {
+		return
+	}
+	configPath := filepath.Join(cUser.HomeDir, ".okta", "okta.yaml")
+
+	yamlConfig, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return
+	}
+	conf := OktaYamlConfig{}
+	err = yaml.Unmarshal(yamlConfig, &conf)
+	if err != nil {
+		return
+	}
+	config = &conf
+
+	return
 }

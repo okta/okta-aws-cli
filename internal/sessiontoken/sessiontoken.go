@@ -214,10 +214,17 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	idps := make(map[string]*oktaApplication)
 	choices := make([]string, len(apps))
 	var selected string
+	oktaConfig, _ := config.OktaConfig()
+
 	for i, app := range apps {
 		choice := app.Label
 		if app.Settings.App.IdentityProviderARN != "" {
 			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
+			if oktaConfig != nil && len(oktaConfig.AWSCLI.IDPS) > 0 {
+				if label, ok := oktaConfig.AWSCLI.IDPS[app.Settings.App.IdentityProviderARN]; ok {
+					choice = label
+				}
+			}
 		}
 		choices[i] = choice
 		idps[choice] = app
