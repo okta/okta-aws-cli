@@ -206,8 +206,8 @@ NOTE: If
 [`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 is set in the `.env` file it will be promoted into the okta-aws-cli runtime if
 it isn't also already set as an ENV VAR. This will allow operators making use of
-an `.env` file have to have proper AWS API behavior in spefific regions, for
-instance in US govcloud and other non-North America regions.
+an `.env` file to have proper AWS API behavior in spefific regions, for instance
+in US govcloud and other non-North America regions.
 
 ### Allowed Web SSO Client
 
@@ -260,6 +260,49 @@ $ okta-aws-cli --org-domain test.okta.com \
 $ okta-aws-cli --org-domain test.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
     --aws-acct-fed-app-id 0oa9x1rifa2H6Q5d8325
+```
+
+### Friendly IdP menus
+
+When the operator has many AWS Federation apps, listing the AWS IAM IdP ARNs can
+make it hard to read the list. The operator can create an Okta config file in
+YAML format at `$HOME/.okta/okta.yaml` that allows them to set a map of alias
+labels for the ARN values.
+
+Note: The Okta language SDKs have standardized on using `$HOME/.okta/okta.yaml`
+as a configuration file and location. We will continue that practice with
+read-only friendly okta-aws-cli application values.
+
+#### Before
+
+```
+? Choose an IdP:  [Use arrows to move, type to filter]
+> Fed App 1 Label (arn:aws:iam::123456789012:saml-provider/company-okta-idp)
+  Fed App 2 Label (arn:aws:iam::012345678901:saml-provider/company-okta-idp)
+  Fed App 3 Label (arn:aws:iam::901234567890:saml-provider/company-okta-idp)
+  Fed App 4 Label (arn:aws:iam::890123456789:saml-provider/company-okta-idp)
+```
+
+#### Example `$HOME/.okta/okta.yaml`
+
+```yaml
+---
+awscli:
+  idps:
+    "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
+    "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+    "arn:aws:iam::901234567890:saml-provider/company-okta-idp": "Marketing Production"
+    "arn:aws:iam::890123456789:saml-provider/company-okta-idp": "Marketing Development"
+```
+
+#### After
+
+```
+? Choose an IdP:  [Use arrows to move, type to filter]
+> Data Production
+  Data Development
+  Marketing Production
+  Marketing Development
 ```
 
 ## Operation
