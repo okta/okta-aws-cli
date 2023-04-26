@@ -69,15 +69,15 @@ const (
 	LegacyAWSVariablesFlag = "legacy-aws-variables"
 
 	// AWSCredentialsEnvVar env var const
-	AWSCredentialsEnvVar = "AWS_CREDENTIALS"
+	AWSCredentialsEnvVar = "OKTA_AWSCLI_AWS_CREDENTIALS"
 	// AWSIAMIdPEnvVar env var const
-	AWSIAMIdPEnvVar = "AWS_IAM_IDP"
+	AWSIAMIdPEnvVar = "OKTA_AWSCLI_IAM_IDP"
 	// AWSIAMRoleEnvVar env var const
-	AWSIAMRoleEnvVar = "AWS_IAM_ROLE"
+	AWSIAMRoleEnvVar = "OKTA_AWSCLI_IAM_ROLE"
 	// AWSSessionDurationEnvVar env var const
-	AWSSessionDurationEnvVar = "AWS_SESSION_DURATION"
+	AWSSessionDurationEnvVar = "OKTA_AWSCLI_SESSION_DURATION"
 	// FormatEnvVar env var const
-	FormatEnvVar = "FORMAT"
+	FormatEnvVar = "OKTA_AWSCLI_FORMAT"
 	// OktaOIDCClientIDEnvVar env var const
 	OktaOIDCClientIDEnvVar = "OKTA_OIDC_CLIENT_ID"
 	// OktaOrgDomainEnvVar env var const
@@ -85,17 +85,17 @@ const (
 	// OktaAWSAccountFederationAppIDEnvVar env var const
 	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
 	// OpenBrowserEnvVar env var const
-	OpenBrowserEnvVar = "OPEN_BROWSER"
+	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
 	// ProfileEnvVar env var const
-	ProfileEnvVar = "PROFILE"
+	ProfileEnvVar = "OKTA_AWSCLI_PROFILE"
 	// QRCodeEnvVar env var const
-	QRCodeEnvVar = "QR_CODE"
+	QRCodeEnvVar = "OKTA_AWSCLI_QR_CODE"
 	// WriteAWSCredentialsEnvVar env var const
-	WriteAWSCredentialsEnvVar = "WRITE_AWS_CREDENTIALS"
+	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
 	// DebugAPICallsEnvVar env var const
-	DebugAPICallsEnvVar = "DEBUG_API_CALLS"
+	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
 	// LegacyAWSVariablesEnvVar env var const
-	LegacyAWSVariablesEnvVar = "LEGACY_AWS_VARIABLES"
+	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
