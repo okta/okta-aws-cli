@@ -18,9 +18,9 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -96,6 +96,12 @@ const (
 	DebugAPICallsEnvVar = "DEBUG_API_CALLS"
 	// LegacyAWSVariablesEnvVar env var const
 	LegacyAWSVariablesEnvVar = "LEGACY_AWS_VARIABLES"
+
+	// CannotBeBlankErrMsg error message const
+	CannotBeBlankErrMsg = "cannot be blank"
+
+	// OrgDomainMsg error message const
+	OrgDomainMsg = "Org Domain"
 )
 
 // Config A config object for the CLI
@@ -306,10 +312,10 @@ func (c *Config) OrgDomain() string {
 // SetOrgDomain --
 func (c *Config) SetOrgDomain(domain string) error {
 	if domain == "" {
-		return NewValidationError("Org Domain", "cannot be blank")
+		return NewValidationError(OrgDomainMsg, CannotBeBlankErrMsg)
 	}
 	if !(strings.Contains(domain, "okta.com") || strings.Contains(domain, "oktapreview.com")) {
-		return NewValidationError("Org Domain", "is not from Okta")
+		return NewValidationError(OrgDomainMsg, "is not from Okta")
 	}
 	c.orgDomain = domain
 	return nil
@@ -323,7 +329,7 @@ func (c *Config) OIDCAppID() string {
 // SetOIDCAppID --
 func (c *Config) SetOIDCAppID(appID string) error {
 	if appID == "" {
-		return NewValidationError("OIDC App ID", "cannot be blank")
+		return NewValidationError("OIDC App ID", CannotBeBlankErrMsg)
 	}
 	c.oidcAppID = appID
 	return nil
@@ -486,7 +492,7 @@ func OktaConfig() (config *OktaYamlConfig, err error) {
 	}
 	configPath := filepath.Join(cUser.HomeDir, ".okta", "okta.yaml")
 
-	yamlConfig, err := ioutil.ReadFile(configPath)
+	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
 		return
 	}
