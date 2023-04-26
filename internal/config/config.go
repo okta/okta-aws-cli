@@ -20,10 +20,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -92,6 +96,12 @@ const (
 	DebugAPICallsEnvVar = "DEBUG_API_CALLS"
 	// LegacyAWSVariablesEnvVar env var const
 	LegacyAWSVariablesEnvVar = "LEGACY_AWS_VARIABLES"
+
+	// CannotBeBlankErrMsg error message const
+	CannotBeBlankErrMsg = "cannot be blank"
+
+	// OrgDomainMsg error message const
+	OrgDomainMsg = "Org Domain"
 )
 
 // Config A config object for the CLI
@@ -111,6 +121,13 @@ type Config struct {
 	debugAPICalls       bool
 	legacyAWSVariables  bool
 	httpClient          *http.Client
+}
+
+// OktaYamlConfig represents config settings from $HOME/.okta/okta.yaml
+type OktaYamlConfig struct {
+	AWSCLI struct {
+		IDPS map[string]string `yaml:"idps"`
+	} `yaml:"awscli"`
 }
 
 // Attributes config construction
@@ -295,10 +312,10 @@ func (c *Config) OrgDomain() string {
 // SetOrgDomain --
 func (c *Config) SetOrgDomain(domain string) error {
 	if domain == "" {
-		return NewValidationError("Org Domain", "cannot be blank")
+		return NewValidationError(OrgDomainMsg, CannotBeBlankErrMsg)
 	}
 	if !(strings.Contains(domain, "okta.com") || strings.Contains(domain, "oktapreview.com")) {
-		return NewValidationError("Org Domain", "is not from Okta")
+		return NewValidationError(OrgDomainMsg, "is not from Okta")
 	}
 	c.orgDomain = domain
 	return nil
@@ -312,7 +329,7 @@ func (c *Config) OIDCAppID() string {
 // SetOIDCAppID --
 func (c *Config) SetOIDCAppID(appID string) error {
 	if appID == "" {
-		return NewValidationError("OIDC App ID", "cannot be blank")
+		return NewValidationError("OIDC App ID", CannotBeBlankErrMsg)
 	}
 	c.oidcAppID = appID
 	return nil
@@ -462,4 +479,29 @@ func (c *Config) HTTPClient() *http.Client {
 func (c *Config) SetHTTPClient(client *http.Client) error {
 	c.httpClient = client
 	return nil
+}
+
+// OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
+func OktaConfig() (config *OktaYamlConfig, err error) {
+	cUser, err := user.Current()
+	if err != nil {
+		return
+	}
+	if cUser.HomeDir == "" {
+		return
+	}
+	configPath := filepath.Join(cUser.HomeDir, ".okta", "okta.yaml")
+
+	yamlConfig, err := os.ReadFile(configPath)
+	if err != nil {
+		return
+	}
+	conf := OktaYamlConfig{}
+	err = yaml.Unmarshal(yamlConfig, &conf)
+	if err != nil {
+		return
+	}
+	config = &conf
+
+	return
 }
