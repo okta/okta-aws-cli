@@ -155,7 +155,7 @@ func NewAWSCredentialsFile(legacyVars bool) *AWSCredentialsFile {
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
 func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error {
-	if c.WriteAWSCredentials {
+	if c.WriteAWSCredentials() {
 		return e.writeConfig(c, ac)
 	}
 
@@ -163,7 +163,7 @@ func (e *AWSCredentialsFile) Output(c *config.Config, ac *aws.Credential) error 
 }
 
 func (e *AWSCredentialsFile) appendConfig(c *config.Config, ac *aws.Credential) error {
-	f, err := os.OpenFile(c.AWSCredentials, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	f, err := os.OpenFile(c.AWSCredentials(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ aws_session_token = %s
 aws_security_token = %s
 x_security_token_expires = %s
 `
-		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
+    creds = fmt.Sprintf(creds, c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
 	} else {
 		creds = `
 [%s]
@@ -191,7 +191,7 @@ aws_secret_access_key = %s
 aws_session_token = %s
 x_security_token_expires = %s
 `
-		creds = fmt.Sprintf(creds, c.Profile, ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
+    creds = fmt.Sprintf(creds, c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
 	}
 	_, err = f.WriteString(creds)
 	if err != nil {
@@ -199,14 +199,14 @@ x_security_token_expires = %s
 	}
 	_ = f.Sync()
 
-	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", c.Profile, c.AWSCredentials)
+	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", c.Profile(), c.AWSCredentials())
 
 	return nil
 }
 
 func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) error {
-	filename := c.AWSCredentials
-	profile := c.Profile
+	filename := c.AWSCredentials()
+	profile := c.Profile()
 
 	err := ensureConfigExists(filename, profile)
 	if err != nil {
