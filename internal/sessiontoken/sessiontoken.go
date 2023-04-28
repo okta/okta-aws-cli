@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/core"
@@ -284,7 +285,8 @@ func (s *SessionToken) renderCredential(ac *oaws.Credential) error {
 	var o output.Outputter
 	switch s.config.Format() {
 	case config.AWSCredentialsFormat:
-		o = output.NewAWSCredentialsFile(s.config.LegacyAWSVariables())
+		expiry := time.Now().Add(time.Duration(s.config.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
+		o = output.NewAWSCredentialsFile(s.config.LegacyAWSVariables(), s.config.ExpiryAWSVariables(), expiry)
 	default:
 		o = output.NewEnvVar(s.config.LegacyAWSVariables())
 		fmt.Fprintf(os.Stderr, "\n")
@@ -317,7 +319,6 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
-		Expiration:      *svcResp.Credentials.Expiration,
 	}
 	return credential, nil
 }

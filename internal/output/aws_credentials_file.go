@@ -20,13 +20,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
-	"time"
+
+	dynamicstruct "github.com/ompluscator/dynamic-struct"
+	"github.com/pkg/errors"
+	"gopkg.in/ini.v1"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/pkg/errors"
-	"gopkg.in/ini.v1"
+)
+
+const (
+
+	// ExpirationField --
+	ExpirationField = "Expiration"
+	// SecurityTokenField --
+	SecurityTokenField = "SecurityToken"
 )
 
 // ensureConfigExists verify that the config file exists
@@ -54,8 +64,8 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars bool) error {
-	config, err := updateConfig(filename, profile, awsCreds, legacyVars)
+func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string) error {
+	config, err := updateConfig(filename, profile, awsCreds, legacyVars, expiryVars, expiry)
 	if err != nil {
 		return err
 	}
@@ -69,7 +79,7 @@ func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars 
 	return nil
 }
 
-func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars bool) (config *ini.File, err error) {
+func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string) (config *ini.File, err error) {
 	config, err = ini.Load(filename)
 	if err != nil {
 		return
@@ -79,28 +89,38 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars
 	if err != nil {
 		return
 	}
-	var creds interface{}
-	if legacyVars {
-		creds = &aws.LegacyCredential{
-			AccessKeyID:     awsCreds.AccessKeyID,
-			SecretAccessKey: awsCreds.SecretAccessKey,
-			SessionToken:    awsCreds.SessionToken,
-			SecurityToken:   awsCreds.SessionToken,
-		}
-	} else {
-		creds = awsCreds
+
+	builder := dynamicstruct.ExtendStruct(aws.Credential{})
+
+	if expiryVars {
+		builder.AddField(ExpirationField, "", `ini:"x_security_token_expires"`)
 	}
-	err = iniProfile.ReflectFrom(creds)
+	if legacyVars {
+		builder.AddField(SecurityTokenField, "", `ini:"aws_security_token"`)
+	}
+	instance := builder.Build().New()
+	reflect.ValueOf(instance).Elem().FieldByName("AccessKeyID").SetString(awsCreds.AccessKeyID)
+	reflect.ValueOf(instance).Elem().FieldByName("SecretAccessKey").SetString(awsCreds.SecretAccessKey)
+	reflect.ValueOf(instance).Elem().FieldByName("SessionToken").SetString(awsCreds.SessionToken)
+
+	if expiryVars {
+		reflect.ValueOf(instance).Elem().FieldByName(ExpirationField).SetString(expiry)
+	}
+	if legacyVars {
+		reflect.ValueOf(instance).Elem().FieldByName(SecurityTokenField).SetString(awsCreds.SessionToken)
+	}
+
+	err = iniProfile.ReflectFrom(instance)
 	if err != nil {
 		return
 	}
 
-	return updateINI(config, profile, legacyVars)
+	return updateINI(config, profile, legacyVars, expiryVars)
 }
 
 // updateIni will comment out any keys that are not "aws_access_key_id",
 // "aws_secret_access_key", or "aws_session_token"
-func updateINI(config *ini.File, profile string, legacyVars bool) (*ini.File, error) {
+func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool) (*ini.File, error) {
 	ignore := []string{
 		"aws_access_key_id",
 		"aws_secret_access_key",
@@ -108,6 +128,9 @@ func updateINI(config *ini.File, profile string, legacyVars bool) (*ini.File, er
 	}
 	if legacyVars {
 		ignore = append(ignore, "aws_security_token")
+	}
+	if expiryVars {
+		ignore = append(ignore, "x_security_token_expires")
 	}
 	section := config.Section(profile)
 	comments := []string{}
@@ -134,7 +157,10 @@ func updateINI(config *ini.File, profile string, legacyVars bool) (*ini.File, er
 		fmt.Fprintf(os.Stderr, "WARNING: Commented out %q profile keys \"%s\". Uncomment if third party tools use these values.\n", profile, strings.Join(comments, "\", \""))
 	}
 	if legacyVars {
-		fmt.Fprintf(os.Stderr, "WARNING: %q includes legacy variable \"aws_security_token\". Update tools making use of this deprecated value.", profile)
+		fmt.Fprintf(os.Stderr, "WARNING: %q includes legacy variable \"aws_security_token\". Update tools making use of this deprecated value.\n", profile)
+	}
+	if expiryVars {
+		fmt.Fprintf(os.Stderr, "WARNING: %q includes 3rd party variable \"x_security_token_expires\".\n", profile)
 	}
 
 	return config, nil
@@ -143,12 +169,16 @@ func updateINI(config *ini.File, profile string, legacyVars bool) (*ini.File, er
 // AWSCredentialsFile AWS credentials file output formatter
 type AWSCredentialsFile struct {
 	LegacyAWSVariables bool
+	ExpiryAWSVariables bool
+	Expiry             string
 }
 
 // NewAWSCredentialsFile Creates a new
-func NewAWSCredentialsFile(legacyVars bool) *AWSCredentialsFile {
+func NewAWSCredentialsFile(legacyVars bool, expiryVars bool, expiry string) *AWSCredentialsFile {
 	return &AWSCredentialsFile{
 		LegacyAWSVariables: legacyVars,
+		ExpiryAWSVariables: expiryVars,
+		Expiry:             expiry,
 	}
 }
 
@@ -171,28 +201,25 @@ func (e *AWSCredentialsFile) appendConfig(c *config.Config, ac *aws.Credential) 
 		_ = f.Close()
 	}()
 
-	var creds string
+	creds := `
+[%s]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+aws_session_token = %s
+`
+	credArgs := []interface{}{c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken}
 
 	if e.LegacyAWSVariables {
-		creds = `
-[%s]
-aws_access_key_id = %s
-aws_secret_access_key = %s
-aws_session_token = %s
-aws_security_token = %s
-x_security_token_expires = %s
-`
-		creds = fmt.Sprintf(creds, c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
-	} else {
-		creds = `
-[%s]
-aws_access_key_id = %s
-aws_secret_access_key = %s
-aws_session_token = %s
-x_security_token_expires = %s
-`
-		creds = fmt.Sprintf(creds, c.Profile(), ac.AccessKeyID, ac.SecretAccessKey, ac.SessionToken, ac.Expiration.Format(time.RFC3339))
+		creds = fmt.Sprintf("%saws_security_token = %%s\n", creds)
+		credArgs = append(credArgs, ac.SessionToken)
 	}
+
+	if e.ExpiryAWSVariables {
+		creds = fmt.Sprintf("%sx_security_token_expires = %%s\n", creds)
+		credArgs = append(credArgs, e.Expiry)
+	}
+
+	creds = fmt.Sprintf(creds, credArgs...)
 
 	_, err = f.WriteString(creds)
 	if err != nil {
@@ -214,7 +241,7 @@ func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) e
 		return err
 	}
 
-	return saveProfile(filename, profile, ac, e.LegacyAWSVariables)
+	return saveProfile(filename, profile, ac, e.LegacyAWSVariables, e.ExpiryAWSVariables, e.Expiry)
 }
 
 func contains(ignore []string, name string) bool {

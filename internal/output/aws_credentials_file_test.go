@@ -58,7 +58,7 @@ func TestINIFormatCredentialsContent(t *testing.T) {
 		SecretAccessKey: "e",
 		SessionToken:    "f",
 	}
-	config, err := updateConfig(filename, "test", awsCreds, false)
+	config, err := updateConfig(filename, "test", awsCreds, false, false, "")
 	assert.NoError(t, err)
 
 	err = config.SaveTo(filename)
@@ -141,7 +141,7 @@ aws_security_token    = ghi
 		t.Run(test.name, func(t *testing.T) {
 			config, err := ini.Load(test.config)
 			require.NoError(t, err)
-			ini, err := updateINI(config, "default", test.legacy)
+			ini, err := updateINI(config, "default", test.legacy, false)
 			require.NoError(t, err)
 			section := ini.Section(test.section)
 			require.Equal(t, len(test.want), len(section.KeyStrings()))
