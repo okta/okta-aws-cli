@@ -189,17 +189,17 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Okta Org Domain (**required**) | `OKTA_ORG_DOMAIN` | `--org-domain [value]` | Full domain hostname of the Okta org e.g. `test.okta.com` |
 | OIDC Client ID (**required**) | `OKTA_OIDC_CLIENT_ID` | `--oidc-client-id [value]` | See [Allowed Web SSO Client](#allowed-web-sso-client) |
 | Okta AWS Account Federation integration app ID (optional) | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `--aws-acct-fed-app-id [value]` | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason |
-| Preselect the AWS IAM Identity Provider ARN (optional) | `AWS_IAM_IDP` | `--aws-iam-idp [value]` | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. |
-| Preselects the AWS IAM Role ARN to assume (optional) | `AWS_IAM_ROLE` | `--aws-iam-role [value]` | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. If there are other Roles available they will not be listed. |
-| AWS Session Duration (optional) | `AWS_SESSION_DURATION` | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
-| Output format (optional) | `FORMAT` | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
-| Profile (optional) | `PROFILE` | `--profile [value]` | Default is `default`  |
-| Display QR Code (optional) | `QR_CODE=true` | `--qr-code` | `true` if flag is present  |
-| Automatically open the activation URL with the system web browser (optional) | `OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
-| Alternate AWS credentials file path (optional) | `AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
-| (Over)write the given profile to the AWS credentials file (optional). WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
-| Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `LEGACY_AWS_VARIABLES=true` | `--legacy-aws-variables` | `true` if flag is present  |
-| Verbosely print all API calls/responses to the screen | `DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
+| Preselect the AWS IAM Identity Provider ARN (optional) | `OKTA_AWSCLI_IAM_IDP` | `--aws-iam-idp [value]` | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. |
+| Preselects the AWS IAM Role ARN to assume (optional) | `OKTA_AWSCLI_IAM_ROLE` | `--aws-iam-role [value]` | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. If there are other Roles available they will not be listed. |
+| AWS Session Duration (optional) | `OKTA_AWSCLI_SESSION_DURATION` | `--session-duration [value]` | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. |
+| Output format (optional) | `OKTA_AWSCLI_FORMAT` | `--format [value]` | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file |
+| Profile (optional) | `OKTA_AWSCLI_PROFILE` | `--profile [value]` | Default is `default`  |
+| Display QR Code (optional) | `OKTA_AWSCLI_QR_CODE=true` | `--qr-code` | `true` if flag is present  |
+| Automatically open the activation URL with the system web browser (optional) | `OKTA_AWSCLI_OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
+| Alternate AWS credentials file path (optional) | `OKTA_AWSCLI_AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
+| (Over)write the given profile to the AWS credentials file (optional). WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `OKTA_AWSCLI_WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
+| Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `OKTA_AWSCLI_LEGACY_AWS_VARIABLES=true` | `--legacy-aws-variables` | `true` if flag is present  |
+| Verbosely print all API calls/responses to the screen | `OKTA_AWSCLI_DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 | HTTP/HTTPS Proxy support | `HTTP_PROXY` or `HTTPS_PROXY` | n/a | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) |
 
 NOTE: If
