@@ -27,6 +27,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -69,6 +71,8 @@ const (
 	chooseRole               = "Choose a Role:"
 	idpSelectedTemplate      = `  {{color "default+hb"}}IdP: {{color "reset"}}{{color "cyan"}}{{ .IDP }}{{color "reset"}}`
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
+	dotOktaDir               = ".okta"
+	tokenFileName            = "awscli-access-token.json"
 )
 
 type idpTemplateData struct {
@@ -94,6 +98,7 @@ type accessToken struct {
 	ExpiresIn    int64  `json:"expires_in,omitempty"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 	DeviceSecret string `json:"device_secret,omitempty"`
+	Expiry       string `json:"expiry"`
 }
 
 // deviceAuthorization Encapsulates Okta API result to
@@ -162,18 +167,23 @@ func NewSessionToken() (token *SessionToken, err error) {
 // token.
 func (s *SessionToken) EstablishToken() error {
 	clientID := s.config.OIDCAppID()
-	deviceAuth, err := s.authorize(clientID)
-	if err != nil {
-		return err
+	var at *accessToken
+	at = s.cachedAccessToken()
+	if at == nil {
+		deviceAuth, err := s.authorize(clientID)
+		if err != nil {
+			return err
+		}
+
+		s.promptAuthentication(deviceAuth)
+
+		at, err = s.fetchAccessToken(clientID, deviceAuth)
+		if err != nil {
+			return err
+		}
+		at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
+		s.cacheAccessToken(at)
 	}
-
-	s.promptAuthentication(deviceAuth)
-
-	at, err := s.fetchAccessToken(clientID, deviceAuth)
-	if err != nil {
-		return err
-	}
-
 	if s.config.FedAppID() != "" {
 		// Alternate path when operator knows their AWS Fed app ID
 		return s.establishTokenWithFedAppID(clientID, s.config.FedAppID(), at)
@@ -650,9 +660,8 @@ func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAutho
 
 	var bodyBytes []byte
 
-	// keep polling if Status Code is 400 and apiError.Error == "authorization_pending"
-	// done if status code is 200
-	// else error
+	// Keep polling if Status Code is 400 and apiError.Error ==
+	// "authorization_pending". Done if status code is 200. Else error.
 	poll := func() error {
 		data := url.Values{
 			"client_id":   {clientID},
@@ -843,4 +852,69 @@ func (s *SessionToken) isClassicOrg() bool {
 	}
 
 	return false
+}
+
+// cachedAccessToken will returned the cached access token if it exists and is
+// not expired.
+func (s *SessionToken) cachedAccessToken() (at *accessToken) {
+	cUser, err := user.Current()
+	if err != nil {
+		return
+	}
+	if cUser.HomeDir == "" {
+		return
+	}
+	configPath := filepath.Join(cUser.HomeDir, dotOktaDir, tokenFileName)
+	atJSON, err := os.ReadFile(configPath)
+	if err != nil {
+		return
+	}
+
+	_at := accessToken{}
+	err = json.Unmarshal(atJSON, &_at)
+	if err != nil {
+		return
+	}
+
+	expiry, err := time.Parse(time.RFC3339, _at.Expiry)
+	if err != nil {
+		return
+	}
+	if expiry.Before(time.Now()) {
+		// expiry is in the past
+		return
+	}
+
+	return &_at
+}
+
+// cacheAccessToken will cache the access token for later use if enabled. Silent
+// if fails.
+func (s *SessionToken) cacheAccessToken(at *accessToken) {
+	if !s.config.CacheAccessToken() {
+		return
+	}
+
+	cUser, err := user.Current()
+	if err != nil {
+		return
+	}
+	if cUser.HomeDir == "" {
+		return
+	}
+
+	oktaDir := filepath.Join(cUser.HomeDir, dotOktaDir)
+	// noop if dir exists
+	err = os.MkdirAll(oktaDir, 0o700)
+	if err != nil {
+		return
+	}
+
+	atJSON, err := json.Marshal(at)
+	if err != nil {
+		return
+	}
+
+	configPath := filepath.Join(cUser.HomeDir, dotOktaDir, tokenFileName)
+	_ = os.WriteFile(configPath, atJSON, 0o600)
 }

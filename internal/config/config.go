@@ -69,6 +69,8 @@ const (
 	LegacyAWSVariablesFlag = "legacy-aws-variables"
 	// ExpiryAWSVariablesFlag cli flag const
 	ExpiryAWSVariablesFlag = "expiry-aws-variables"
+	// CacheAccessTokenFlag cli flag const
+	CacheAccessTokenFlag = "cache-access-token"
 
 	// AWSCredentialsEnvVar env var const
 	AWSCredentialsEnvVar = "OKTA_AWSCLI_AWS_CREDENTIALS"
@@ -100,6 +102,8 @@ const (
 	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 	// ExpiryAWSVariablesEnvVar env var const
 	ExpiryAWSVariablesEnvVar = "OKTA_AWSCLI_EXPIRY_AWS_VARIABLES"
+	// CacheAccessTokenEnvVar env var const
+	CacheAccessTokenEnvVar = "OKTA_AWSCLI_CACHE_ACCESS_TOKEN"
 
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
@@ -125,6 +129,7 @@ type Config struct {
 	debugAPICalls       bool
 	legacyAWSVariables  bool
 	expiryAWSVariables  bool
+	cacheAccessToken    bool
 	httpClient          *http.Client
 }
 
@@ -152,6 +157,7 @@ type Attributes struct {
 	DebugAPICalls       bool
 	LegacyAWSVariables  bool
 	ExpiryAWSVariables  bool
+	CacheAccessToken    bool
 }
 
 // CreateConfig Creates a new config gathering values in this order of precedence:
@@ -182,6 +188,7 @@ func NewConfig(attrs Attributes) (*Config, error) {
 		debugAPICalls:       attrs.DebugAPICalls,
 		legacyAWSVariables:  attrs.LegacyAWSVariables,
 		expiryAWSVariables:  attrs.ExpiryAWSVariables,
+		cacheAccessToken:    attrs.CacheAccessToken,
 	}
 	err = cfg.SetOrgDomain(attrs.OrgDomain)
 	if err != nil {
@@ -217,6 +224,7 @@ func readConfig() (Attributes, error) {
 		Format:              viper.GetString(FormatFlag),
 		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
 		ExpiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
+		CacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
 		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
 		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
@@ -306,6 +314,9 @@ func readConfig() (Attributes, error) {
 	}
 	if !attrs.ExpiryAWSVariables {
 		attrs.ExpiryAWSVariables = viper.GetBool(downCase(ExpiryAWSVariablesEnvVar))
+	}
+	if !attrs.CacheAccessToken {
+		attrs.CacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
 	}
 	return attrs, nil
 }
@@ -489,6 +500,17 @@ func (c *Config) ExpiryAWSVariables() bool {
 // SetExpiryAWSVariables --
 func (c *Config) SetExpiryAWSVariables(expiryAWSVariables bool) error {
 	c.expiryAWSVariables = expiryAWSVariables
+	return nil
+}
+
+// CacheAccessToken --
+func (c *Config) CacheAccessToken() bool {
+	return c.cacheAccessToken
+}
+
+// SetCacheAccessToken --
+func (c *Config) SetCacheAccessToken(cacheAccessToken bool) error {
+	c.cacheAccessToken = cacheAccessToken
 	return nil
 }
 

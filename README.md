@@ -196,6 +196,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Profile (optional) | `OKTA_AWSCLI_PROFILE` | `--profile [value]` | Default is `default`  |
 | Display QR Code (optional) | `OKTA_AWSCLI_QR_CODE=true` | `--qr-code` | `true` if flag is present  |
 | Automatically open the activation URL with the system web browser (optional) | `OKTA_AWSCLI_OPEN_BROWSER=true` | `--open-browser` | `true` if flag is present  |
+| Cache Okta access token at `$HOME/.okta/awscli-access-token.json` to reduce need to open device authorization URL | `OKTA_AWSCLI_CACHE_ACCESS_TOKEN=true` | `--cache-access-token` | `true` if flag is present  |
 | Alternate AWS credentials file path (optional) | `OKTA_AWSCLI_AWS_CREDENTIALS` | `--aws-credentials` | Path to alternative credentials file other than AWS CLI default |
 | (Over)write the given profile to the AWS credentials file (optional). WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `OKTA_AWSCLI_WRITE_AWS_CREDENTIALS=true` | `--write-aws-credentials` | `true` if flag is present  |
 | Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `OKTA_AWSCLI_LEGACY_AWS_VARIABLES=true` | `--legacy-aws-variables` | `true` if flag is present  |

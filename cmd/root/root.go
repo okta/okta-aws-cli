@@ -151,6 +151,13 @@ func init() {
 			envVar: config.ExpiryAWSVariablesEnvVar,
 		},
 		{
+			name:   config.CacheAccessTokenFlag,
+			short:  "e",
+			value:  false,
+			usage:  "Cache Okta access token to reduce need for opening grant URL",
+			envVar: config.CacheAccessTokenEnvVar,
+		},
+		{
 			name:   config.DebugAPICallsFlag,
 			short:  "d",
 			value:  false,
