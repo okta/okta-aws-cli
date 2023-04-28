@@ -22,11 +22,3 @@ type Credential struct {
 	SecretAccessKey string `ini:"aws_secret_access_key"`
 	SessionToken    string `ini:"aws_session_token"`
 }
-
-// LegacyCredential Convenience representation of an AWS credential.
-type LegacyCredential struct {
-	AccessKeyID     string `ini:"aws_access_key_id"`
-	SecretAccessKey string `ini:"aws_secret_access_key"`
-	SessionToken    string `ini:"aws_session_token"`
-	SecurityToken   string `ini:"aws_security_token"`
-}

@@ -144,8 +144,15 @@ func init() {
 			envVar: config.LegacyAWSVariablesEnvVar,
 		},
 		{
-			name:   config.DebugAPICallsFlag,
+			name:   config.ExpiryAWSVariablesFlag,
 			short:  "x",
+			value:  false,
+			usage:  "Emit x_security_token_expires value in profile block of AWS credentials file",
+			envVar: config.ExpiryAWSVariablesEnvVar,
+		},
+		{
+			name:   config.DebugAPICallsFlag,
+			short:  "d",
 			value:  false,
 			usage:  "Verbosely print all API calls/responses to the screen",
 			envVar: config.DebugAPICallsEnvVar,

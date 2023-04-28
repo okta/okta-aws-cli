@@ -67,6 +67,8 @@ const (
 	WriteAWSCredentialsFlag = "write-aws-credentials"
 	// LegacyAWSVariablesFlag cli flag const
 	LegacyAWSVariablesFlag = "legacy-aws-variables"
+	// ExpiryAWSVariablesFlag cli flag const
+	ExpiryAWSVariablesFlag = "expiry-aws-variables"
 
 	// AWSCredentialsEnvVar env var const
 	AWSCredentialsEnvVar = "OKTA_AWSCLI_AWS_CREDENTIALS"
@@ -96,6 +98,8 @@ const (
 	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
 	// LegacyAWSVariablesEnvVar env var const
 	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
+	// ExpiryAWSVariablesEnvVar env var const
+	ExpiryAWSVariablesEnvVar = "OKTA_AWSCLI_EXPIRY_AWS_VARIABLES"
 
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
@@ -120,6 +124,7 @@ type Config struct {
 	openBrowser         bool
 	debugAPICalls       bool
 	legacyAWSVariables  bool
+	expiryAWSVariables  bool
 	httpClient          *http.Client
 }
 
@@ -146,6 +151,7 @@ type Attributes struct {
 	OpenBrowser         bool
 	DebugAPICalls       bool
 	LegacyAWSVariables  bool
+	ExpiryAWSVariables  bool
 }
 
 // CreateConfig Creates a new config gathering values in this order of precedence:
@@ -175,6 +181,7 @@ func NewConfig(attrs Attributes) (*Config, error) {
 		openBrowser:         attrs.OpenBrowser,
 		debugAPICalls:       attrs.DebugAPICalls,
 		legacyAWSVariables:  attrs.LegacyAWSVariables,
+		expiryAWSVariables:  attrs.ExpiryAWSVariables,
 	}
 	err = cfg.SetOrgDomain(attrs.OrgDomain)
 	if err != nil {
@@ -209,6 +216,7 @@ func readConfig() (Attributes, error) {
 		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
 		Format:              viper.GetString(FormatFlag),
 		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
+		ExpiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
 		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
 		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
@@ -295,6 +303,9 @@ func readConfig() (Attributes, error) {
 	}
 	if !attrs.LegacyAWSVariables {
 		attrs.LegacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
+	}
+	if !attrs.ExpiryAWSVariables {
+		attrs.ExpiryAWSVariables = viper.GetBool(downCase(ExpiryAWSVariablesEnvVar))
 	}
 	return attrs, nil
 }
@@ -467,6 +478,17 @@ func (c *Config) LegacyAWSVariables() bool {
 // SetLegacyAWSVariables --
 func (c *Config) SetLegacyAWSVariables(legacyAWSVariables bool) error {
 	c.legacyAWSVariables = legacyAWSVariables
+	return nil
+}
+
+// ExpiryAWSVariables --
+func (c *Config) ExpiryAWSVariables() bool {
+	return c.expiryAWSVariables
+}
+
+// SetExpiryAWSVariables --
+func (c *Config) SetExpiryAWSVariables(expiryAWSVariables bool) error {
+	c.expiryAWSVariables = expiryAWSVariables
 	return nil
 }
 
