@@ -1,5 +1,67 @@
 # Changelog
 
+## 1.0.0 (May 02, 2023)
+
+### ENHANCEMENTS
+
+* Cache Okta API access token [#100](https://github.com/okta/okta-aws-cli/pull/100), thanks [@monde](https://github.com/monde)!
+* Bringing in @tim-fitzgerald's PR #56 `x_security_token_expires` value [#56](https://github.com/okta/okta-aws-cli/pull/56) [#99](https://github.com/okta/okta-aws-cli/pull/99), thanks [@tim-fitzgerald](https://github.com/tim-fitzgerald)!
+* Prepend OKTA_AWSCLI_ on ENV VARs [#98](https://github.com/okta/okta-aws-cli/pull/98), thanks [@monde](https://github.com/monde)!
+* Config for IdP menu [#97](https://github.com/okta/okta-aws-cli/pull/97), thanks [@monde](https://github.com/monde)!
+* Send browser command stdout to stderr [#93](https://github.com/okta/okta-aws-cli/pull/93), thanks [@daniel-sampliner](https://github.com/daniel-sampliner)!
+* Refactor config [#90](https://github.com/okta/okta-aws-cli/pull/90), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+* Update aws-cli with best practices [#88](https://github.com/okta/okta-aws-cli/pull/88), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+
+### NOTICES
+
+#### New Features
+
+* `--expiry-aws-variables` CLI flag for `x_security_token_expires` support in AWS creds file
+* `--cache-access-token` CLI flag to cache the access token associated device authorization to preempt needing to open the browser frequently
+* [Friendly IdP menu lables](https://github.com/okta/okta-aws-cli#friendly-idp-menu-labels) for long ARN values can be set in `$HOME/.okta/okta.yaml`
+
+#### ENV VAR changes
+
+The following ENV VARs have been renamed
+
+| old value | new value |
+|-----------|-----------|
+|`AWS_IAM_IDP` |`OKTA_AWSCLI_IAM_IDP` |
+|`AWS_IAM_ROLE` |`OKTA_AWSCLI_IAM_ROLE` |
+|`AWS_SESSION_DURATION` |`OKTA_AWSCLI_SESSION_DURATION` |
+|`FORMAT` |`OKTA_AWSCLI_FORMAT` |
+|`PROFILE` |`OKTA_AWSCLI_PROFILE` |
+|`QR_CODE` |`OKTA_AWSCLI_QR_CODE` |
+|`OPEN_BROWSER` |`OKTA_AWSCLI_OPEN_BROWSER` |
+|`AWS_CREDENTIALS` |`OKTA_AWSCLI_AWS_CREDENTIALS` |
+|`WRITE_AWS_CREDENTIALS` |`OKTA_AWSCLI_WRITE_AWS_CREDENTIALS` |
+|`LEGACY_AWS_VARIABLES` |`OKTA_AWSCLI_LEGACY_AWS_VARIABLES` |
+|`DEBUG_API_CALLS` |`OKTA_AWSCLI_DEBUG_API_CALLS` |
+
+#### Support for non-admin users needing multiple AWS Federation Application support
+
+Multiple AWS environments requires extra configuration for non-admin users.
+Follow these steps to support non-admin users.
+
+1) Create a custom admin role with the only permission being "View application
+and their details", and a resource set constrained to "All AWS Account
+Federation apps".
+
+2) Create a group that will contain the AWS custom admin role users.
+
+3) Add a rule on the admin console authentication policy that denies access if
+the use is a member of the group from step 2.
+
+4) Assign non-admin users this custom role in step 1 and assign them to the
+group in step 2.
+
+The "Admin" button will be visible on the Okta dashboard of non-admin users but
+they will receive a 403 if they attempt to open the Admin UI.
+
+It is on our feature backlog to get support into the Okta API to allow the
+multiple AWS Fed apps feature into okta-aws-cli without needing this work
+around using a custom admin role.
+
 ## 0.3.0 (March 15, 2023)
 
 ### ENHANCEMENTS

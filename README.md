@@ -91,6 +91,10 @@ URL below. Then follow the directions in that wizard.
 
 ### Multiple AWS environments
 
+**NOTE**: Multiple AWS environments works correctly without extra configuration
+for Admin users. See ["Non-Admin Users"](#non-admin-users) for extra
+configuration needed for non-admin users.
+
 To support multiple AWS environments, associate additional AWS Federation
 applications with the OIDC app The OIDC app **must** have the `okta.apps.read`
 grant. The following is an illustration of the association of objects that make
@@ -114,6 +118,30 @@ up this kind of configuration.
 #### Example creds consumed for S3 operations
 
 ![conclusion](./doc/example-conclusion.png)
+
+### Non-Admin Users
+
+Multiple AWS environments requires extra configuration for non-admin users.
+Follow these steps to support non-admin users.
+
+1) Create a custom admin role with the only permission being "View application
+and their details", and a resource set constrained to "All AWS Account
+Federation apps".
+
+2) Create a group that will contain the AWS custom admin role users.
+
+3) Add a rule on the admin console authentication policy that denies access if
+the use is a member of the group from step 2.
+
+4) Assign non-admin users this custom role in step 1 and assign them to the
+group in step 2.
+
+The "Admin" button will be visible on the Okta dashboard of non-admin users but
+they will receive a 403 if they attempt to open the Admin UI.
+
+It is on our feature backlog to get support into the Okta API to allow the
+multiple AWS Fed apps feature into okta-aws-cli without needing this work
+around using a custom admin role.
 
 ## Recommendations
 
@@ -155,7 +183,7 @@ $ make build
 
 ## Configuration
 
-**Note**: If your AWS IAM IdP is in a non-commercial region, such as GovCloud,
+**NOTE**: If your AWS IAM IdP is in a non-commercial region, such as GovCloud,
 the environmental variable
 [`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 should be set
@@ -204,7 +232,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Verbosely print all API calls/responses to the screen | `OKTA_AWSCLI_DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 | HTTP/HTTPS Proxy support | `HTTP_PROXY` or `HTTPS_PROXY` | n/a | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) |
 
-NOTE: If
+**NOTE**: If
 [`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 is set in the `.env` file it will be promoted into the okta-aws-cli runtime if
 it isn't also already set as an ENV VAR. This will allow operators making use of
@@ -264,16 +292,16 @@ $ okta-aws-cli --org-domain test.okta.com \
     --aws-acct-fed-app-id 0oa9x1rifa2H6Q5d8325
 ```
 
-### Friendly IdP menus
+### Friendly IdP menu labels
 
-When the operator has many AWS Federation apps, listing the AWS IAM IdP ARNs can
+When the operator has many AWS Federation apps listing the AWS IAM IdP ARNs can
 make it hard to read the list. The operator can create an Okta config file in
 YAML format at `$HOME/.okta/okta.yaml` that allows them to set a map of alias
 labels for the ARN values.
 
-Note: The Okta language SDKs have standardized on using `$HOME/.okta/okta.yaml`
-as a configuration file and location. We will continue that practice with
-read-only friendly okta-aws-cli application values.
+**NOTE**: The Okta language SDKs have standardized on using
+`$HOME/.okta/okta.yaml` as a configuration file and location. We will continue
+that practice with read-only friendly okta-aws-cli application values.
 
 #### Before
 
@@ -389,7 +417,7 @@ Wrote profile "test" to /Users/mikemondragon/.aws/credentials
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
 ```
-Note: Writing to the AWS credentials file will include the `x_security_token_expires` value in RFC3339 format. This allows tools dependent on valid AWS credentials to validate if they are expired or not, and potentially trigger a refresh if needed.
+**NOTE**: Writing to the AWS credentials file will include the `x_security_token_expires` value in RFC3339 format. This allows tools dependent on valid AWS credentials to validate if they are expired or not, and potentially trigger a refresh if needed.
 
 **NOTE**: the Okta AWS CLI will only append to the AWS credentials file. Be sure to
 comment out or remove previous named profiles from the credentials file.
