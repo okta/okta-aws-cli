@@ -9,6 +9,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mdp/qrterminal v1.0.1
+	github.com/ompluscator/dynamic-struct v1.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.14.0
@@ -17,9 +18,8 @@ require (
 	golang.org/x/net v0.7.0
 	golang.org/x/sys v0.5.0
 	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/yaml.v2 v2.4.0
 )
-
-require github.com/ompluscator/dynamic-struct v1.4.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -43,7 +43,6 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )

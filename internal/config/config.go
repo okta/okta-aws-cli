@@ -336,9 +336,6 @@ func (c *Config) SetOrgDomain(domain string) error {
 	if domain == "" {
 		return NewValidationError(OrgDomainMsg, CannotBeBlankErrMsg)
 	}
-	if !(strings.Contains(domain, "okta.com") || strings.Contains(domain, "oktapreview.com")) {
-		return NewValidationError(OrgDomainMsg, "is not from Okta")
-	}
 	c.orgDomain = domain
 	return nil
 }
