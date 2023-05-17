@@ -535,6 +535,7 @@ func OktaConfig() (config *OktaYamlConfig, err error) {
 
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml error: %+v\n", err)
 		return
 	}
 	conf := OktaYamlConfig{}
