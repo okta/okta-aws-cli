@@ -526,21 +526,24 @@ func (c *Config) SetHTTPClient(client *http.Client) error {
 func OktaConfig() (config *OktaYamlConfig, err error) {
 	cUser, err := user.Current()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: current user error: %+v\n", err)
 		return
 	}
 	if cUser.HomeDir == "" {
+		fmt.Fprintf(os.Stderr, "WARNING: config home dir error: %+v\n", err)
 		return
 	}
 	configPath := filepath.Join(cUser.HomeDir, ".okta", "okta.yaml")
 
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml error: %+v\n", err)
+		fmt.Fprintf(os.Stderr, "WARNING: config okta.yaml error: %+v\n", err)
 		return
 	}
 	conf := OktaYamlConfig{}
 	err = yaml.Unmarshal(yamlConfig, &conf)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: config yaml unmarshal error: %+v\n", err)
 		return
 	}
 	config = &conf
