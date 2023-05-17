@@ -203,11 +203,14 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		return fmt.Errorf(errMsg, clientID, "okta.apps.read")
 	}
 
+	fmt.Fprintf(os.Stderr, "DEBUG before select fed app\n")
 	var fedAppID string
 	if len(apps) == 1 {
 		// only one app, we don't need to prompt selection of idp / fed app
 		fedAppID = apps[0].ID
+		fmt.Fprintf(os.Stderr, "DEBUG only one fed app\n")
 	} else {
+		fmt.Fprintf(os.Stderr, "DEBUG select fed app\n")
 		// Here, we do want to prompt for selection of the Fed App.
 		// If the app is making use of "Role value pattern" on AWS settings we
 		// won't get the real ARN until we establish the web sso token.
@@ -217,6 +220,7 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 			return err
 		}
 	}
+	fmt.Fprintf(os.Stderr, "DEBUG after select fed app\n")
 
 	return s.establishTokenWithFedAppID(clientID, fedAppID, at)
 }
