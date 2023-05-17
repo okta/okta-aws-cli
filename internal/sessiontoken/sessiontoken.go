@@ -225,7 +225,9 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	idps := make(map[string]*oktaApplication)
 	choices := make([]string, len(apps))
 	var selected string
+	fmt.Fprintf(os.Stderr, "DEBUG before OktaConfig\n")
 	oktaConfig, _ := config.OktaConfig()
+	fmt.Fprintf(os.Stderr, "DEBUG after OktaConfig %+v\n", oktaConfig)
 
 	for i, app := range apps {
 		choice := app.Label

@@ -524,6 +524,7 @@ func (c *Config) SetHTTPClient(client *http.Client) error {
 
 // OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
 func OktaConfig() (config *OktaYamlConfig, err error) {
+	fmt.Fprintf(os.Stderr, "DEBUG in OktaConfig\n")
 	cUser, err := user.Current()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: current user error: %+v\n", err)
