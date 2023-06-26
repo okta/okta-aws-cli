@@ -235,6 +235,12 @@ func readConfig() (Attributes, error) {
 	if attrs.Format == "" {
 		attrs.Format = EnvVarFormat
 	}
+
+	// if profile is set by env var defer to it, otherwise the default "default"
+	// will be used
+	if viper.GetString(downCase(ProfileEnvVar)) != "" {
+		attrs.Profile = viper.GetString(downCase(ProfileEnvVar))
+	}
 	if attrs.Profile == "" {
 		attrs.Profile = "default"
 	}
