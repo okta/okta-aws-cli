@@ -229,6 +229,21 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 
 	for i, app := range apps {
 		choice := app.Label
+		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
+		if s.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
+			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
+			idpData := idpTemplateData{
+				IDP: choice,
+			}
+			rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
+			if err != nil {
+				return "", err
+			}
+			fmt.Fprintln(os.Stderr, rich)
+
+			return app.ID, nil
+		}
+
 		if app.Settings.App.IdentityProviderARN != "" {
 			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
 			if oktaConfig != nil && len(oktaConfig.AWSCLI.IDPS) > 0 {
