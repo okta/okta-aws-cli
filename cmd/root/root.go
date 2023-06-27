@@ -188,9 +188,9 @@ to collect a proper IAM role for the AWS CLI operator.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config, err := config.CreateConfig()
 			if err == nil && config.DebugConfig() {
-				config.RunConfigChecks()
+				checkErr := config.RunConfigChecks()
 				fmt.Fprintf(os.Stderr, "debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete\n")
-				return nil
+				return checkErr
 			}
 			if err != nil {
 				return err

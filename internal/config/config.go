@@ -110,9 +110,13 @@ const (
 
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
-
 	// OrgDomainMsg error message const
 	OrgDomainMsg = "Org Domain"
+
+	// DotOkta string const
+	DotOkta = ".okta"
+	// OktaYaml string const
+	OktaYaml = "okta.yaml"
 )
 
 // Config A config object for the CLI
@@ -498,7 +502,7 @@ func (c *Config) DebugConfig() bool {
 	return c.debugConfig
 }
 
-// SetDebugAPICalls --
+// SetDebugConfig --
 func (c *Config) SetDebugConfig(debugConfig bool) error {
 	c.debugConfig = debugConfig
 	return nil
@@ -555,7 +559,7 @@ func (c *Config) OktaConfig() (config *OktaYamlConfig, err error) {
 		return
 	}
 
-	configPath := filepath.Join(homeDir, ".okta", "okta.yaml")
+	configPath := filepath.Join(homeDir, DotOkta, OktaYaml)
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
 		return
@@ -571,6 +575,7 @@ func (c *Config) OktaConfig() (config *OktaYamlConfig, err error) {
 	return
 }
 
+// RunConfigChecks runs a series of checks on the okta.yaml config file
 func (c *Config) RunConfigChecks() (err error) {
 	exampleYaml := `
 ---
@@ -586,35 +591,32 @@ awscli:
 		fmt.Fprintf(os.Stderr, "WARNING: can't find user home directory $HOME\n")
 		fmt.Fprintf(os.Stderr, "         see https://pkg.go.dev/os#UserHomeDir\n")
 		return
-	} else {
-		fmt.Fprintf(os.Stderr, "found home directory %q\n", homeDir)
 	}
+	fmt.Fprintf(os.Stderr, "found home directory %q\n", homeDir)
 
-	configPath := filepath.Join(homeDir, ".okta", "okta.yaml")
+	configPath := filepath.Join(homeDir, DotOkta, OktaYaml)
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: can't read okta config %q\n", configPath)
 		return
-	} else {
-		fmt.Fprintf(os.Stderr, "okta.yaml is readable %q\n", configPath)
 	}
+	fmt.Fprintf(os.Stderr, "okta.yaml is readable %q\n", configPath)
 
 	conf := map[string]any{}
 	err = yaml.Unmarshal(yamlConfig, &conf)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml is invalid yaml format\n")
 		return
-	} else {
-		fmt.Fprintf(os.Stderr, "okta.yaml is valid yaml\n")
 	}
+	fmt.Fprintf(os.Stderr, "okta.yaml is valid yaml\n")
 
 	awscli, ok := conf["awscli"]
 	if !ok {
 		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli\" section\n")
 		return
-	} else {
-		fmt.Fprintf(os.Stderr, "okta.yaml has root \"awscli\" section\n")
 	}
+	fmt.Fprintf(os.Stderr, "okta.yaml has root \"awscli\" section\n")
+
 	if awscli == nil {
 		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli\" section has no values\n")
 		return

@@ -73,6 +73,8 @@ const (
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 	dotOktaDir               = ".okta"
 	tokenFileName            = "awscli-access-token.json"
+
+	choiceArnPrintFmt = "%s (%s)"
 )
 
 type idpTemplateData struct {
@@ -230,7 +232,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 		choice := app.Label
 		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
 		if s.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
-			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
+			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
 			idpData := idpTemplateData{
 				IDP: choice,
 			}
@@ -244,7 +246,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 		}
 
 		if app.Settings.App.IdentityProviderARN != "" {
-			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
+			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
 			if oktaConfig != nil && len(oktaConfig.AWSCLI.IDPS) > 0 {
 				if label, ok := oktaConfig.AWSCLI.IDPS[app.Settings.App.IdentityProviderARN]; ok {
 					choice = label
