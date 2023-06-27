@@ -149,8 +149,7 @@ var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
 }
 
 // NewSessionToken Creates a new session token.
-func NewSessionToken() (token *SessionToken, err error) {
-	config, err := config.CreateConfig()
+func NewSessionToken(config *config.Config) (token *SessionToken, err error) {
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +224,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	idps := make(map[string]*oktaApplication)
 	choices := make([]string, len(apps))
 	var selected string
-	oktaConfig, _ := config.OktaConfig()
+	oktaConfig, _ := s.config.OktaConfig()
 
 	for i, app := range apps {
 		choice := app.Label

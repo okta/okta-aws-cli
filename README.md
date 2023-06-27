@@ -231,6 +231,7 @@ Also see the CLI's online help `$ okta-aws-cli --help`
 | Emit expiry timestamp `x_security_token_expires` in RFC3339 format for the session/security token (AWS credentials file only) | `OKTA_AWSCLI_EXPIRY_AWS_VARIABLES=true` | `--expiry-aws-variables` | `true` if flag is present  |
 | Verbosely print all API calls/responses to the screen | `OKTA_AWSCLI_DEBUG_API_CALLS=true` | `--debug-api-calls` | `true` if flag is present  |
 | HTTP/HTTPS Proxy support | `HTTP_PROXY` or `HTTPS_PROXY` | n/a | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) |
+| Debug okta.yaml config file and exit | `OKTA_AWSCLI_DEBUG_CONFIG=true` | `--debug-config` | `true` if flag is present  |
 
 **NOTE**: If
 [`AWS_REGION`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
@@ -334,6 +335,36 @@ awscli:
   Marketing Production
   Marketing Development
 ```
+
+#### Debug okta.yaml
+
+okta-aws-cli has a debug option to check if the okta.yaml file is readable and
+in valid format.
+
+```
+$ okta-aws-cli --debug-config
+
+Given example okta.yaml for reference:
+
+---
+awscli:
+  idps:
+    "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
+    "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+
+found home directory "/Users/person"
+okta.yaml is readable "/Users/person/.okta/okta.yaml"
+okta.yaml is valid yaml
+okta.yaml has root "awscli" section
+okta.yaml "awscli.idps" section is a map of 4 ARN string keys to friendly string label values
+okta.yaml is OK
+debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete
+```
+
+If any of the checks fail a warning and diagnostic message is given.
+
+okta-aws-cli will exit once the debug config operation is complete. It is not
+intended to be run with other flags.
 
 ## Operation
 

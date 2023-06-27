@@ -164,6 +164,13 @@ func init() {
 			usage:  "Verbosely print all API calls/responses to the screen",
 			envVar: config.DebugAPICallsEnvVar,
 		},
+		{
+			name:   config.DebugConfigFlag,
+			short:  "k",
+			value:  false,
+			usage:  "Inspect current okta.yaml configuration and exit",
+			envVar: config.DebugConfigEnvVar,
+		},
 	}
 }
 
@@ -179,7 +186,17 @@ okta-aws-cli handles authentication to the IdP and token exchange with AWS STS
 to collect a proper IAM role for the AWS CLI operator.`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			st, err := sessiontoken.NewSessionToken()
+			config, err := config.CreateConfig()
+			if err == nil && config.DebugConfig() {
+				config.RunConfigChecks()
+				fmt.Fprintf(os.Stderr, "debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete\n")
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			st, err := sessiontoken.NewSessionToken(config)
 			if err != nil {
 				return err
 			}
