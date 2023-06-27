@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2 (June 27, 2023)
+
+* [#112](https://github.com/okta/okta-aws-cli/pull/112), thanks [@monde](https://github.com/monde)!
+  * Fix broken preselecting  --aws-iam-idp / OKTA_AWSCLI_IAM_IDP value [#95](https://github.com/okta/okta-aws-cli/issues/95)
+  * Ensure ENV VAR OKTA_AWSCLI_PROFILE is honored. [#109](https://github.com/okta/okta-aws-cli/issues/109)
+  * Operation to debug/inspect okta.yaml config for valid format [#106](https://github.com/okta/okta-aws-cli/issues/106)
+
+## 1.0.1 (May 04, 2023)
+
+* Remove okta-only domain check [#103](https://github.com/okta/okta-aws-cli/pull/103), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+
 ## 1.0.0 (May 02, 2023)
 
 ### ENHANCEMENTS
