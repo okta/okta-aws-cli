@@ -17,13 +17,18 @@
 package sessiontoken
 
 import (
+	"net/http"
 	"testing"
 
+	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEstablishToken(t *testing.T) {
-	_, err := NewSessionToken()
+	config := &config.Config{}
+	_ = config.SetOrgDomain("example.okta.com")
+	_ = config.SetHTTPClient(http.DefaultClient)
+	_, err := NewSessionToken(config)
 	// config is not set so this should error
 	require.Error(t, err)
 }

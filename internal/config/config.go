@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,7 +31,7 @@ import (
 
 const (
 	// Version app version
-	Version = "1.0.0"
+	Version = "1.0.2"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
@@ -49,6 +48,8 @@ const (
 	AWSIAMRoleFlag = "aws-iam-role"
 	// DebugAPICallsFlag cli flag const
 	DebugAPICallsFlag = "debug-api-calls"
+	// DebugConfigFlag cli flag const
+	DebugConfigFlag = "debug-config"
 	// FormatFlag cli flag const
 	FormatFlag = "format"
 	// OIDCClientIDFlag cli flag const
@@ -98,6 +99,8 @@ const (
 	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
 	// DebugAPICallsEnvVar env var const
 	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
+	// DebugConfigEnvVar env var const
+	DebugConfigEnvVar = "OKTA_AWSCLI_DEBUG_CONFIG"
 	// LegacyAWSVariablesEnvVar env var const
 	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 	// ExpiryAWSVariablesEnvVar env var const
@@ -107,9 +110,13 @@ const (
 
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
-
 	// OrgDomainMsg error message const
 	OrgDomainMsg = "Org Domain"
+
+	// DotOkta string const
+	DotOkta = ".okta"
+	// OktaYaml string const
+	OktaYaml = "okta.yaml"
 )
 
 // Config A config object for the CLI
@@ -127,6 +134,7 @@ type Config struct {
 	writeAWSCredentials bool
 	openBrowser         bool
 	debugAPICalls       bool
+	debugConfig         bool
 	legacyAWSVariables  bool
 	expiryAWSVariables  bool
 	cacheAccessToken    bool
@@ -155,6 +163,7 @@ type Attributes struct {
 	WriteAWSCredentials bool
 	OpenBrowser         bool
 	DebugAPICalls       bool
+	DebugConfig         bool
 	LegacyAWSVariables  bool
 	ExpiryAWSVariables  bool
 	CacheAccessToken    bool
@@ -186,9 +195,13 @@ func NewConfig(attrs Attributes) (*Config, error) {
 		writeAWSCredentials: attrs.WriteAWSCredentials,
 		openBrowser:         attrs.OpenBrowser,
 		debugAPICalls:       attrs.DebugAPICalls,
+		debugConfig:         attrs.DebugConfig,
 		legacyAWSVariables:  attrs.LegacyAWSVariables,
 		expiryAWSVariables:  attrs.ExpiryAWSVariables,
 		cacheAccessToken:    attrs.CacheAccessToken,
+	}
+	if attrs.DebugConfig {
+		return cfg, nil
 	}
 	err = cfg.SetOrgDomain(attrs.OrgDomain)
 	if err != nil {
@@ -220,6 +233,7 @@ func readConfig() (Attributes, error) {
 		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
 		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
 		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
+		DebugConfig:         viper.GetBool(DebugConfigFlag),
 		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
 		Format:              viper.GetString(FormatFlag),
 		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
@@ -234,6 +248,12 @@ func readConfig() (Attributes, error) {
 	}
 	if attrs.Format == "" {
 		attrs.Format = EnvVarFormat
+	}
+
+	// if profile is set by env var defer to it, otherwise the default "default"
+	// will be used
+	if viper.GetString(downCase(ProfileEnvVar)) != "" {
+		attrs.Profile = viper.GetString(downCase(ProfileEnvVar))
 	}
 	if attrs.Profile == "" {
 		attrs.Profile = "default"
@@ -298,7 +318,6 @@ func readConfig() (Attributes, error) {
 	if !attrs.WriteAWSCredentials {
 		attrs.WriteAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
 	}
-	// TODU
 	if attrs.WriteAWSCredentials {
 		// writing aws creds option implies "aws-credentials" format
 		attrs.Format = AWSCredentialsFormat
@@ -478,6 +497,17 @@ func (c *Config) SetDebugAPICalls(debugAPICalls bool) error {
 	return nil
 }
 
+// DebugConfig --
+func (c *Config) DebugConfig() bool {
+	return c.debugConfig
+}
+
+// SetDebugConfig --
+func (c *Config) SetDebugConfig(debugConfig bool) error {
+	c.debugConfig = debugConfig
+	return nil
+}
+
 // LegacyAWSVariables --
 func (c *Config) LegacyAWSVariables() bool {
 	return c.legacyAWSVariables
@@ -523,20 +553,18 @@ func (c *Config) SetHTTPClient(client *http.Client) error {
 }
 
 // OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
-func OktaConfig() (config *OktaYamlConfig, err error) {
-	cUser, err := user.Current()
+func (c *Config) OktaConfig() (config *OktaYamlConfig, err error) {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	if cUser.HomeDir == "" {
-		return
-	}
-	configPath := filepath.Join(cUser.HomeDir, ".okta", "okta.yaml")
 
+	configPath := filepath.Join(homeDir, DotOkta, OktaYaml)
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
 		return
 	}
+
 	conf := OktaYamlConfig{}
 	err = yaml.Unmarshal(yamlConfig, &conf)
 	if err != nil {
@@ -545,4 +573,91 @@ func OktaConfig() (config *OktaYamlConfig, err error) {
 	config = &conf
 
 	return
+}
+
+// RunConfigChecks runs a series of checks on the okta.yaml config file
+func (c *Config) RunConfigChecks() (err error) {
+	exampleYaml := `
+---
+awscli:
+  idps:
+    "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
+    "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+	`
+	fmt.Fprintf(os.Stderr, "Given example okta.yaml for reference:\n%s\n", exampleYaml)
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: can't find user home directory $HOME\n")
+		fmt.Fprintf(os.Stderr, "         see https://pkg.go.dev/os#UserHomeDir\n")
+		return
+	}
+	fmt.Fprintf(os.Stderr, "found home directory %q\n", homeDir)
+
+	configPath := filepath.Join(homeDir, DotOkta, OktaYaml)
+	yamlConfig, err := os.ReadFile(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: can't read okta config %q\n", configPath)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "okta.yaml is readable %q\n", configPath)
+
+	conf := map[string]any{}
+	err = yaml.Unmarshal(yamlConfig, &conf)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml is invalid yaml format\n")
+		return
+	}
+	fmt.Fprintf(os.Stderr, "okta.yaml is valid yaml\n")
+
+	awscli, ok := conf["awscli"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli\" section\n")
+		return
+	}
+	fmt.Fprintf(os.Stderr, "okta.yaml has root \"awscli\" section\n")
+
+	if awscli == nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli\" section has no values\n")
+		return
+	}
+	_awscli, ok := awscli.(map[any]any)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli\" is not a map of values\n")
+	}
+	idps, ok := _awscli["idps"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli.idps\" section\n")
+		return
+	}
+	if idps == nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section has no values\n")
+		return
+	}
+	// map[interface {}]interface {}
+	_idps, ok := idps.(map[any]any)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section is not a map of ARN string key to friendly string label values\n")
+		return
+	}
+	if len(_idps) == 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section is an empty map of ARN string key to friendly string label values\n")
+		return
+	}
+
+	for k, v := range _idps {
+		if _, ok := k.(string); !ok {
+			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" value of ARN key \"%v\" is not a string\n", k)
+			return
+		}
+		if _, ok := v.(string); !ok {
+			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" ARN key %q's friendly label value \"%v\" is not a string\n", k, v)
+			return
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" section is a map of %d ARN string keys to friendly string label values\n", len(_idps))
+
+	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
+	return nil
 }

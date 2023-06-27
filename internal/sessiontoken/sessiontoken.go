@@ -73,6 +73,8 @@ const (
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 	dotOktaDir               = ".okta"
 	tokenFileName            = "awscli-access-token.json"
+
+	choiceArnPrintFmt = "%s (%s)"
 )
 
 type idpTemplateData struct {
@@ -149,8 +151,7 @@ var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
 }
 
 // NewSessionToken Creates a new session token.
-func NewSessionToken() (token *SessionToken, err error) {
-	config, err := config.CreateConfig()
+func NewSessionToken(config *config.Config) (token *SessionToken, err error) {
 	if err != nil {
 		return nil, err
 	}
@@ -225,12 +226,27 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	idps := make(map[string]*oktaApplication)
 	choices := make([]string, len(apps))
 	var selected string
-	oktaConfig, _ := config.OktaConfig()
+	oktaConfig, _ := s.config.OktaConfig()
 
 	for i, app := range apps {
 		choice := app.Label
+		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
+		if s.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
+			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
+			idpData := idpTemplateData{
+				IDP: choice,
+			}
+			rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
+			if err != nil {
+				return "", err
+			}
+			fmt.Fprintln(os.Stderr, rich)
+
+			return app.ID, nil
+		}
+
 		if app.Settings.App.IdentityProviderARN != "" {
-			choice = fmt.Sprintf("%s (%s)", choice, app.Settings.App.IdentityProviderARN)
+			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
 			if oktaConfig != nil && len(oktaConfig.AWSCLI.IDPS) > 0 {
 				if label, ok := oktaConfig.AWSCLI.IDPS[app.Settings.App.IdentityProviderARN]; ok {
 					choice = label
