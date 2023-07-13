@@ -158,6 +158,13 @@ func init() {
 			envVar: config.CacheAccessTokenEnvVar,
 		},
 		{
+			name:   config.DebugFlag,
+			short:  "g",
+			value:  false,
+			usage:  "Print operational information to the screen for debugging purposes",
+			envVar: config.DebugEnvVar,
+		},
+		{
 			name:   config.DebugAPICallsFlag,
 			short:  "d",
 			value:  false,

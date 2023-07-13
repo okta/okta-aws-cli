@@ -249,7 +249,17 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
 			if oktaConfig != nil && len(oktaConfig.AWSCLI.IDPS) > 0 {
 				if label, ok := oktaConfig.AWSCLI.IDPS[app.Settings.App.IdentityProviderARN]; ok {
+					if s.config.Debug() {
+						fmt.Fprintf(os.Stderr, "  found IdP ARN %q having friendly label %q\n", app.Settings.App.IdentityProviderARN, label)
+					}
 					choice = label
+				} else if s.config.Debug() {
+					fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
+					fmt.Fprintf(os.Stderr, "    %q\n", app.Settings.App.IdentityProviderARN)
+					fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.idps map:\n")
+					for arn, label := range oktaConfig.AWSCLI.IDPS {
+						fmt.Fprintf(os.Stderr, "      %q: %q\n", arn, label)
+					}
 				}
 			}
 		}

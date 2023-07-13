@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 (July 13, 2023)
+
+* Print out operational debugging information flag [#113](https://github.com/okta/okta-aws-cli/pull/113), thanks [@monde](https://github.com/monde)!
+
 ## 1.0.2 (June 27, 2023)
 
 * [#112](https://github.com/okta/okta-aws-cli/pull/112), thanks [@monde](https://github.com/monde)!

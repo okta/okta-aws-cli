@@ -31,7 +31,7 @@ import (
 
 const (
 	// Version app version
-	Version = "1.0.2"
+	Version = "1.1.0"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
@@ -46,6 +46,8 @@ const (
 	AWSIAMIdPFlag = "aws-iam-idp"
 	// AWSIAMRoleFlag cli flag const
 	AWSIAMRoleFlag = "aws-iam-role"
+	// DebugFlag cli flag const
+	DebugFlag = "debug"
 	// DebugAPICallsFlag cli flag const
 	DebugAPICallsFlag = "debug-api-calls"
 	// DebugConfigFlag cli flag const
@@ -97,6 +99,8 @@ const (
 	QRCodeEnvVar = "OKTA_AWSCLI_QR_CODE"
 	// WriteAWSCredentialsEnvVar env var const
 	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
+	// DebugEnvVar env var const
+	DebugEnvVar = "OKTA_AWSCLI_DEBUG"
 	// DebugAPICallsEnvVar env var const
 	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
 	// DebugConfigEnvVar env var const
@@ -133,6 +137,7 @@ type Config struct {
 	awsCredentials      string
 	writeAWSCredentials bool
 	openBrowser         bool
+	debug               bool
 	debugAPICalls       bool
 	debugConfig         bool
 	legacyAWSVariables  bool
@@ -162,6 +167,7 @@ type Attributes struct {
 	AWSCredentials      string
 	WriteAWSCredentials bool
 	OpenBrowser         bool
+	Debug               bool
 	DebugAPICalls       bool
 	DebugConfig         bool
 	LegacyAWSVariables  bool
@@ -194,6 +200,7 @@ func NewConfig(attrs Attributes) (*Config, error) {
 		awsCredentials:      attrs.AWSCredentials,
 		writeAWSCredentials: attrs.WriteAWSCredentials,
 		openBrowser:         attrs.OpenBrowser,
+		debug:               attrs.Debug,
 		debugAPICalls:       attrs.DebugAPICalls,
 		debugConfig:         attrs.DebugConfig,
 		legacyAWSVariables:  attrs.LegacyAWSVariables,
@@ -232,6 +239,7 @@ func readConfig() (Attributes, error) {
 		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
 		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
 		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
+		Debug:               viper.GetBool(DebugFlag),
 		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
 		DebugConfig:         viper.GetBool(DebugConfigFlag),
 		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
@@ -324,6 +332,9 @@ func readConfig() (Attributes, error) {
 	}
 	if !attrs.OpenBrowser {
 		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
+	}
+	if !attrs.Debug {
+		attrs.Debug = viper.GetBool(downCase(DebugEnvVar))
 	}
 	if !attrs.DebugAPICalls {
 		attrs.DebugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
@@ -483,6 +494,17 @@ func (c *Config) OpenBrowser() bool {
 // SetOpenBrowser --
 func (c *Config) SetOpenBrowser(openBrowser bool) error {
 	c.openBrowser = openBrowser
+	return nil
+}
+
+// Debug --
+func (c *Config) Debug() bool {
+	return c.debug
+}
+
+// SetDebug --
+func (c *Config) SetDebug(debug bool) error {
+	c.debug = debug
 	return nil
 }
 
