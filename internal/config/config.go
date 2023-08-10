@@ -149,7 +149,8 @@ type Config struct {
 // OktaYamlConfig represents config settings from $HOME/.okta/okta.yaml
 type OktaYamlConfig struct {
 	AWSCLI struct {
-		IDPS map[string]string `yaml:"idps"`
+		IDPS  map[string]string `yaml:"idps"`
+		ROLES map[string]string `yaml:"roles"`
 	} `yaml:"awscli"`
 }
 
@@ -605,6 +606,9 @@ awscli:
   idps:
     "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
     "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+  roles:
+    "arn:aws:iam::123456789012:role/operator": "Prod Ops"
+    "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 	`
 	fmt.Fprintf(os.Stderr, "Given example okta.yaml for reference:\n%s\n", exampleYaml)
 
@@ -656,6 +660,7 @@ awscli:
 		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section has no values\n")
 		return
 	}
+
 	// map[interface {}]interface {}
 	_idps, ok := idps.(map[any]any)
 	if !ok {
@@ -679,6 +684,40 @@ awscli:
 	}
 
 	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" section is a map of %d ARN string keys to friendly string label values\n", len(_idps))
+
+	roles, ok := _awscli["roles"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli.roles\" section\n")
+		return
+	}
+	if roles == nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section has no values\n")
+		return
+	}
+
+	// map[interface {}]interface {}
+	_roles, ok := roles.(map[any]any)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section is not a map of ARN string key to friendly string label values\n")
+		return
+	}
+	if len(_roles) == 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section is an empty map of ARN string key to friendly string label values\n")
+		return
+	}
+
+	for k, v := range _roles {
+		if _, ok := k.(string); !ok {
+			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" value of ARN key \"%v\" is not a string\n", k)
+			return
+		}
+		if _, ok := v.(string); !ok {
+			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" ARN key %q's friendly label value \"%v\" is not a string\n", k, v)
+			return
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" section is a map of %d ARN string keys to friendly string label values\n", len(_roles))
 
 	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
 	return nil
