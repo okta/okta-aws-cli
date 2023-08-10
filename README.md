@@ -297,9 +297,10 @@ $ okta-aws-cli --org-domain test.okta.com \
 ### Friendly IdP menu labels
 
 When the operator has many AWS Federation apps listing the AWS IAM IdP ARNs can
-make it hard to read the list. The operator can create an Okta config file in
-YAML format at `$HOME/.okta/okta.yaml` that allows them to set a map of alias
-labels for the ARN values.
+make it hard to read the list. The same can be said if an IdP has many IAM Role
+ARNs associated with it. To make this easier to manage the operator can create
+an Okta config file in YAML format at `$HOME/.okta/okta.yaml` that allows them
+to set a map of alias labels for the ARN values.
 
 **NOTE**: The Okta language SDKs have standardized on using
 `$HOME/.okta/okta.yaml` as a configuration file and location. We will continue
@@ -313,6 +314,10 @@ that practice with read-only friendly okta-aws-cli application values.
   Fed App 2 Label (arn:aws:iam::012345678901:saml-provider/company-okta-idp)
   Fed App 3 Label (arn:aws:iam::901234567890:saml-provider/company-okta-idp)
   Fed App 4 Label (arn:aws:iam::890123456789:saml-provider/company-okta-idp)
+
+? Choose a Role:  [Use arrows to move, type to filter]
+> Admin (arn:aws:iam::123456789012:role/admin)
+  Op (arn:aws:iam::123456789012:role/operator)
 ```
 
 #### Example `$HOME/.okta/okta.yaml`
@@ -325,6 +330,11 @@ awscli:
     "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
     "arn:aws:iam::901234567890:saml-provider/company-okta-idp": "Marketing Production"
     "arn:aws:iam::890123456789:saml-provider/company-okta-idp": "Marketing Development"
+  roles:
+    "arn:aws:iam::123456789012:role/admin": "Prod Admin"
+    "arn:aws:iam::123456789012:role/operator": "Prod Ops"
+    "arn:aws:iam::012345678901:role/admin": "Dev Admin"
+    "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 ```
 
 #### After
@@ -335,6 +345,10 @@ awscli:
   Data Development
   Marketing Production
   Marketing Development
+
+? Choose a Role:  [Use arrows to move, type to filter]
+> Prod Admin
+  Prod Ops
 ```
 
 #### Debug okta.yaml
@@ -352,12 +366,18 @@ awscli:
   idps:
     "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
     "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+  roles:
+    "arn:aws:iam::123456789012:role/admin": "Prod Admin"
+    "arn:aws:iam::123456789012:role/operator": "Prod Ops"
+    "arn:aws:iam::012345678901:role/admin": "Dev Admin"
+    "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 
 found home directory "/Users/person"
 okta.yaml is readable "/Users/person/.okta/okta.yaml"
 okta.yaml is valid yaml
 okta.yaml has root "awscli" section
-okta.yaml "awscli.idps" section is a map of 4 ARN string keys to friendly string label values
+okta.yaml "awscli.idps" section is a map of 2 ARN string keys to friendly string label values
+okta.yaml "awscli.roles" section is a map of 4 ARN string keys to friendly string label values
 okta.yaml is OK
 debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete
 ```
