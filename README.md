@@ -363,7 +363,7 @@ in valid format.
 ```
 $ okta-aws-cli --debug-config
 
-Given example okta.yaml for reference:
+Given this YAML as an example template of okta.yaml for reference:
 
 ---
 awscli:

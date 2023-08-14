@@ -607,10 +607,12 @@ awscli:
     "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
     "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
   roles:
+    "arn:aws:iam::123456789012:role/admin": "Prod Admin"
     "arn:aws:iam::123456789012:role/operator": "Prod Ops"
+    "arn:aws:iam::012345678901:role/admin": "Dev Admin"
     "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 	`
-	fmt.Fprintf(os.Stderr, "Given example okta.yaml for reference:\n%s\n", exampleYaml)
+	fmt.Fprintf(os.Stderr, "Given this YAML as an example template of okta.yaml for reference:\n%s\n", exampleYaml)
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
