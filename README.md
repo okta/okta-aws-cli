@@ -351,8 +351,8 @@ awscli:
   Marketing Development
 
 ? Choose a Role:  [Use arrows to move, type to filter]
-> Prod Admin
-  Prod Ops
+> Prod Admin (arn:aws:iam::123456789012:role/admin)
+  Prod Ops (arn:aws:iam::123456789012:role/operator)
 ```
 
 #### Debug okta.yaml
