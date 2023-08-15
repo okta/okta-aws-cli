@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 (August 15, 2023)
+
+* [Friendly Role menu labels](https://github.com/okta/okta-aws-cli#friendly-idp-and-role-menu-labels) for long ARN values can be set in `$HOME/.okta/okta.yaml`
+
 ## 1.1.0 (July 13, 2023)
 
 * Print out operational debugging information flag [#113](https://github.com/okta/okta-aws-cli/pull/113), thanks [@monde](https://github.com/monde)!
@@ -33,7 +37,7 @@
 
 * `--expiry-aws-variables` CLI flag for `x_security_token_expires` support in AWS creds file
 * `--cache-access-token` CLI flag to cache the access token associated device authorization to preempt needing to open the browser frequently
-* [Friendly IdP menu lables](https://github.com/okta/okta-aws-cli#friendly-idp-menu-labels) for long ARN values can be set in `$HOME/.okta/okta.yaml`
+* [Friendly IdP menu labels](https://github.com/okta/okta-aws-cli#friendly-idp-menu-labels) for long ARN values can be set in `$HOME/.okta/okta.yaml`
 
 #### ENV VAR changes
 

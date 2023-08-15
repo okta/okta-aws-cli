@@ -31,7 +31,7 @@ import (
 
 const (
 	// Version app version
-	Version = "1.1.0"
+	Version = "1.2.0"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
@@ -697,7 +697,6 @@ awscli:
 		return
 	}
 
-	// map[interface {}]interface {}
 	_roles, ok := roles.(map[any]any)
 	if !ok {
 		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section is not a map of ARN string key to friendly string label values\n")

@@ -298,7 +298,7 @@ $ okta-aws-cli --org-domain test.okta.com \
     --aws-acct-fed-app-id 0oa9x1rifa2H6Q5d8325
 ```
 
-### Friendly IdP menu labels
+### Friendly IdP and Role menu labels
 
 When the operator has many AWS Federation apps listing the AWS IAM IdP ARNs can
 make it hard to read the list. The same can be said if an IdP has many IAM Role
