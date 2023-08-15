@@ -222,6 +222,30 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 	return s.establishTokenWithFedAppID(clientID, fedAppID, at)
 }
 
+// choiceFriendlyLabelIDP returns a friendly choice for pretty printing IDP
+// labels.  alternative value is the default value to return if a friendly
+// determination can not be made.
+func (s *SessionToken) choiceFriendlyLabelIDP(alternative string, oktaConfig *config.OktaYamlConfig, arn string) string {
+	if oktaConfig == nil {
+		return alternative
+	}
+
+	if label, ok := oktaConfig.AWSCLI.IDPS[arn]; ok {
+		if s.config.Debug() {
+			fmt.Fprintf(os.Stderr, "  found IdP ARN %q having friendly label %q\n", arn, label)
+		}
+		return fmt.Sprintf(choiceArnPrintFmt, label, arn)
+	} else if s.config.Debug() {
+		fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
+		fmt.Fprintf(os.Stderr, "    %q\n", arn)
+		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.idps map:\n")
+		for arn, label := range oktaConfig.AWSCLI.IDPS {
+			fmt.Fprintf(os.Stderr, "      %q: %q\n", arn, label)
+		}
+	}
+	return alternative
+}
+
 func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	idps := make(map[string]*oktaApplication)
 	choices := make([]string, len(apps))
@@ -229,12 +253,13 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	oktaConfig, _ := s.config.OktaConfig()
 
 	for i, app := range apps {
-		choice := app.Label
+		defaultLabel := fmt.Sprintf(choiceArnPrintFmt, app.Label, app.Settings.App.IdentityProviderARN)
+		choiceLabel := s.choiceFriendlyLabelIDP(defaultLabel, oktaConfig, app.Settings.App.IdentityProviderARN)
+
 		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
 		if s.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
-			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
 			idpData := idpTemplateData{
-				IDP: choice,
+				IDP: choiceLabel,
 			}
 			rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
 			if err != nil {
@@ -245,26 +270,8 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 			return app.ID, nil
 		}
 
-		if app.Settings.App.IdentityProviderARN != "" {
-			choice = fmt.Sprintf(choiceArnPrintFmt, choice, app.Settings.App.IdentityProviderARN)
-			if oktaConfig != nil && len(oktaConfig.AWSCLI.IDPS) > 0 {
-				if label, ok := oktaConfig.AWSCLI.IDPS[app.Settings.App.IdentityProviderARN]; ok {
-					if s.config.Debug() {
-						fmt.Fprintf(os.Stderr, "  found IdP ARN %q having friendly label %q\n", app.Settings.App.IdentityProviderARN, label)
-					}
-					choice = label
-				} else if s.config.Debug() {
-					fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
-					fmt.Fprintf(os.Stderr, "    %q\n", app.Settings.App.IdentityProviderARN)
-					fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.idps map:\n")
-					for arn, label := range oktaConfig.AWSCLI.IDPS {
-						fmt.Fprintf(os.Stderr, "      %q: %q\n", arn, label)
-					}
-				}
-			}
-		}
-		choices[i] = choice
-		idps[choice] = app
+		choices[i] = choiceLabel
+		idps[choiceLabel] = app
 	}
 
 	prompt := &survey.Select{
@@ -359,80 +366,131 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 	return credential, nil
 }
 
-// promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
-func (s *SessionToken) promptForRole(idp string, roles []string) (role string, err error) {
-	switch {
-	case len(roles) == 1 || s.config.AWSIAMRole() != "":
-		role = s.config.AWSIAMRole()
-		if len(roles) == 1 {
-			role = roles[0]
+// choiceFriendlyLabelRole returns a friendly choice for pretty printing Role
+// labels.  The ARN default value to return if a friendly determination can not
+// be made.
+func (s *SessionToken) choiceFriendlyLabelRole(arn string, oktaConfig *config.OktaYamlConfig) string {
+	if oktaConfig == nil {
+		return arn
+	}
+
+	if label, ok := oktaConfig.AWSCLI.ROLES[arn]; ok {
+		if s.config.Debug() {
+			fmt.Fprintf(os.Stderr, "  found Role ARN %q having friendly label %q\n", arn, label)
 		}
+		return fmt.Sprintf(choiceArnPrintFmt, label, arn)
+	} else if s.config.Debug() {
+		fmt.Fprintf(os.Stderr, "  did not find friendly label for Role ARN\n")
+		fmt.Fprintf(os.Stderr, "    %q\n", arn)
+		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.roles map:\n")
+		for arn, label := range oktaConfig.AWSCLI.ROLES {
+			fmt.Fprintf(os.Stderr, "      %q: %q\n", arn, label)
+		}
+	}
+	return arn
+}
+
+// promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
+func (s *SessionToken) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
+	oktaConfig, _ := s.config.OktaConfig()
+
+	if len(roleARNs) == 1 || s.config.AWSIAMRole() != "" {
+		roleARN = s.config.AWSIAMRole()
+		if len(roleARNs) == 1 {
+			roleARN = roleARNs[0]
+		}
+		roleLabel := s.choiceFriendlyLabelRole(roleARN, oktaConfig)
 		roleData := roleTemplateData{
-			Role: role,
+			Role: roleLabel,
 		}
 		rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
 		if err != nil {
-			return idp, err
+			return "", err
 		}
 		fmt.Fprintln(os.Stderr, rich)
-	default:
-		prompt := &survey.Select{
-			Message: chooseRole,
-			Options: roles,
-		}
-		err = survey.AskOne(prompt, &role, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-		if err != nil {
-			return "", fmt.Errorf(askRoleError, err)
-		}
-		if role == "" {
-			return "", fmt.Errorf(noRolesError, idp)
-		}
+		return roleARN, nil
 	}
 
-	return role, nil
+	promptRoles := []string{}
+	labelsARNs := map[string]string{}
+	for _, arn := range roleARNs {
+		roleLabel := s.choiceFriendlyLabelRole(arn, oktaConfig)
+		promptRoles = append(promptRoles, roleLabel)
+		labelsARNs[roleLabel] = arn
+	}
+
+	prompt := &survey.Select{
+		Message: chooseRole,
+		Options: promptRoles,
+	}
+	var selected string
+	err = survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return "", fmt.Errorf(askRoleError, err)
+	}
+
+	roleARN = labelsARNs[selected]
+	if roleARN == "" {
+		return "", fmt.Errorf(noRolesError, idp)
+	}
+
+	return roleARN, nil
 }
 
 // promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
-func (s *SessionToken) promptForIDP(idps []string) (idp string, err error) {
-	if len(idps) == 0 {
-		return idp, errors.New(noIDPsError)
+func (s *SessionToken) promptForIDP(idpARNs []string) (idpARN string, err error) {
+	oktaConfig, _ := s.config.OktaConfig()
+
+	if len(idpARNs) == 0 {
+		return idpARN, errors.New(noIDPsError)
 	}
 
-	switch {
-	case len(idps) == 1 || s.config.AWSIAMIdP() != "":
-		idp = s.config.AWSIAMIdP()
-		if len(idps) == 1 {
-			idp = idps[0]
+	if len(idpARNs) == 1 || s.config.AWSIAMIdP() != "" {
+		idpARN = s.config.AWSIAMIdP()
+		if len(idpARNs) == 1 {
+			idpARN = idpARNs[0]
 		}
 		if s.fedAppAlreadySelected {
-			return idp, nil
+			return idpARN, nil
 		}
 
+		idpLabel := s.choiceFriendlyLabelIDP(idpARN, oktaConfig, idpARN)
 		idpData := idpTemplateData{
-			IDP: idp,
+			IDP: idpLabel,
 		}
 		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
 		if err != nil {
-			return idp, err
+			return "", err
 		}
 		fmt.Fprintln(os.Stderr, rich)
-	default:
-		prompt := &survey.Select{
-			Message: chooseIDP,
-			Options: idps,
-		}
-		err = survey.AskOne(prompt, &idp, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-		if err != nil {
-			return idp, fmt.Errorf(askIDPError, err)
-		}
-		if idp == "" {
-			return idp, errors.New(idpValueNotSelectedError)
-		}
+		return idpARN, nil
 	}
 
-	return idp, nil
+	idpChoices := make(map[string]string, len(idpARNs))
+	idpChoiceLabels := make([]string, len(idpARNs))
+	for i, arn := range idpARNs {
+		idpLabel := s.choiceFriendlyLabelIDP(arn, oktaConfig, arn)
+		idpChoices[idpLabel] = arn
+		idpChoiceLabels[i] = idpLabel
+	}
+
+	var idpChoice string
+	prompt := &survey.Select{
+		Message: chooseIDP,
+		Options: idpChoiceLabels,
+	}
+	err = survey.AskOne(prompt, &idpChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	if err != nil {
+		return idpARN, fmt.Errorf(askIDPError, err)
+	}
+	idpARN = idpChoices[idpChoice]
+	if idpARN == "" {
+		return idpARN, errors.New(idpValueNotSelectedError)
+	}
+
+	return idpARN, nil
 }
 
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials

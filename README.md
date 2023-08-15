@@ -208,7 +208,11 @@ that can be used for the AWS CLI configuration. Output can also be expressed as
 values](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for AWS CLI configuration.
 
-Configuration can be done with environment variables, an `.env` file, command line flags, or a combination of the three.
+Configuration can be done with command line flags, an `.env` file, environment
+variables, or a combination of the three. Configuration is evaluated in that
+order. For example if the CLI flag `--profile [value]` and the env var
+`OKTA_AWSCLI_PROFILE` are both present then the environment variable value takes
+precedent.
 
 Also see the CLI's online help `$ okta-aws-cli --help`
 
@@ -294,12 +298,13 @@ $ okta-aws-cli --org-domain test.okta.com \
     --aws-acct-fed-app-id 0oa9x1rifa2H6Q5d8325
 ```
 
-### Friendly IdP menu labels
+### Friendly IdP and Role menu labels
 
 When the operator has many AWS Federation apps listing the AWS IAM IdP ARNs can
-make it hard to read the list. The operator can create an Okta config file in
-YAML format at `$HOME/.okta/okta.yaml` that allows them to set a map of alias
-labels for the ARN values.
+make it hard to read the list. The same can be said if an IdP has many IAM Role
+ARNs associated with it. To make this easier to manage the operator can create
+an Okta config file in YAML format at `$HOME/.okta/okta.yaml` that allows them
+to set a map of alias labels for the ARN values.
 
 **NOTE**: The Okta language SDKs have standardized on using
 `$HOME/.okta/okta.yaml` as a configuration file and location. We will continue
@@ -313,6 +318,10 @@ that practice with read-only friendly okta-aws-cli application values.
   Fed App 2 Label (arn:aws:iam::012345678901:saml-provider/company-okta-idp)
   Fed App 3 Label (arn:aws:iam::901234567890:saml-provider/company-okta-idp)
   Fed App 4 Label (arn:aws:iam::890123456789:saml-provider/company-okta-idp)
+
+? Choose a Role:  [Use arrows to move, type to filter]
+> Admin (arn:aws:iam::123456789012:role/admin)
+  Op (arn:aws:iam::123456789012:role/operator)
 ```
 
 #### Example `$HOME/.okta/okta.yaml`
@@ -325,6 +334,11 @@ awscli:
     "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
     "arn:aws:iam::901234567890:saml-provider/company-okta-idp": "Marketing Production"
     "arn:aws:iam::890123456789:saml-provider/company-okta-idp": "Marketing Development"
+  roles:
+    "arn:aws:iam::123456789012:role/admin": "Prod Admin"
+    "arn:aws:iam::123456789012:role/operator": "Prod Ops"
+    "arn:aws:iam::012345678901:role/admin": "Dev Admin"
+    "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 ```
 
 #### After
@@ -335,6 +349,10 @@ awscli:
   Data Development
   Marketing Production
   Marketing Development
+
+? Choose a Role:  [Use arrows to move, type to filter]
+> Prod Admin (arn:aws:iam::123456789012:role/admin)
+  Prod Ops (arn:aws:iam::123456789012:role/operator)
 ```
 
 #### Debug okta.yaml
@@ -345,19 +363,25 @@ in valid format.
 ```
 $ okta-aws-cli --debug-config
 
-Given example okta.yaml for reference:
+Given this YAML as an example template of okta.yaml for reference:
 
 ---
 awscli:
   idps:
     "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
     "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+  roles:
+    "arn:aws:iam::123456789012:role/admin": "Prod Admin"
+    "arn:aws:iam::123456789012:role/operator": "Prod Ops"
+    "arn:aws:iam::012345678901:role/admin": "Dev Admin"
+    "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 
 found home directory "/Users/person"
 okta.yaml is readable "/Users/person/.okta/okta.yaml"
 okta.yaml is valid yaml
 okta.yaml has root "awscli" section
-okta.yaml "awscli.idps" section is a map of 4 ARN string keys to friendly string label values
+okta.yaml "awscli.idps" section is a map of 2 ARN string keys to friendly string label values
+okta.yaml "awscli.roles" section is a map of 4 ARN string keys to friendly string label values
 okta.yaml is OK
 debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete
 ```
