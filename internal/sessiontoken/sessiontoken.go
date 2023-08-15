@@ -73,8 +73,6 @@ const (
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 	dotOktaDir               = ".okta"
 	tokenFileName            = "awscli-access-token.json"
-
-	choiceArnPrintFmt = "%s (%s)"
 )
 
 type idpTemplateData struct {
@@ -234,7 +232,7 @@ func (s *SessionToken) choiceFriendlyLabelIDP(alternative string, oktaConfig *co
 		if s.config.Debug() {
 			fmt.Fprintf(os.Stderr, "  found IdP ARN %q having friendly label %q\n", arn, label)
 		}
-		return fmt.Sprintf(choiceArnPrintFmt, label, arn)
+		return label
 	} else if s.config.Debug() {
 		fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
 		fmt.Fprintf(os.Stderr, "    %q\n", arn)
@@ -253,8 +251,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	oktaConfig, _ := s.config.OktaConfig()
 
 	for i, app := range apps {
-		defaultLabel := fmt.Sprintf(choiceArnPrintFmt, app.Label, app.Settings.App.IdentityProviderARN)
-		choiceLabel := s.choiceFriendlyLabelIDP(defaultLabel, oktaConfig, app.Settings.App.IdentityProviderARN)
+		choiceLabel := s.choiceFriendlyLabelIDP(app.Label, oktaConfig, app.Settings.App.IdentityProviderARN)
 
 		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
 		if s.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
@@ -378,7 +375,7 @@ func (s *SessionToken) choiceFriendlyLabelRole(arn string, oktaConfig *config.Ok
 		if s.config.Debug() {
 			fmt.Fprintf(os.Stderr, "  found Role ARN %q having friendly label %q\n", arn, label)
 		}
-		return fmt.Sprintf(choiceArnPrintFmt, label, arn)
+		return label
 	} else if s.config.Debug() {
 		fmt.Fprintf(os.Stderr, "  did not find friendly label for Role ARN\n")
 		fmt.Fprintf(os.Stderr, "    %q\n", arn)

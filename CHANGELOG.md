@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (August 15, 2023)
+
+* Friendly IdP and Role labels don't also print out ARN value (less text clutter in the UI)
+
 ## 1.2.0 (August 15, 2023)
 
 * [Friendly Role menu labels](https://github.com/okta/okta-aws-cli#friendly-idp-and-role-menu-labels) for long ARN values can be set in `$HOME/.okta/okta.yaml`

@@ -314,14 +314,14 @@ that practice with read-only friendly okta-aws-cli application values.
 
 ```
 ? Choose an IdP:  [Use arrows to move, type to filter]
-> Fed App 1 Label (arn:aws:iam::123456789012:saml-provider/company-okta-idp)
-  Fed App 2 Label (arn:aws:iam::012345678901:saml-provider/company-okta-idp)
-  Fed App 3 Label (arn:aws:iam::901234567890:saml-provider/company-okta-idp)
-  Fed App 4 Label (arn:aws:iam::890123456789:saml-provider/company-okta-idp)
+> Fed App 1 Label
+  Fed App 2 Label
+  Fed App 3 Label
+  Fed App 4 Label
 
 ? Choose a Role:  [Use arrows to move, type to filter]
 > Admin (arn:aws:iam::123456789012:role/admin)
-  Op (arn:aws:iam::123456789012:role/operator)
+  Ops
 ```
 
 #### Example `$HOME/.okta/okta.yaml`
@@ -351,8 +351,8 @@ awscli:
   Marketing Development
 
 ? Choose a Role:  [Use arrows to move, type to filter]
-> Prod Admin (arn:aws:iam::123456789012:role/admin)
-  Prod Ops (arn:aws:iam::123456789012:role/operator)
+> Prod Admin
+  Prod Ops
 ```
 
 #### Debug okta.yaml
