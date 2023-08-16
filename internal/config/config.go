@@ -259,9 +259,9 @@ func readConfig() (Attributes, error) {
 		attrs.Format = EnvVarFormat
 	}
 
-	// if profile is set by env var defer to it, otherwise the default "default"
-	// will be used
-	if viper.GetString(downCase(ProfileEnvVar)) != "" {
+	// mimic AWS CLI behavior, if profile value is not set by flag check
+	// the ENV VAR, else set to "default"
+	if attrs.Profile == "" {
 		attrs.Profile = viper.GetString(downCase(ProfileEnvVar))
 	}
 	if attrs.Profile == "" {
@@ -285,14 +285,17 @@ func readConfig() (Attributes, error) {
 	if attrs.AWSIAMRole == "" {
 		attrs.AWSIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
 	}
-	// duration has a default of 3600 from CLI flags, but if the env var version
-	// is not 0 then prefer it
-	duration := viper.GetInt64(downCase(AWSSessionDurationEnvVar))
-	if duration != 0 {
-		attrs.AWSSessionDuration = duration
-	}
 	if !attrs.QRCode {
 		attrs.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
+	}
+
+	// if session duration is 0, inspect the ENV VAR for a value, else set
+	// a default of 3600
+	if attrs.AWSSessionDuration == 0 {
+		attrs.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	}
+	if attrs.AWSSessionDuration == 0 {
+		attrs.AWSSessionDuration = 3600
 	}
 
 	// correct org domain if it's in admin form
