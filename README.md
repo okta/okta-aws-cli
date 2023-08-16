@@ -208,11 +208,9 @@ that can be used for the AWS CLI configuration. Output can also be expressed as
 values](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for AWS CLI configuration.
 
-Configuration can be done with command line flags, an `.env` file, environment
-variables, or a combination of the three. Configuration is evaluated in that
-order. For example if the CLI flag `--profile [value]` and the env var
-`OKTA_AWSCLI_PROFILE` are both present then the environment variable value takes
-precedent.
+Configuration can be done with command line flags, environment variables, an
+`.env` file, or a combination of the three. The first value found in that
+evaluation order takes precedent.
 
 Also see the CLI's online help `$ okta-aws-cli --help`
 
