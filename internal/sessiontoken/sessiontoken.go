@@ -167,28 +167,49 @@ func NewSessionToken(config *config.Config) (token *SessionToken, err error) {
 func (s *SessionToken) EstablishToken() error {
 	clientID := s.config.OIDCAppID()
 	var at *accessToken
+	var apps []*oktaApplication
+	var err error
 	at = s.cachedAccessToken()
-	if at == nil {
-		deviceAuth, err := s.authorize(clientID)
-		if err != nil {
+
+	// If there is a cached token, and it isn't expired, but the API 401s redo
+	// the authorize step.
+	for attempt := 1; attempt <= 2; attempt++ {
+		err = nil
+		if at == nil {
+			deviceAuth, err := s.authorize(clientID)
+			if err != nil {
+				return err
+			}
+
+			s.promptAuthentication(deviceAuth)
+
+			at, err = s.fetchAccessToken(clientID, deviceAuth)
+			if err != nil {
+				return err
+			}
+			at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
+			s.cacheAccessToken(at)
+		}
+		if s.config.FedAppID() != "" {
+			// Alternate path when operator knows their AWS Fed app ID
+			err = s.establishTokenWithFedAppID(clientID, s.config.FedAppID(), at)
+			if at != nil && err != nil {
+				// possible bad cached access token, retry
+				at = nil
+				continue
+			}
 			return err
 		}
 
-		s.promptAuthentication(deviceAuth)
-
-		at, err = s.fetchAccessToken(clientID, deviceAuth)
-		if err != nil {
-			return err
+		apps, err = s.listFedApps(clientID, at)
+		if at != nil && err != nil {
+			// possible bad cached access token, retry
+			at = nil
+			continue
 		}
-		at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
-		s.cacheAccessToken(at)
-	}
-	if s.config.FedAppID() != "" {
-		// Alternate path when operator knows their AWS Fed app ID
-		return s.establishTokenWithFedAppID(clientID, s.config.FedAppID(), at)
+		break
 	}
 
-	apps, err := s.listFedApps(clientID, at)
 	if err != nil {
 		return err
 	}
@@ -938,14 +959,11 @@ func (s *SessionToken) isClassicOrg() bool {
 // cachedAccessToken will returned the cached access token if it exists and is
 // not expired.
 func (s *SessionToken) cachedAccessToken() (at *accessToken) {
-	cUser, err := user.Current()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	if cUser.HomeDir == "" {
-		return
-	}
-	configPath := filepath.Join(cUser.HomeDir, dotOktaDir, tokenFileName)
+	configPath := filepath.Join(homeDir, dotOktaDir, tokenFileName)
 	atJSON, err := os.ReadFile(configPath)
 	if err != nil {
 		return
