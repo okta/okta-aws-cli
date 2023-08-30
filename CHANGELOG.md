@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.2 (August 30, 2023)
+
+* Ensure evaluation of CLI flag for profile is in the same order as the other flags [#124](https://github.com/okta/okta-aws-cli/pull/124)
+* Retry cached access token if it isn't expired by but receives API error [#127](https://github.com/okta/okta-aws-cli/pull/127)
+
 ## 1.2.1 (August 15, 2023)
 
 * Friendly IdP and Role labels don't also print out ARN value (less text clutter in the UI)
