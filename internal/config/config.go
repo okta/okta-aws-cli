@@ -46,7 +46,7 @@ const (
 	AWSIAMIdPFlag = "aws-iam-idp"
 	// AWSIAMRoleFlag cli flag const
 	AWSIAMRoleFlag = "aws-iam-role"
-	// CustomScope cli flag const
+	// CustomScopeFlag cli flag const
 	CustomScopeFlag = "custom-scope"
 	// DebugFlag cli flag const
 	DebugFlag = "debug"

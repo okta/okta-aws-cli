@@ -31,10 +31,6 @@ import (
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
 )
 
-const (
-	dotEnvFilename = ".env"
-)
-
 var (
 	flags   []cliFlag.Flag
 	rootCmd *cobra.Command
@@ -149,6 +145,7 @@ func init() {
 	rootCmd.AddCommand(debugCfgCmd)
 }
 
+// NewRootCommand Sets up the root cobra command
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Version: config.Version,

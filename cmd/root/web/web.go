@@ -20,13 +20,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/flag"
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
 	"github.com/okta/okta-aws-cli/internal/sessiontoken"
-)
-
-const (
-	dotEnvFilename = ".env"
 )
 
 var (
@@ -63,6 +58,7 @@ var (
 	requiredFlags = []string{"org-domain", "oidc-client-id"}
 )
 
+// NewWebCommand Sets up the web cobra sub command
 func NewWebCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "web",
@@ -72,7 +68,7 @@ func NewWebCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = flag.CheckRequiredFlags(requiredFlags, cmd)
+			err = cliFlag.CheckRequiredFlags(requiredFlags)
 			if err != nil {
 				return err
 			}

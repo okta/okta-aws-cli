@@ -73,6 +73,8 @@ const (
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 	dotOktaDir               = ".okta"
 	tokenFileName            = "awscli-access-token.json"
+	arnLabelPrintFmt         = "      %q: %q\n"
+	arnPrintFmt              = "    %q\n"
 )
 
 type idpTemplateData struct {
@@ -256,10 +258,10 @@ func (s *SessionToken) choiceFriendlyLabelIDP(alternative string, oktaConfig *co
 		return label
 	} else if s.config.Debug() {
 		fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
-		fmt.Fprintf(os.Stderr, "    %q\n", arn)
+		fmt.Fprintf(os.Stderr, arnPrintFmt, arn)
 		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.idps map:\n")
 		for arn, label := range oktaConfig.AWSCLI.IDPS {
-			fmt.Fprintf(os.Stderr, "      %q: %q\n", arn, label)
+			fmt.Fprintf(os.Stderr, arnLabelPrintFmt, arn, label)
 		}
 	}
 	return alternative
@@ -399,10 +401,10 @@ func (s *SessionToken) choiceFriendlyLabelRole(arn string, oktaConfig *config.Ok
 		return label
 	} else if s.config.Debug() {
 		fmt.Fprintf(os.Stderr, "  did not find friendly label for Role ARN\n")
-		fmt.Fprintf(os.Stderr, "    %q\n", arn)
+		fmt.Fprintf(os.Stderr, arnPrintFmt, arn)
 		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.roles map:\n")
 		for arn, label := range oktaConfig.AWSCLI.ROLES {
-			fmt.Fprintf(os.Stderr, "      %q: %q\n", arn, label)
+			fmt.Fprintf(os.Stderr, arnLabelPrintFmt, arn, label)
 		}
 	}
 	return arn

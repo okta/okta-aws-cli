@@ -31,6 +31,7 @@ const (
 	dotEnvFilename = ".env"
 )
 
+// Flag Convenience struct for Viper flag parameters
 type Flag struct {
 	Name   string
 	Short  string
@@ -97,7 +98,8 @@ func MakeFlagBindings(cmd *cobra.Command, flags []Flag, persistent bool) {
 	}
 }
 
-func CheckRequiredFlags(flags []string, cmd *cobra.Command) error {
+// CheckRequiredFlags Checks if flags in the list are all set in Viper
+func CheckRequiredFlags(flags []string) error {
 	unsetFlags := []string{}
 	for _, f := range flags {
 		if !viper.GetViper().IsSet(f) {

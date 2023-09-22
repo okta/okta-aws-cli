@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/flag"
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
 )
 
@@ -47,6 +46,7 @@ var (
 	requiredFlags = []string{"org-domain", "oidc-client-id", "aws-iam-role", "private-key"}
 )
 
+// NewM2MCommand Sets up the m2m cobra sub command
 func NewM2MCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "m2m",
@@ -56,7 +56,7 @@ func NewM2MCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = flag.CheckRequiredFlags(requiredFlags, cmd)
+			err = cliFlag.CheckRequiredFlags(requiredFlags)
 			if err != nil {
 				return err
 			}

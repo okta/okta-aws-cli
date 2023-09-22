@@ -25,6 +25,7 @@ import (
 	"github.com/okta/okta-aws-cli/internal/config"
 )
 
+// NewDebugCommand Sets up the debug cobra sub command
 func NewDebugCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "debug",
