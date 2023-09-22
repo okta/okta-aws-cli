@@ -17,33 +17,24 @@
 package root
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
+	debugCmd "github.com/okta/okta-aws-cli/cmd/root/debug"
+	"github.com/okta/okta-aws-cli/cmd/root/m2m"
+	"github.com/okta/okta-aws-cli/cmd/root/web"
 	"github.com/okta/okta-aws-cli/internal/ansi"
 	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/sessiontoken"
+	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
 )
 
-const (
-	dotEnvFilename = ".env"
+var (
+	flags   []cliFlag.Flag
+	rootCmd *cobra.Command
 )
-
-type flag struct {
-	name   string
-	short  string
-	value  interface{}
-	usage  string
-	envVar string
-}
-
-var flags []flag
 
 func init() {
 	var awsCredentialsFilename string
@@ -51,211 +42,163 @@ func init() {
 		awsCredentialsFilename = filepath.Join(home, ".aws", "credentials")
 	}
 
-	flags = []flag{
+	flags = []cliFlag.Flag{
 		{
-			name:   config.OrgDomainFlag,
-			short:  "o",
-			value:  "",
-			usage:  "Okta Org Domain",
-			envVar: config.OktaOrgDomainEnvVar,
+			Name:   config.OrgDomainFlag,
+			Short:  "o",
+			Value:  "",
+			Usage:  "Okta Org Domain",
+			EnvVar: config.OktaOrgDomainEnvVar,
 		},
 		{
-			name:   config.OIDCClientIDFlag,
-			short:  "c",
-			value:  "",
-			usage:  "OIDC Client ID",
-			envVar: config.OktaOIDCClientIDEnvVar,
+			Name:   config.OIDCClientIDFlag,
+			Short:  "c",
+			Value:  "",
+			Usage:  "OIDC Client ID - web: OIDC native application, m2m: API service application",
+			EnvVar: config.OktaOIDCClientIDEnvVar,
 		},
 		{
-			name:   config.AWSAcctFedAppIDFlag,
-			short:  "a",
-			value:  "",
-			usage:  "AWS Account Federation app ID",
-			envVar: config.OktaAWSAccountFederationAppIDEnvVar,
+			Name:   config.AWSIAMRoleFlag,
+			Short:  "r",
+			Value:  "",
+			Usage:  "Preset IAM Role ARN",
+			EnvVar: config.AWSIAMRoleEnvVar,
 		},
 		{
-			name:   config.AWSIAMIdPFlag,
-			short:  "i",
-			value:  "",
-			usage:  "Preset IAM Identity Provider ARN",
-			envVar: config.AWSIAMIdPEnvVar,
+			Name:   config.SessionDurationFlag,
+			Short:  "s",
+			Value:  "",
+			Usage:  "Session duration for role.",
+			EnvVar: config.AWSSessionDurationEnvVar,
 		},
 		{
-			name:   config.AWSIAMRoleFlag,
-			short:  "r",
-			value:  "",
-			usage:  "Preset IAM Role ARN",
-			envVar: config.AWSIAMRoleEnvVar,
+			Name:   config.ProfileFlag,
+			Short:  "p",
+			Value:  "",
+			Usage:  "AWS Profile",
+			EnvVar: config.ProfileEnvVar,
 		},
 		{
-			name:   config.SessionDurationFlag,
-			short:  "s",
-			value:  "",
-			usage:  "Session duration for role.",
-			envVar: config.AWSSessionDurationEnvVar,
+			Name:   config.FormatFlag,
+			Short:  "f",
+			Value:  "",
+			Usage:  "Output format. [env-var|aws-credentials]",
+			EnvVar: config.FormatEnvVar,
 		},
 		{
-			name:   config.ProfileFlag,
-			short:  "p",
-			value:  "",
-			usage:  "AWS Profile",
-			envVar: config.ProfileEnvVar,
+			Name:   config.AWSCredentialsFlag,
+			Short:  "w",
+			Value:  awsCredentialsFilename,
+			Usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", config.AWSCredentialsFormat),
+			EnvVar: config.AWSCredentialsEnvVar,
 		},
 		{
-			name:   config.FormatFlag,
-			short:  "f",
-			value:  "",
-			usage:  "Output format. [env-var|aws-credentials]",
-			envVar: config.FormatEnvVar,
+			Name:   config.WriteAWSCredentialsFlag,
+			Short:  "z",
+			Value:  false,
+			Usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertently remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
+			EnvVar: config.WriteAWSCredentialsEnvVar,
 		},
 		{
-			name:   config.QRCodeFlag,
-			short:  "q",
-			value:  false,
-			usage:  "Print QR Code of activation URL",
-			envVar: config.QRCodeEnvVar,
+			Name:   config.LegacyAWSVariablesFlag,
+			Short:  "l",
+			Value:  false,
+			Usage:  "Emit deprecated AWS Security Token value. WARNING: AWS CLI deprecated this value in November 2014 and is no longer documented",
+			EnvVar: config.LegacyAWSVariablesEnvVar,
 		},
 		{
-			name:   config.AWSCredentialsFlag,
-			short:  "w",
-			value:  awsCredentialsFilename,
-			usage:  fmt.Sprintf("Path to AWS credentials file, only valid with format %q", config.AWSCredentialsFormat),
-			envVar: config.AWSCredentialsEnvVar,
+			Name:   config.ExpiryAWSVariablesFlag,
+			Short:  "x",
+			Value:  false,
+			Usage:  "Emit x_security_token_expires value in profile block of AWS credentials file",
+			EnvVar: config.ExpiryAWSVariablesEnvVar,
 		},
 		{
-			name:   config.OpenBrowserFlag,
-			short:  "b",
-			value:  false,
-			usage:  "Automatically open the activation URL with the system web browser",
-			envVar: config.OpenBrowserEnvVar,
+			Name:   config.CacheAccessTokenFlag,
+			Short:  "e",
+			Value:  false,
+			Usage:  "Cache Okta access token to reduce need for opening grant URL",
+			EnvVar: config.CacheAccessTokenEnvVar,
 		},
 		{
-			name:   config.WriteAWSCredentialsFlag,
-			short:  "z",
-			value:  false,
-			usage:  fmt.Sprintf("Write the created/updated profile to the %q file. WARNING: This can inadvertently remove dangling comments and extraneous formatting from the creds file.", awsCredentialsFilename),
-			envVar: config.WriteAWSCredentialsEnvVar,
+			Name:   config.DebugFlag,
+			Short:  "g",
+			Value:  false,
+			Usage:  "Print operational information to the screen for debugging purposes",
+			EnvVar: config.DebugEnvVar,
 		},
 		{
-			name:   config.LegacyAWSVariablesFlag,
-			short:  "l",
-			value:  false,
-			usage:  "Emit deprecated AWS Security Token value. WARNING: AWS CLI deprecated this value in November 2014 and is no longer documented",
-			envVar: config.LegacyAWSVariablesEnvVar,
-		},
-		{
-			name:   config.ExpiryAWSVariablesFlag,
-			short:  "x",
-			value:  false,
-			usage:  "Emit x_security_token_expires value in profile block of AWS credentials file",
-			envVar: config.ExpiryAWSVariablesEnvVar,
-		},
-		{
-			name:   config.CacheAccessTokenFlag,
-			short:  "e",
-			value:  false,
-			usage:  "Cache Okta access token to reduce need for opening grant URL",
-			envVar: config.CacheAccessTokenEnvVar,
-		},
-		{
-			name:   config.DebugFlag,
-			short:  "g",
-			value:  false,
-			usage:  "Print operational information to the screen for debugging purposes",
-			envVar: config.DebugEnvVar,
-		},
-		{
-			name:   config.DebugAPICallsFlag,
-			short:  "d",
-			value:  false,
-			usage:  "Verbosely print all API calls/responses to the screen",
-			envVar: config.DebugAPICallsEnvVar,
-		},
-		{
-			name:   config.DebugConfigFlag,
-			short:  "k",
-			value:  false,
-			usage:  "Inspect current okta.yaml configuration and exit",
-			envVar: config.DebugConfigEnvVar,
+			Name:   config.DebugAPICallsFlag,
+			Short:  "d",
+			Value:  false,
+			Usage:  "Verbosely print all API calls/responses to the screen",
+			EnvVar: config.DebugAPICallsEnvVar,
 		},
 	}
+
+	rootCmd = NewRootCommand()
+	webCmd := web.NewWebCommand()
+	rootCmd.AddCommand(webCmd)
+	m2mCmd := m2m.NewM2MCommand()
+	rootCmd.AddCommand(m2mCmd)
+	debugCfgCmd := debugCmd.NewDebugCommand()
+	rootCmd.AddCommand(debugCfgCmd)
 }
 
-func buildRootCommand() *cobra.Command {
+// NewRootCommand Sets up the root cobra command
+func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Version: config.Version,
 		Use:     "okta-aws-cli",
-		Short:   "okta-aws-cli - Okta federated identity for AWS CLI",
-		Long: `okta-aws-cli - Okta federated identity for AWS CLI
- 
-Okta authentication for federated identity providers in support of AWS CLI.
-okta-aws-cli handles authentication to the IdP and token exchange with AWS STS 
-to collect a proper IAM role for the AWS CLI operator.`,
+		Short:   "Okta federated identity for AWS CLI",
+		Long: `Okta federated identity for AWS CLI
 
-		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.CreateConfig()
-			if err == nil && config.DebugConfig() {
-				checkErr := config.RunConfigChecks()
-				fmt.Fprintf(os.Stderr, "debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete\n")
-				return checkErr
-			}
-			if err != nil {
-				return err
-			}
-
-			st, err := sessiontoken.NewSessionToken(config)
-			if err != nil {
-				return err
-			}
-			return st.EstablishToken()
-		},
-	}
-
-	// bind env vars
-	for _, f := range flags {
-		_ = viper.BindEnv(f.envVar, f.name)
-	}
-	// bind env vars via dotenv if it exists
-	path, _ := os.Getwd()
-	dotEnv := filepath.Join(path, dotEnvFilename)
-	if _, err := os.Stat(dotEnv); err == nil || !errors.Is(err, os.ErrNotExist) {
-		viper.AddConfigPath(path)
-		viper.SetConfigName(dotEnvFilename)
-		viper.SetConfigType("dotenv")
-
-		_ = viper.ReadInConfig()
-
-		// After viper reads in the dotenv file check if AWS_REGION is set
-		// there. The value will be keyed by lower case name. If it is, set
-		// AWS_REGION as an ENV VAR if it hasn't already been.
-		awsRegionEnvVar := "AWS_REGION"
-		vipAwsRegion := viper.GetString(strings.ToLower(awsRegionEnvVar))
-		if vipAwsRegion != "" && os.Getenv(awsRegionEnvVar) == "" {
-			_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
-		}
-	}
-	viper.AutomaticEnv()
-
-	// bind cli flags
-	for _, f := range flags {
-		if val, ok := f.value.(string); ok {
-			cmd.PersistentFlags().StringP(f.name, f.short, val, f.usage)
-		}
-		if val, ok := f.value.(bool); ok {
-			cmd.PersistentFlags().BoolP(f.name, f.short, val, f.usage)
-		}
-
-		_ = viper.BindPFlag(f.name, cmd.PersistentFlags().Lookup(f.name))
+Okta authentication in support of AWS CLI.  okta-aws-cli handles authentication
+with Okta and token exchange with AWS STS to collect temporary IAM credentials
+associated with a given IAM Role for the AWS CLI operator.`,
 	}
 
 	cmd.SetUsageTemplate(resourceUsageTemplate())
+	cliFlag.MakeFlagBindings(cmd, flags, true)
+
 	return cmd
 }
 
 // Execute executes the root command
-func Execute() {
-	cmd := buildRootCommand()
-	if err := cmd.Execute(); err != nil {
+func Execute(defaultCommand string) {
+	// cmdFound is used to determine if we were called without a subcommand
+	// argument, and if so, treat the default command as if it was called as a
+	// sub command.
+	var cmdFound bool
+
+	// If the sub command is registered we don't need to alias the default
+	// command with an append below.
+	for _, cmd := range rootCmd.Commands() {
+		for _, arg := range os.Args[1:] {
+			if cmd.Name() == arg {
+				cmdFound = true
+				break
+			}
+		}
+	}
+
+	// Also, consider the command found if our args is just a bare help so help
+	// for both sub commands is printed.
+	if len(os.Args) == 1 {
+		cmdFound = true
+	}
+	if len(os.Args) >= 2 {
+		if arg := os.Args[1]; arg == "--help" || arg == "-h" || arg == "help" {
+			cmdFound = true
+		}
+	}
+	if !cmdFound {
+		args := append([]string{defaultCommand}, os.Args[1:]...)
+		rootCmd.SetArgs(args)
+	}
+
+	// Get to work ...
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

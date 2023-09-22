@@ -46,12 +46,12 @@ const (
 	AWSIAMIdPFlag = "aws-iam-idp"
 	// AWSIAMRoleFlag cli flag const
 	AWSIAMRoleFlag = "aws-iam-role"
+	// CustomScopeFlag cli flag const
+	CustomScopeFlag = "custom-scope"
 	// DebugFlag cli flag const
 	DebugFlag = "debug"
 	// DebugAPICallsFlag cli flag const
 	DebugAPICallsFlag = "debug-api-calls"
-	// DebugConfigFlag cli flag const
-	DebugConfigFlag = "debug-config"
 	// FormatFlag cli flag const
 	FormatFlag = "format"
 	// OIDCClientIDFlag cli flag const
@@ -60,6 +60,8 @@ const (
 	OpenBrowserFlag = "open-browser"
 	// OrgDomainFlag cli flag const
 	OrgDomainFlag = "org-domain"
+	// PrivateKeyFlag cli flag const
+	PrivateKeyFlag = "private-key"
 	// ProfileFlag cli flag const
 	ProfileFlag = "profile"
 	// QRCodeFlag cli flag const
@@ -83,8 +85,20 @@ const (
 	AWSIAMRoleEnvVar = "OKTA_AWSCLI_IAM_ROLE"
 	// AWSSessionDurationEnvVar env var const
 	AWSSessionDurationEnvVar = "OKTA_AWSCLI_SESSION_DURATION"
+	// CacheAccessTokenEnvVar env var const
+	CacheAccessTokenEnvVar = "OKTA_AWSCLI_CACHE_ACCESS_TOKEN"
+	// CustomScopeEnvVar env var const
+	CustomScopeEnvVar = "OKTA_AWSCLI_CUSTOM_SCOPE"
+	// DebugEnvVar env var const
+	DebugEnvVar = "OKTA_AWSCLI_DEBUG"
+	// DebugAPICallsEnvVar env var const
+	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
+	// ExpiryAWSVariablesEnvVar env var const
+	ExpiryAWSVariablesEnvVar = "OKTA_AWSCLI_EXPIRY_AWS_VARIABLES"
 	// FormatEnvVar env var const
 	FormatEnvVar = "OKTA_AWSCLI_FORMAT"
+	// LegacyAWSVariablesEnvVar env var const
+	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 	// OktaOIDCClientIDEnvVar env var const
 	OktaOIDCClientIDEnvVar = "OKTA_OIDC_CLIENT_ID"
 	// OktaOrgDomainEnvVar env var const
@@ -93,24 +107,14 @@ const (
 	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
 	// OpenBrowserEnvVar env var const
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
+	// PrivateKeyEnvVar env var const
+	PrivateKeyEnvVar = "OKTA_AWSCLI_PRIVATE_KEY"
 	// ProfileEnvVar env var const
 	ProfileEnvVar = "OKTA_AWSCLI_PROFILE"
 	// QRCodeEnvVar env var const
 	QRCodeEnvVar = "OKTA_AWSCLI_QR_CODE"
 	// WriteAWSCredentialsEnvVar env var const
 	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
-	// DebugEnvVar env var const
-	DebugEnvVar = "OKTA_AWSCLI_DEBUG"
-	// DebugAPICallsEnvVar env var const
-	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
-	// DebugConfigEnvVar env var const
-	DebugConfigEnvVar = "OKTA_AWSCLI_DEBUG_CONFIG"
-	// LegacyAWSVariablesEnvVar env var const
-	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
-	// ExpiryAWSVariablesEnvVar env var const
-	ExpiryAWSVariablesEnvVar = "OKTA_AWSCLI_EXPIRY_AWS_VARIABLES"
-	// CacheAccessTokenEnvVar env var const
-	CacheAccessTokenEnvVar = "OKTA_AWSCLI_CACHE_ACCESS_TOKEN"
 
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
@@ -123,29 +127,6 @@ const (
 	OktaYaml = "okta.yaml"
 )
 
-// Config A config object for the CLI
-type Config struct {
-	orgDomain           string
-	oidcAppID           string
-	fedAppID            string
-	awsIAMIdP           string
-	awsIAMRole          string
-	awsSessionDuration  int64
-	format              string
-	profile             string
-	qrCode              bool
-	awsCredentials      string
-	writeAWSCredentials bool
-	openBrowser         bool
-	debug               bool
-	debugAPICalls       bool
-	debugConfig         bool
-	legacyAWSVariables  bool
-	expiryAWSVariables  bool
-	cacheAccessToken    bool
-	httpClient          *http.Client
-}
-
 // OktaYamlConfig represents config settings from $HOME/.okta/okta.yaml
 type OktaYamlConfig struct {
 	AWSCLI struct {
@@ -154,33 +135,63 @@ type OktaYamlConfig struct {
 	} `yaml:"awscli"`
 }
 
-// Attributes config construction
-type Attributes struct {
-	OrgDomain           string
-	OIDCAppID           string
-	FedAppID            string
-	AWSIAMIdP           string
-	AWSIAMRole          string
-	AWSSessionDuration  int64
-	Format              string
-	Profile             string
-	QRCode              bool
-	AWSCredentials      string
-	WriteAWSCredentials bool
-	OpenBrowser         bool
-	Debug               bool
-	DebugAPICalls       bool
-	DebugConfig         bool
-	LegacyAWSVariables  bool
-	ExpiryAWSVariables  bool
-	CacheAccessToken    bool
+// Config A config object for the CLI
+//
+// External consumers of Config use its setters and getters to interact with the
+// underlying data values encapsulated on the Attribute. This allows Config to
+// control data access, be concerned with evaluation, validation, and not
+// allowing direct access to values as is done on structs in the generic case.
+type Config struct {
+	awsCredentials      string
+	awsIAMIdP           string
+	awsIAMRole          string
+	awsSessionDuration  int64
+	cacheAccessToken    bool
+	customScope         string
+	debug               bool
+	debugAPICalls       bool
+	expiryAWSVariables  bool
+	fedAppID            string
+	format              string
+	httpClient          *http.Client
+	legacyAWSVariables  bool
+	oidcAppID           string
+	openBrowser         bool
+	orgDomain           string
+	privateKey          string
+	profile             string
+	qrCode              bool
+	writeAWSCredentials bool
 }
 
-// CreateConfig Creates a new config gathering values in this order of precedence:
+// attributes config construction
+type attributes struct {
+	awsCredentials      string
+	awsIAMIdP           string
+	awsIAMRole          string
+	awsSessionDuration  int64
+	cacheAccessToken    bool
+	customScope         string
+	debug               bool
+	debugAPICalls       bool
+	expiryAWSVariables  bool
+	fedAppID            string
+	format              string
+	legacyAWSVariables  bool
+	oidcAppID           string
+	openBrowser         bool
+	orgDomain           string
+	privateKey          string
+	profile             string
+	qrCode              bool
+	writeAWSCredentials bool
+}
+
+// EvaluateSettings Returns a new config gathering values in this order of precedence:
 //  1. CLI flags
 //  2. ENV variables
 //  3. .env file
-func CreateConfig() (*Config, error) {
+func EvaluateSettings() (*Config, error) {
 	cfgAttrs, err := readConfig()
 	if err != nil {
 		return nil, err
@@ -189,37 +200,35 @@ func CreateConfig() (*Config, error) {
 }
 
 // NewConfig create config from attributes
-func NewConfig(attrs Attributes) (*Config, error) {
+func NewConfig(attrs attributes) (*Config, error) {
 	var err error
 	cfg := &Config{
-		fedAppID:            attrs.FedAppID,
-		awsIAMIdP:           attrs.AWSIAMIdP,
-		awsIAMRole:          attrs.AWSIAMRole,
-		format:              attrs.Format,
-		profile:             attrs.Profile,
-		qrCode:              attrs.QRCode,
-		awsCredentials:      attrs.AWSCredentials,
-		writeAWSCredentials: attrs.WriteAWSCredentials,
-		openBrowser:         attrs.OpenBrowser,
-		debug:               attrs.Debug,
-		debugAPICalls:       attrs.DebugAPICalls,
-		debugConfig:         attrs.DebugConfig,
-		legacyAWSVariables:  attrs.LegacyAWSVariables,
-		expiryAWSVariables:  attrs.ExpiryAWSVariables,
-		cacheAccessToken:    attrs.CacheAccessToken,
+		awsCredentials:      attrs.awsCredentials,
+		awsIAMIdP:           attrs.awsIAMIdP,
+		awsIAMRole:          attrs.awsIAMRole,
+		cacheAccessToken:    attrs.cacheAccessToken,
+		customScope:         attrs.customScope,
+		debug:               attrs.debug,
+		debugAPICalls:       attrs.debugAPICalls,
+		expiryAWSVariables:  attrs.expiryAWSVariables,
+		fedAppID:            attrs.fedAppID,
+		format:              attrs.format,
+		legacyAWSVariables:  attrs.legacyAWSVariables,
+		openBrowser:         attrs.openBrowser,
+		privateKey:          attrs.privateKey,
+		profile:             attrs.profile,
+		qrCode:              attrs.qrCode,
+		writeAWSCredentials: attrs.writeAWSCredentials,
 	}
-	if attrs.DebugConfig {
-		return cfg, nil
-	}
-	err = cfg.SetOrgDomain(attrs.OrgDomain)
+	err = cfg.SetOrgDomain(attrs.orgDomain)
 	if err != nil {
 		return nil, err
 	}
-	err = cfg.SetOIDCAppID(attrs.OIDCAppID)
+	err = cfg.SetOIDCAppID(attrs.oidcAppID)
 	if err != nil {
 		return nil, err
 	}
-	err = cfg.SetAWSSessionDuration(attrs.AWSSessionDuration)
+	err = cfg.SetAWSSessionDuration(attrs.awsSessionDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -234,123 +243,130 @@ func NewConfig(attrs Attributes) (*Config, error) {
 	return cfg, nil
 }
 
-func readConfig() (Attributes, error) {
-	attrs := Attributes{
-		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
-		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
-		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
-		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
-		Debug:               viper.GetBool(DebugFlag),
-		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
-		DebugConfig:         viper.GetBool(DebugConfigFlag),
-		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
-		Format:              viper.GetString(FormatFlag),
-		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
-		ExpiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
-		CacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
-		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
-		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
-		OrgDomain:           viper.GetString(OrgDomainFlag),
-		Profile:             viper.GetString(ProfileFlag),
-		QRCode:              viper.GetBool(QRCodeFlag),
-		WriteAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
+func readConfig() (attributes, error) {
+	attrs := attributes{
+		awsCredentials:      viper.GetString(AWSCredentialsFlag),
+		awsIAMIdP:           viper.GetString(AWSIAMIdPFlag),
+		awsIAMRole:          viper.GetString(AWSIAMRoleFlag),
+		awsSessionDuration:  viper.GetInt64(SessionDurationFlag),
+		customScope:         viper.GetString(CustomScopeFlag),
+		debug:               viper.GetBool(DebugFlag),
+		debugAPICalls:       viper.GetBool(DebugAPICallsFlag),
+		fedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
+		format:              viper.GetString(FormatFlag),
+		legacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
+		expiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
+		cacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
+		oidcAppID:           viper.GetString(OIDCClientIDFlag),
+		openBrowser:         viper.GetBool(OpenBrowserFlag),
+		orgDomain:           viper.GetString(OrgDomainFlag),
+		privateKey:          viper.GetString(PrivateKeyFlag),
+		profile:             viper.GetString(ProfileFlag),
+		qrCode:              viper.GetBool(QRCodeFlag),
+		writeAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
 	}
-	if attrs.Format == "" {
-		attrs.Format = EnvVarFormat
+	if attrs.format == "" {
+		attrs.format = EnvVarFormat
 	}
 
 	// mimic AWS CLI behavior, if profile value is not set by flag check
 	// the ENV VAR, else set to "default"
-	if attrs.Profile == "" {
-		attrs.Profile = viper.GetString(downCase(ProfileEnvVar))
+	if attrs.profile == "" {
+		attrs.profile = viper.GetString(downCase(ProfileEnvVar))
 	}
-	if attrs.Profile == "" {
-		attrs.Profile = "default"
+	if attrs.profile == "" {
+		attrs.profile = "default"
 	}
 
 	// Viper binds ENV VARs to a lower snake version, set the configs with them
 	// if they haven't already been set by cli flag binding.
-	if attrs.OrgDomain == "" {
-		attrs.OrgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
+	if attrs.orgDomain == "" {
+		attrs.orgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
 	}
-	if attrs.OIDCAppID == "" {
-		attrs.OIDCAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
+	if attrs.oidcAppID == "" {
+		attrs.oidcAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
 	}
-	if attrs.FedAppID == "" {
-		attrs.FedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
+	if attrs.fedAppID == "" {
+		attrs.fedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
 	}
-	if attrs.AWSIAMIdP == "" {
-		attrs.AWSIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
+	if attrs.awsIAMIdP == "" {
+		attrs.awsIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
 	}
-	if attrs.AWSIAMRole == "" {
-		attrs.AWSIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
+	if attrs.awsIAMRole == "" {
+		attrs.awsIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
 	}
-	if !attrs.QRCode {
-		attrs.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
+	if !attrs.qrCode {
+		attrs.qrCode = viper.GetBool(downCase(QRCodeEnvVar))
+	}
+	if attrs.privateKey == "" {
+		attrs.privateKey = viper.GetString(downCase(PrivateKeyEnvVar))
+	}
+	if attrs.customScope == "" {
+		attrs.customScope = viper.GetString(downCase(CustomScopeEnvVar))
 	}
 
 	// if session duration is 0, inspect the ENV VAR for a value, else set
 	// a default of 3600
-	if attrs.AWSSessionDuration == 0 {
-		attrs.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	if attrs.awsSessionDuration == 0 {
+		attrs.awsSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
 	}
-	if attrs.AWSSessionDuration == 0 {
-		attrs.AWSSessionDuration = 3600
+	if attrs.awsSessionDuration == 0 {
+		attrs.awsSessionDuration = 3600
 	}
 
 	// correct org domain if it's in admin form
-	orgDomain := strings.Replace(attrs.OrgDomain, "-admin", "", -1)
-	if orgDomain != attrs.OrgDomain {
-		fmt.Printf("WARNING: proactively correcting org domain %q to non-admin form %q.\n\n", attrs.OrgDomain, orgDomain)
-		attrs.OrgDomain = orgDomain
+	orgDomain := strings.Replace(attrs.orgDomain, "-admin", "", -1)
+	if orgDomain != attrs.orgDomain {
+		fmt.Fprintf(os.Stderr, "WARNING: proactively correcting org domain %q to non-admin form %q.\n\n", attrs.orgDomain, orgDomain)
+		attrs.orgDomain = orgDomain
 	}
-	if strings.HasPrefix(attrs.OrgDomain, "http") {
-		u, err := url.Parse(attrs.OrgDomain)
+	if strings.HasPrefix(attrs.orgDomain, "http") {
+		u, err := url.Parse(attrs.orgDomain)
 		// try to help correct org domain value if parsing occurs correctly,
 		// else let the CLI error out else where
 		if err == nil {
 			orgDomain = u.Hostname()
-			fmt.Printf("WARNING: proactively correcting URL format org domain %q value to hostname only form %q.\n\n", attrs.OrgDomain, orgDomain)
-			attrs.OrgDomain = orgDomain
+			fmt.Fprintf(os.Stderr, "WARNING: proactively correcting URL format org domain %q value to hostname only form %q.\n\n", attrs.orgDomain, orgDomain)
+			attrs.orgDomain = orgDomain
 		}
 	}
-	if strings.HasSuffix(attrs.OrgDomain, "/") {
-		orgDomain = string([]byte(attrs.OrgDomain)[0 : len(attrs.OrgDomain)-1])
+	if strings.HasSuffix(attrs.orgDomain, "/") {
+		orgDomain = string([]byte(attrs.orgDomain)[0 : len(attrs.orgDomain)-1])
 		// try to help correct malformed org domain value
-		fmt.Printf("WARNING: proactively correcting malformed org domain %q value to hostname only form %q.\n\n", attrs.OrgDomain, orgDomain)
-		attrs.OrgDomain = orgDomain
+		fmt.Fprintf(os.Stderr, "WARNING: proactively correcting malformed org domain %q value to hostname only form %q.\n\n", attrs.orgDomain, orgDomain)
+		attrs.orgDomain = orgDomain
 	}
 
 	// There is always a default aws credentials path set in root.go's init
 	// function so overwrite the config value if the operator is attempting to
 	// set it by ENV VAR value.
 	if viper.GetString(downCase(AWSCredentialsEnvVar)) != "" {
-		attrs.AWSCredentials = viper.GetString(downCase(AWSCredentialsEnvVar))
+		attrs.awsCredentials = viper.GetString(downCase(AWSCredentialsEnvVar))
 	}
-	if !attrs.WriteAWSCredentials {
-		attrs.WriteAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
+	if !attrs.writeAWSCredentials {
+		attrs.writeAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
 	}
-	if attrs.WriteAWSCredentials {
+	if attrs.writeAWSCredentials {
 		// writing aws creds option implies "aws-credentials" format
-		attrs.Format = AWSCredentialsFormat
+		attrs.format = AWSCredentialsFormat
 	}
-	if !attrs.OpenBrowser {
-		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
+	if !attrs.openBrowser {
+		attrs.openBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
-	if !attrs.Debug {
-		attrs.Debug = viper.GetBool(downCase(DebugEnvVar))
+	if !attrs.debug {
+		attrs.debug = viper.GetBool(downCase(DebugEnvVar))
 	}
-	if !attrs.DebugAPICalls {
-		attrs.DebugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
+	if !attrs.debugAPICalls {
+		attrs.debugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
 	}
-	if !attrs.LegacyAWSVariables {
-		attrs.LegacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
+	if !attrs.legacyAWSVariables {
+		attrs.legacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
 	}
-	if !attrs.ExpiryAWSVariables {
-		attrs.ExpiryAWSVariables = viper.GetBool(downCase(ExpiryAWSVariablesEnvVar))
+	if !attrs.expiryAWSVariables {
+		attrs.expiryAWSVariables = viper.GetBool(downCase(ExpiryAWSVariablesEnvVar))
 	}
-	if !attrs.CacheAccessToken {
-		attrs.CacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
+	if !attrs.cacheAccessToken {
+		attrs.cacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
 	}
 	return attrs, nil
 }
@@ -360,42 +376,25 @@ func downCase(s string) string {
 	return strings.ToLower(s)
 }
 
-// OrgDomain --
-func (c *Config) OrgDomain() string {
-	return c.orgDomain
+// AWSCredentials --
+func (c *Config) AWSCredentials() string {
+	return c.awsCredentials
 }
 
-// SetOrgDomain --
-func (c *Config) SetOrgDomain(domain string) error {
-	if domain == "" {
-		return NewValidationError(OrgDomainMsg, CannotBeBlankErrMsg)
-	}
-	c.orgDomain = domain
+// SetAWSCredentials --
+func (c *Config) SetAWSCredentials(credentials string) error {
+	c.awsCredentials = credentials
 	return nil
 }
 
-// OIDCAppID --
-func (c *Config) OIDCAppID() string {
-	return c.oidcAppID
+// WriteAWSCredentials --
+func (c *Config) WriteAWSCredentials() bool {
+	return c.writeAWSCredentials
 }
 
-// SetOIDCAppID --
-func (c *Config) SetOIDCAppID(appID string) error {
-	if appID == "" {
-		return NewValidationError("OIDC App ID", CannotBeBlankErrMsg)
-	}
-	c.oidcAppID = appID
-	return nil
-}
-
-// FedAppID --
-func (c *Config) FedAppID() string {
-	return c.fedAppID
-}
-
-// SetFedAppID --
-func (c *Config) SetFedAppID(appID string) error {
-	c.fedAppID = appID
+// SetWriteAWSCredentials --
+func (c *Config) SetWriteAWSCredentials(writeCredentials bool) error {
+	c.writeAWSCredentials = writeCredentials
 	return nil
 }
 
@@ -428,76 +427,29 @@ func (c *Config) AWSSessionDuration() int64 {
 
 // SetAWSSessionDuration --
 func (c *Config) SetAWSSessionDuration(duration int64) error {
-	if duration < 60 || duration > 43200 {
-		return NewValidationError("AWS Session Duration", "must be between 60 and 43200")
-	}
 	c.awsSessionDuration = duration
 	return nil
 }
 
-// Format --
-func (c *Config) Format() string {
-	return c.format
+// CacheAccessToken --
+func (c *Config) CacheAccessToken() bool {
+	return c.cacheAccessToken
 }
 
-// SetFormat --
-func (c *Config) SetFormat(format string) error {
-	c.format = format
+// SetCacheAccessToken --
+func (c *Config) SetCacheAccessToken(cacheAccessToken bool) error {
+	c.cacheAccessToken = cacheAccessToken
 	return nil
 }
 
-// Profile --
-func (c *Config) Profile() string {
-	return c.profile
+// CustomScope --
+func (c *Config) CustomScope() string {
+	return c.customScope
 }
 
-// SetProfile --
-func (c *Config) SetProfile(profile string) error {
-	c.profile = profile
-	return nil
-}
-
-// QRCode --
-func (c *Config) QRCode() bool {
-	return c.qrCode
-}
-
-// SetQRCode --
-func (c *Config) SetQRCode(qrCode bool) error {
-	c.qrCode = qrCode
-	return nil
-}
-
-// AWSCredentials --
-func (c *Config) AWSCredentials() string {
-	return c.awsCredentials
-}
-
-// SetAWSCredentials --
-func (c *Config) SetAWSCredentials(credentials string) error {
-	c.awsCredentials = credentials
-	return nil
-}
-
-// WriteAWSCredentials --
-func (c *Config) WriteAWSCredentials() bool {
-	return c.writeAWSCredentials
-}
-
-// SetWriteAWSCredentials --
-func (c *Config) SetWriteAWSCredentials(writeCredentials bool) error {
-	c.writeAWSCredentials = writeCredentials
-	return nil
-}
-
-// OpenBrowser --
-func (c *Config) OpenBrowser() bool {
-	return c.openBrowser
-}
-
-// SetOpenBrowser --
-func (c *Config) SetOpenBrowser(openBrowser bool) error {
-	c.openBrowser = openBrowser
+// SetCustomScope --
+func (c *Config) SetCustomScope(customScope string) error {
+	c.customScope = customScope
 	return nil
 }
 
@@ -523,14 +475,47 @@ func (c *Config) SetDebugAPICalls(debugAPICalls bool) error {
 	return nil
 }
 
-// DebugConfig --
-func (c *Config) DebugConfig() bool {
-	return c.debugConfig
+// ExpiryAWSVariables --
+func (c *Config) ExpiryAWSVariables() bool {
+	return c.expiryAWSVariables
 }
 
-// SetDebugConfig --
-func (c *Config) SetDebugConfig(debugConfig bool) error {
-	c.debugConfig = debugConfig
+// SetExpiryAWSVariables --
+func (c *Config) SetExpiryAWSVariables(expiryAWSVariables bool) error {
+	c.expiryAWSVariables = expiryAWSVariables
+	return nil
+}
+
+// FedAppID --
+func (c *Config) FedAppID() string {
+	return c.fedAppID
+}
+
+// SetFedAppID --
+func (c *Config) SetFedAppID(appID string) error {
+	c.fedAppID = appID
+	return nil
+}
+
+// Format --
+func (c *Config) Format() string {
+	return c.format
+}
+
+// SetFormat --
+func (c *Config) SetFormat(format string) error {
+	c.format = format
+	return nil
+}
+
+// HTTPClient --
+func (c *Config) HTTPClient() *http.Client {
+	return c.httpClient
+}
+
+// SetHTTPClient --
+func (c *Config) SetHTTPClient(client *http.Client) error {
+	c.httpClient = client
 	return nil
 }
 
@@ -545,36 +530,69 @@ func (c *Config) SetLegacyAWSVariables(legacyAWSVariables bool) error {
 	return nil
 }
 
-// ExpiryAWSVariables --
-func (c *Config) ExpiryAWSVariables() bool {
-	return c.expiryAWSVariables
+// OIDCAppID --
+func (c *Config) OIDCAppID() string {
+	return c.oidcAppID
 }
 
-// SetExpiryAWSVariables --
-func (c *Config) SetExpiryAWSVariables(expiryAWSVariables bool) error {
-	c.expiryAWSVariables = expiryAWSVariables
+// SetOIDCAppID --
+func (c *Config) SetOIDCAppID(appID string) error {
+	c.oidcAppID = appID
 	return nil
 }
 
-// CacheAccessToken --
-func (c *Config) CacheAccessToken() bool {
-	return c.cacheAccessToken
+// OpenBrowser --
+func (c *Config) OpenBrowser() bool {
+	return c.openBrowser
 }
 
-// SetCacheAccessToken --
-func (c *Config) SetCacheAccessToken(cacheAccessToken bool) error {
-	c.cacheAccessToken = cacheAccessToken
+// SetOpenBrowser --
+func (c *Config) SetOpenBrowser(openBrowser bool) error {
+	c.openBrowser = openBrowser
 	return nil
 }
 
-// HTTPClient --
-func (c *Config) HTTPClient() *http.Client {
-	return c.httpClient
+// OrgDomain --
+func (c *Config) OrgDomain() string {
+	return c.orgDomain
 }
 
-// SetHTTPClient --
-func (c *Config) SetHTTPClient(client *http.Client) error {
-	c.httpClient = client
+// SetOrgDomain --
+func (c *Config) SetOrgDomain(domain string) error {
+	c.orgDomain = domain
+	return nil
+}
+
+// PrivateKey --
+func (c *Config) PrivateKey() string {
+	return c.privateKey
+}
+
+// SetPrivateKey --
+func (c *Config) SetPrivateKey(privateKey string) error {
+	c.privateKey = privateKey
+	return nil
+}
+
+// Profile --
+func (c *Config) Profile() string {
+	return c.profile
+}
+
+// SetProfile --
+func (c *Config) SetProfile(profile string) error {
+	c.profile = profile
+	return nil
+}
+
+// QRCode --
+func (c *Config) QRCode() bool {
+	return c.qrCode
+}
+
+// SetQRCode --
+func (c *Config) SetQRCode(qrCode bool) error {
+	c.qrCode = qrCode
 	return nil
 }
 

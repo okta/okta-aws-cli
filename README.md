@@ -2,15 +2,15 @@
 
 `okta-aws-cli` is a CLI program allowing Okta to act as an identity provider and
 retrieve AWS IAM temporary credentials for use in AWS CLI, AWS SDKs, and other
-tools accessing the AWS API. It has two modes of operation: `web` - combined
-human and device authorization; and `m2m` - headless authorization.
+tools accessing the AWS API. There are two primary commands of operation: `web` -
+combined human and device authorization; and `m2m` - headless authorization.
 `okta-aws-cli web` is native to the Okta Identity Engine and its authentication
 and device authorization flows. `okta-aws-cli web` is not compatible with Okta
 Classic orgs. `okta-aws-cli m2m` makes use of public/private authorization and
 OIDC. 
 
-Example `okta-aws-cli` in *default* `web` mode with environment variables
-output:
+Example `okta-aws-cli` `web` command with environment variables (when command is
+missing *defaults* to `web`) output:
 
 ```shell
  # *nix, export statements
@@ -45,16 +45,17 @@ format.
 
 ## Table of Contents
 
- - [Web Mode](#web-mode)
-   - [Web Mode Requirements](#web-mode-requirements)
+ - [Commands](#commands)
+ - [Web Command](#web-command)
+   - [Web Command Requirements](#web-command-requirements)
      - [Multiple AWS environments](#multiple-aws-environments)
      - [Non-Admin Users](#non-admin-users)
- - [M2M mode](#m2m-mode)
-   - [M2M Mode Requirements](#m2m-mode-requirements)
+ - [M2M Command](#m2m-command)
+   - [M2M Command Requirements](#m2m-command-requirements)
  - [Configuration](#configuration)
    - [Global settings](#global-settings)
-   - [Web mode settings](#web-mode-settings)
-   - [M2M mode settings](#m2m-mode-settings)
+   - [Web command settings](#web-command-settings)
+   - [M2M command settings](#m2m-command-settings)
    - [Friendly IdP and Role menu labels](#friendly-idp-and-role-menu-labels)
  - [Installation](#installation)
  - [Recommendations](#recommendations)
@@ -64,7 +65,15 @@ format.
  - [Contributing](#contributing)
  - [References](#references)
 
-## Web Mode
+## Commands
+
+| Command | Description |
+|-----|-----|
+| web | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
+| m2m | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
+| debug | Debug okta.yaml config file and exit. |
+
+## Web Command
 
 ```shell
 $ okta-aws-cli web
@@ -73,12 +82,12 @@ export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
 ```
 
-Web mode is the original human oriented device authorization mode. The user
+Web command is the original human oriented device authorization mode. The user
 executes `okta-aws-cli web` and a web browser is opened to complete the device
 authorization at the Okta web site. After that the human returns to the CLI they
 select an identity provider and a role from that IdP.
 
-Web mode is an integration that pairs an Okta [OIDC Native
+Web command is an integration that pairs an Okta [OIDC Native
 Application](https://developer.okta.com/blog/2021/11/12/native-sso) with an 
 [Okta AWS Federation integration
 application](https://www.okta.com/integrations/aws-account-federation/). In turn
@@ -103,9 +112,9 @@ format.
 
 The `Session Token` has a default expiry of 60 minutes.
 
-### Web Mode Requirements
+### Web Command Requirements
 
-For web mode the Okta AWS CLI requires an OIE organization and an [OIDC Native
+For web command the Okta AWS CLI requires an OIE organization and an [OIDC Native
 Application](https://developer.okta.com/blog/2021/11/12/native-sso) paired with
 an [Okta AWS Federation integration
 application](https://www.okta.com/integrations/aws-account-federation/). The
@@ -183,7 +192,7 @@ It is on our feature backlog to get support into the Okta API to allow the
 multiple AWS Fed apps feature into okta-aws-cli without needing this work
 around using a custom admin role.
 
-## M2M mode
+## M2M Command
 
 ```shell
 $ okta-aws-cli m2m
@@ -192,7 +201,7 @@ export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
 ```
 
-M2M mode is headless machine to machine authorization. The operator executes
+M2M command is headless machine to machine authorization. The operator executes
 `okta-aws-cli m2m` which has access to a private key whose public key is
 registered in an Okta API service application. `okta-aws-cli m2m` signs a
 request for an Okta access token that is associated with the Okta service
@@ -215,7 +224,7 @@ format.
 
 The `Session Token` has a default expiry of 60 minutes.
 
-### M2M Mode Requirements
+### M2M Command Requirements
 
 M2M is an integration of:
 
@@ -323,10 +332,13 @@ in US govcloud and other non-North America regions.
 
 Also see the CLI's online help `$ okta-aws-cli --help`
 
-These global settings are all optional:
+These global settings are optional unless marked otherwise:
 
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
+| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `test.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_ORG_DOMAIN` |
+| OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_OIDC_CLIENT_ID` |
+| AWS IAM Role ARN (**optional** for `web`, **required** for `m2m`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
 | AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
 | Output format | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file, `process-credentials` for credentials as JSON | `--format [value]` | `OKTA_AWSCLI_FORMAT` |
 | Profile | Default is `default` | `--profile [value]` | `OKTA_AWSCLI_PROFILE` |
@@ -338,28 +350,23 @@ These global settings are all optional:
 | Print operational information to the screen for debugging purposes | `true` if flag is present | `--debug` | `OKTA_AWSCLI_DEBUG=true` |
 | Verbosely print all API calls/responses to the screen | `true` if flag is present | `--debug-api-calls` | `OKTA_AWSCLI_DEBUG_API_CALLS=true` |
 | HTTP/HTTPS Proxy support | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) | n/a | `HTTP_PROXY` or `HTTPS_PROXY` |
-| Debug okta.yaml config file and exit | `true` if flag is present | `--debug-config` | `OKTA_AWSCLI_DEBUG_CONFIG=true` |
 
 
-### Web mode settings
+### Web command settings
 
 If the OIDC Native App doesn't also have the `okta.apps.read` grant the client
 ID of the [Okta AWS
 Federation](https://www.okta.com/integrations/aws-account-federation/)
 integration application is also required.
 
+These settings are all optional:
+
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
-| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `test.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_ORG_DOMAIN` |
-| OIDC Client ID (**required**) | The OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id) | `--oidc-client-id [value]` | `OKTA_OIDC_CLIENT_ID` |
-| Okta AWS Account Federation integration app ID (optional) | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason | `--aws-acct-fed-app-id [value]` | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` |
-| Preselect the AWS IAM Identity Provider ARN (optional) | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. | `--aws-iam-idp [value]` | `OKTA_AWSCLI_IAM_IDP` |
-
-| Preselects the AWS IAM Role ARN to assume (optional) | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. If there are other Roles available they will not be listed. | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
-| Display QR Code (optional) | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
-| Automatically open the activation URL with the system web browser (optional) | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
-
-
+| Okta AWS Account Federation integration app ID | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason | `--aws-acct-fed-app-id [value]` | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` |
+| AWS IAM Identity Provider ARN | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. | `--aws-iam-idp [value]` | `OKTA_AWSCLI_IAM_IDP` |
+| Display QR Code | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
+| Automatically open the activation URL with the system web browser | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 
 #### Allowed Web SSO Client ID
 
@@ -414,15 +421,14 @@ $ okta-aws-cli web --org-domain test.okta.com \
     --aws-acct-fed-app-id 0oa9x1rifa2H6Q5d8325
 ```
 
-### M2M mode settings
+### M2M command settings
+
+These settings are optional unless marked otherwise:
 
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
-| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `test.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_ORG_DOMAIN` |
-| OIDC Client ID (**required**) | The API services app ID | `--oidc-client-id [value]` | `OKTA_OIDC_CLIENT_ID` |
-| AWS IAM Role ARN (required) | Preselects the role list to this preferred IAM role for the given IAM Identity Provider. | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
 | Private Key (**required**) | PEM or JWKS format private key whose public key is stored on the service app | `--private-key [value]` | `OKTA_AWSCLI_PRIVATE_KEY` |
-| Custom scope name (optional) | The custom scope established in the custom authorization server. Default `okta-aws-cli` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |
+| Custom scope name | The custom scope established in the custom authorization server. Default `okta-aws-cli` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |
 
 ### Friendly IdP and Role menu labels
 
