@@ -73,6 +73,13 @@ func NewWebCommand() *cobra.Command {
 				return err
 			}
 
+			// TODO refactor the naming convention
+			// webAuth, err := webauth.NewWebSSOAuthentication(config)
+			// if err != nil {
+			// 	return err
+			// }
+			// return webAuth.EstablishIAMCredentials()
+
 			st, err := sessiontoken.NewSessionToken(config)
 			if err != nil {
 				return err

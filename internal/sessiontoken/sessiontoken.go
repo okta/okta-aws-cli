@@ -47,20 +47,18 @@ import (
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	boff "github.com/okta/okta-aws-cli/internal/backoff"
 	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/output"
+	"github.com/okta/okta-aws-cli/internal/utils"
 )
 
 const (
 	amazonAWS                = "amazon_aws"
 	accept                   = "Accept"
-	applicationJSON          = "application/json"
-	applicationXWwwForm      = "application/x-www-form-urlencoded"
-	contentType              = "Content-Type"
 	userAgent                = "User-Agent"
 	nameKey                  = "name"
 	saml2Attribute           = "saml2:attribute"
 	samlAttributesRole       = "https://aws.amazon.com/SAML/Attributes/Role"
-	oauthV1TokenEndpointFmt  = "https://%s/oauth2/v1/token"
 	askIDPError              = "error asking for IdP selection: %w"
 	noRoleError              = "provider %q has no roles to choose from"
 	noIDPsError              = "no IdPs to choose from"
@@ -90,19 +88,6 @@ type SessionToken struct {
 	fedAppAlreadySelected bool
 }
 
-// accessToken Encapsulates an Okta access token
-// https://developer.okta.com/docs/reference/api/oidc/#token
-type accessToken struct {
-	AccessToken  string `json:"access_token,omitempty"`
-	IDToken      string `json:"id_token,omitempty"`
-	TokenType    string `json:"token_type,omitempty"`
-	Scope        string `json:"scope,omitempty"`
-	ExpiresIn    int64  `json:"expires_in,omitempty"`
-	RefreshToken string `json:"refresh_token,omitempty"`
-	DeviceSecret string `json:"device_secret,omitempty"`
-	Expiry       string `json:"expiry"`
-}
-
 // deviceAuthorization Encapsulates Okta API result to
 // /oauth2/v1/device/authorize call
 type deviceAuthorization struct {
@@ -127,12 +112,6 @@ type oktaApplication struct {
 			WebSSOClientID      string `json:"webSSOAllowedClient"`
 		} `json:"app"`
 	} `json:"settings"`
-}
-
-// apiError Wrapper for Okta API error
-type apiError struct {
-	Error            string `json:"error,omitempty"`
-	ErrorDescription string `json:"error_description,omitempty"`
 }
 
 // idpAndRole IdP and role pairs
@@ -168,7 +147,7 @@ func NewSessionToken(config *config.Config) (token *SessionToken, err error) {
 // token.
 func (s *SessionToken) EstablishToken() error {
 	clientID := s.config.OIDCAppID()
-	var at *accessToken
+	var at *okta.AccessToken
 	var apps []*oktaApplication
 	var err error
 	at = s.cachedAccessToken()
@@ -309,7 +288,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	return idps[selected].ID, nil
 }
 
-func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *accessToken) error {
+func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *okta.AccessToken) error {
 	at, err := s.fetchSSOWebToken(clientID, fedAppID, at)
 	if err != nil {
 		return err
@@ -575,7 +554,7 @@ func (s *SessionToken) extractIDPAndRolesMapFromAssertion(encoded string) (irmap
 }
 
 // fetchSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
-func (s *SessionToken) fetchSAMLAssertion(at *accessToken) (assertion string, err error) {
+func (s *SessionToken) fetchSAMLAssertion(at *okta.AccessToken) (assertion string, err error) {
 	params := url.Values{"token": {at.AccessToken}}
 	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", s.config.OrgDomain(), params.Encode())
 
@@ -605,8 +584,8 @@ func (s *SessionToken) fetchSAMLAssertion(at *accessToken) (assertion string, er
 
 // fetchSSOWebToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *accessToken) (token *accessToken, err error) {
-	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain())
+func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *okta.AccessToken) (token *okta.AccessToken, err error) {
+	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, s.config.OrgDomain())
 
 	data := url.Values{
 		"client_id":            {clientID},
@@ -624,8 +603,8 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(accept, applicationJSON)
-	req.Header.Add(contentType, applicationXWwwForm)
+	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient().Do(req)
@@ -639,7 +618,7 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
-		var apiErr apiError
+		var apiErr okta.APIError
 		err = json.NewDecoder(resp.Body).Decode(&apiErr)
 		if err != nil {
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
@@ -648,7 +627,7 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *access
 		return nil, fmt.Errorf(baseErrStr+", error: %q, description: %q", resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
-	token = &accessToken{}
+	token = &okta.AccessToken{}
 	err = json.NewDecoder(resp.Body).Decode(token)
 	if err != nil {
 		return nil, err
@@ -695,7 +674,7 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 // after getting anything other than a 403 on /api/v1/apps will be wrapped as as
 // an error that is related having multiple fed apps available.  Requires
 // assoicated OIDC app has been granted okta.apps.read to its scope.
-func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*oktaApplication, err error) {
+func (s *SessionToken) listFedApps(clientID string, at *okta.AccessToken) (apps []*oktaApplication, err error) {
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain()))
 	if err != nil {
 		return nil, err
@@ -710,8 +689,8 @@ func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*ok
 		return nil, err
 	}
 
-	req.Header.Add(accept, applicationJSON)
-	req.Header.Add(contentType, applicationJSON)
+	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.ContentType, utils.ApplicationJSON)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
 	resp, err := s.config.HTTPClient().Do(req)
@@ -751,15 +730,15 @@ func (s *SessionToken) listFedApps(clientID string, at *accessToken) (apps []*ok
 
 // fetchAccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAuthorization) (at *accessToken, err error) {
-	apiURL := fmt.Sprintf(oauthV1TokenEndpointFmt, s.config.OrgDomain())
+func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAuthorization) (at *okta.AccessToken, err error) {
+	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, s.config.OrgDomain())
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(accept, applicationJSON)
-	req.Header.Add(contentType, applicationXWwwForm)
+	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	var bodyBytes []byte
@@ -806,7 +785,7 @@ func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAutho
 		return nil, err
 	}
 
-	at = &accessToken{}
+	at = &okta.AccessToken{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(at)
 	if err != nil {
 		return nil, err
@@ -828,8 +807,8 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(accept, applicationJSON)
-	req.Header.Add(contentType, applicationXWwwForm)
+	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient().Do(req)
@@ -840,8 +819,8 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 		return nil, fmt.Errorf("authorize received API response %q", resp.Status)
 	}
 
-	ct := resp.Header.Get(contentType)
-	if !strings.Contains(ct, applicationJSON) {
+	ct := resp.Header.Get(utils.ContentType)
+	if !strings.Contains(ct, utils.ApplicationJSON) {
 		return nil, fmt.Errorf("authorize non-JSON API response content type %q", ct)
 	}
 
@@ -913,8 +892,8 @@ func findSAMLRoleAttibute(n *html.Node) (node *html.Node, found bool) {
 	return nil, false
 }
 
-func apiErr(bodyBytes []byte) (ae *apiError, err error) {
-	ae = &apiError{}
+func apiErr(bodyBytes []byte) (ae *okta.APIError, err error) {
+	ae = &okta.APIError{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
 	return
 }
@@ -934,7 +913,7 @@ func (s *SessionToken) isClassicOrg() bool {
 	if err != nil {
 		return false
 	}
-	req.Header.Add(accept, applicationJSON)
+	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
 	resp, err := s.config.HTTPClient().Do(req)
@@ -960,7 +939,7 @@ func (s *SessionToken) isClassicOrg() bool {
 
 // cachedAccessToken will returned the cached access token if it exists and is
 // not expired.
-func (s *SessionToken) cachedAccessToken() (at *accessToken) {
+func (s *SessionToken) cachedAccessToken() (at *okta.AccessToken) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
@@ -971,7 +950,7 @@ func (s *SessionToken) cachedAccessToken() (at *accessToken) {
 		return
 	}
 
-	_at := accessToken{}
+	_at := okta.AccessToken{}
 	err = json.Unmarshal(atJSON, &_at)
 	if err != nil {
 		return
@@ -991,7 +970,7 @@ func (s *SessionToken) cachedAccessToken() (at *accessToken) {
 
 // cacheAccessToken will cache the access token for later use if enabled. Silent
 // if fails.
-func (s *SessionToken) cacheAccessToken(at *accessToken) {
+func (s *SessionToken) cacheAccessToken(at *okta.AccessToken) {
 	if !s.config.CacheAccessToken() {
 		return
 	}

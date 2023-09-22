@@ -427,6 +427,8 @@ These settings are optional unless marked otherwise:
 
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
+| Custom Authorization Server ID (**required**) | The ID of the Okta custom authorization server | `--authz-id [value]` | `OKTA_AUTHZ_ID` |
+| Key ID (kid) (**required**) | The ID of the key stored in the service app | `--key-id [value]` | `OKTA_AWSCLI_KEY_ID` |
 | Private Key (**required**) | PEM or JWKS format private key whose public key is stored on the service app | `--private-key [value]` | `OKTA_AWSCLI_PRIVATE_KEY` |
 | Custom scope name | The custom scope established in the custom authorization server. Default `okta-aws-cli` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |
 
