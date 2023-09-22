@@ -21,5 +21,6 @@ import (
 )
 
 func main() {
-	root.Execute()
+	defaultCommand := "web"
+	root.Execute(defaultCommand)
 }
