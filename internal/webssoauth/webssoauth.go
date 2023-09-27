@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sessiontoken
+package webssoauth
 
 import (
 	"bytes"
@@ -82,36 +82,20 @@ type roleTemplateData struct {
 	Role string
 }
 
-// SessionToken Encapsulates the work of getting an AWS Session Token
-type SessionToken struct {
+// WebSSOAuthentication Encapsulates the work of getting temporary IAM
+// credentials through Okta's Web SSO authentication with an Okta AWS Federation
+// Application.
+//
+// The overall API interactions are as follows:
+// - CLI starts device authorization at /oauth2/v1/device/authorize
+// - CLI polls for access token from device auth at /oauth2/v1/token
+//   - Access token granted by Okta once user is authorized
+//
+// - CLI presents access token to Okta AWS Fed app for a SAML assertion at /login/token/sso
+// - CLI presents SAML assertion to AWS STS for temporary AWS IAM creds
+type WebSSOAuthentication struct {
 	config                *config.Config
 	fedAppAlreadySelected bool
-}
-
-// deviceAuthorization Encapsulates Okta API result to
-// /oauth2/v1/device/authorize call
-type deviceAuthorization struct {
-	UserCode                string `json:"user_code,omitempty"`
-	DeviceCode              string `json:"device_code,omitempty"`
-	VerificationURI         string `json:"verification_uri,omitempty"`
-	VerificationURIComplete string `json:"verification_uri_complete,omitempty"`
-	ExpiresIn               int    `json:"expires_in,omitempty"`
-	Interval                int    `json:"interval,omitempty"`
-}
-
-// oktaApplication Okta API application object
-// See: https://developer.okta.com/docs/reference/api/apps/#application-object
-type oktaApplication struct {
-	ID       string `json:"id"`
-	Label    string `json:"label"`
-	Name     string `json:"name"`
-	Status   string `json:"status"`
-	Settings struct {
-		App struct {
-			IdentityProviderARN string `json:"identityProviderArn"`
-			WebSSOClientID      string `json:"webSSOAllowedClient"`
-		} `json:"app"`
-	} `json:"settings"`
 }
 
 // idpAndRole IdP and role pairs
@@ -129,12 +113,12 @@ var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
 	return nil
 }
 
-// NewSessionToken Creates a new session token.
-func NewSessionToken(config *config.Config) (token *SessionToken, err error) {
+// NewWebSSOAuthentication New Web SSO Authentication constructor
+func NewWebSSOAuthentication(config *config.Config) (token *WebSSOAuthentication, err error) {
 	if err != nil {
 		return nil, err
 	}
-	token = &SessionToken{
+	token = &WebSSOAuthentication{
 		config: config,
 	}
 	if token.isClassicOrg() {
@@ -143,37 +127,36 @@ func NewSessionToken(config *config.Config) (token *SessionToken, err error) {
 	return token, nil
 }
 
-// EstablishToken Template method of the steps to establish an AWS session
-// token.
-func (s *SessionToken) EstablishToken() error {
-	clientID := s.config.OIDCAppID()
+// EstablishIAMCredentials Steps to establish an AWS session token.
+func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
+	clientID := w.config.OIDCAppID()
 	var at *okta.AccessToken
-	var apps []*oktaApplication
+	var apps []*okta.Application
 	var err error
-	at = s.cachedAccessToken()
+	at = w.cachedAccessToken()
 
-	// If there is a cached token, and it isn't expired, but the API 401s redo
-	// the authorize step.
+	// If there is a cached okta access token, and it isn't expired, but the API
+	// 401s redo the authorize step.
 	for attempt := 1; attempt <= 2; attempt++ {
 		err = nil
 		if at == nil {
-			deviceAuth, err := s.authorize(clientID)
+			deviceAuth, err := w.authorize(clientID)
 			if err != nil {
 				return err
 			}
 
-			s.promptAuthentication(deviceAuth)
+			w.promptAuthentication(deviceAuth)
 
-			at, err = s.fetchAccessToken(clientID, deviceAuth)
+			at, err = w.fetchAccessToken(clientID, deviceAuth)
 			if err != nil {
 				return err
 			}
 			at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
-			s.cacheAccessToken(at)
+			w.cacheAccessToken(at)
 		}
-		if s.config.FedAppID() != "" {
+		if w.config.FedAppID() != "" {
 			// Alternate path when operator knows their AWS Fed app ID
-			err = s.establishTokenWithFedAppID(clientID, s.config.FedAppID(), at)
+			err = w.establishTokenWithFedAppID(clientID, w.config.FedAppID(), at)
 			if at != nil && err != nil {
 				// possible bad cached access token, retry
 				at = nil
@@ -182,7 +165,7 @@ func (s *SessionToken) EstablishToken() error {
 			return err
 		}
 
-		apps, err = s.listFedApps(clientID, at)
+		apps, err = w.listFedApps(clientID, at)
 		if at != nil && err != nil {
 			// possible bad cached access token, retry
 			at = nil
@@ -212,30 +195,30 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		// Here, we do want to prompt for selection of the Fed App.
 		// If the app is making use of "Role value pattern" on AWS settings we
 		// won't get the real ARN until we establish the web sso token.
-		s.fedAppAlreadySelected = true
-		fedAppID, err = s.selectFedApp(apps)
+		w.fedAppAlreadySelected = true
+		fedAppID, err = w.selectFedApp(apps)
 		if err != nil {
 			return err
 		}
 	}
 
-	return s.establishTokenWithFedAppID(clientID, fedAppID, at)
+	return w.establishTokenWithFedAppID(clientID, fedAppID, at)
 }
 
 // choiceFriendlyLabelIDP returns a friendly choice for pretty printing IDP
 // labels.  alternative value is the default value to return if a friendly
 // determination can not be made.
-func (s *SessionToken) choiceFriendlyLabelIDP(alternative string, oktaConfig *config.OktaYamlConfig, arn string) string {
+func (w *WebSSOAuthentication) choiceFriendlyLabelIDP(alternative string, oktaConfig *config.OktaYamlConfig, arn string) string {
 	if oktaConfig == nil {
 		return alternative
 	}
 
 	if label, ok := oktaConfig.AWSCLI.IDPS[arn]; ok {
-		if s.config.Debug() {
+		if w.config.Debug() {
 			fmt.Fprintf(os.Stderr, "  found IdP ARN %q having friendly label %q\n", arn, label)
 		}
 		return label
-	} else if s.config.Debug() {
+	} else if w.config.Debug() {
 		fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
 		fmt.Fprintf(os.Stderr, arnPrintFmt, arn)
 		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.idps map:\n")
@@ -246,17 +229,17 @@ func (s *SessionToken) choiceFriendlyLabelIDP(alternative string, oktaConfig *co
 	return alternative
 }
 
-func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
-	idps := make(map[string]*oktaApplication)
+func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, error) {
+	idps := make(map[string]*okta.Application)
 	choices := make([]string, len(apps))
 	var selected string
-	oktaConfig, _ := s.config.OktaConfig()
+	oktaConfig, _ := w.config.OktaConfig()
 
 	for i, app := range apps {
-		choiceLabel := s.choiceFriendlyLabelIDP(app.Label, oktaConfig, app.Settings.App.IdentityProviderARN)
+		choiceLabel := w.choiceFriendlyLabelIDP(app.Label, oktaConfig, app.Settings.App.IdentityProviderARN)
 
 		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
-		if s.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
+		if w.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
 			idpData := idpTemplateData{
 				IDP: choiceLabel,
 			}
@@ -288,33 +271,33 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	return idps[selected].ID, nil
 }
 
-func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *okta.AccessToken) error {
-	at, err := s.fetchSSOWebToken(clientID, fedAppID, at)
+func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID string, at *okta.AccessToken) error {
+	at, err := w.fetchSSOWebToken(clientID, fedAppID, at)
 	if err != nil {
 		return err
 	}
 
-	assertion, err := s.fetchSAMLAssertion(at)
+	assertion, err := w.fetchSAMLAssertion(at)
 	if err != nil {
 		return err
 	}
 
-	idpRolesMap, err := s.extractIDPAndRolesMapFromAssertion(assertion)
+	idpRolesMap, err := w.extractIDPAndRolesMapFromAssertion(assertion)
 	if err != nil {
 		return err
 	}
 
-	iar, err := s.promptForIdpAndRole(idpRolesMap)
+	iar, err := w.promptForIdpAndRole(idpRolesMap)
 	if err != nil {
 		return err
 	}
 
-	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
+	ac, err := w.fetchAWSCredentialWithSAMLRole(iar, assertion)
 	if err != nil {
 		return err
 	}
 
-	err = s.renderCredential(ac)
+	err = w.renderCredential(ac)
 	if err != nil {
 		return err
 	}
@@ -323,31 +306,31 @@ func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at 
 }
 
 // renderCredential Renders the credentials in the prescribed format.
-func (s *SessionToken) renderCredential(ac *oaws.Credential) error {
+func (w *WebSSOAuthentication) renderCredential(ac *oaws.Credential) error {
 	var o output.Outputter
-	switch s.config.Format() {
+	switch w.config.Format() {
 	case config.AWSCredentialsFormat:
-		expiry := time.Now().Add(time.Duration(s.config.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
-		o = output.NewAWSCredentialsFile(s.config.LegacyAWSVariables(), s.config.ExpiryAWSVariables(), expiry)
+		expiry := time.Now().Add(time.Duration(w.config.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
+		o = output.NewAWSCredentialsFile(w.config.LegacyAWSVariables(), w.config.ExpiryAWSVariables(), expiry)
 	default:
-		o = output.NewEnvVar(s.config.LegacyAWSVariables())
+		o = output.NewEnvVar(w.config.LegacyAWSVariables())
 		fmt.Fprintf(os.Stderr, "\n")
 	}
 
-	return o.Output(s.config, ac)
+	return o.Output(w.config, ac)
 }
 
 // fetchAWSCredentialWithSAMLRole Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
-	awsCfg := aws.NewConfig().WithHTTPClient(s.config.HTTPClient())
+func (w *WebSSOAuthentication) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
+	awsCfg := aws.NewConfig().WithHTTPClient(w.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
 		return nil, err
 	}
 	svc := sts.New(sess)
 	input := &sts.AssumeRoleWithSAMLInput{
-		DurationSeconds: aws.Int64(s.config.AWSSessionDuration()),
+		DurationSeconds: aws.Int64(w.config.AWSSessionDuration()),
 		PrincipalArn:    aws.String(iar.idp),
 		RoleArn:         aws.String(iar.role),
 		SAMLAssertion:   aws.String(assertion),
@@ -368,17 +351,17 @@ func (s *SessionToken) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion
 // choiceFriendlyLabelRole returns a friendly choice for pretty printing Role
 // labels.  The ARN default value to return if a friendly determination can not
 // be made.
-func (s *SessionToken) choiceFriendlyLabelRole(arn string, oktaConfig *config.OktaYamlConfig) string {
+func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, oktaConfig *config.OktaYamlConfig) string {
 	if oktaConfig == nil {
 		return arn
 	}
 
 	if label, ok := oktaConfig.AWSCLI.ROLES[arn]; ok {
-		if s.config.Debug() {
+		if w.config.Debug() {
 			fmt.Fprintf(os.Stderr, "  found Role ARN %q having friendly label %q\n", arn, label)
 		}
 		return label
-	} else if s.config.Debug() {
+	} else if w.config.Debug() {
 		fmt.Fprintf(os.Stderr, "  did not find friendly label for Role ARN\n")
 		fmt.Fprintf(os.Stderr, arnPrintFmt, arn)
 		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.roles map:\n")
@@ -390,15 +373,15 @@ func (s *SessionToken) choiceFriendlyLabelRole(arn string, oktaConfig *config.Ok
 }
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
-func (s *SessionToken) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
-	oktaConfig, _ := s.config.OktaConfig()
+func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
+	oktaConfig, _ := w.config.OktaConfig()
 
-	if len(roleARNs) == 1 || s.config.AWSIAMRole() != "" {
-		roleARN = s.config.AWSIAMRole()
+	if len(roleARNs) == 1 || w.config.AWSIAMRole() != "" {
+		roleARN = w.config.AWSIAMRole()
 		if len(roleARNs) == 1 {
 			roleARN = roleARNs[0]
 		}
-		roleLabel := s.choiceFriendlyLabelRole(roleARN, oktaConfig)
+		roleLabel := w.choiceFriendlyLabelRole(roleARN, oktaConfig)
 		roleData := roleTemplateData{
 			Role: roleLabel,
 		}
@@ -413,7 +396,7 @@ func (s *SessionToken) promptForRole(idp string, roleARNs []string) (roleARN str
 	promptRoles := []string{}
 	labelsARNs := map[string]string{}
 	for _, arn := range roleARNs {
-		roleLabel := s.choiceFriendlyLabelRole(arn, oktaConfig)
+		roleLabel := w.choiceFriendlyLabelRole(arn, oktaConfig)
 		promptRoles = append(promptRoles, roleLabel)
 		labelsARNs[roleLabel] = arn
 	}
@@ -439,23 +422,23 @@ func (s *SessionToken) promptForRole(idp string, roleARNs []string) (roleARN str
 // promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
-func (s *SessionToken) promptForIDP(idpARNs []string) (idpARN string, err error) {
-	oktaConfig, _ := s.config.OktaConfig()
+func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
+	oktaConfig, _ := w.config.OktaConfig()
 
 	if len(idpARNs) == 0 {
 		return idpARN, errors.New(noIDPsError)
 	}
 
-	if len(idpARNs) == 1 || s.config.AWSIAMIdP() != "" {
-		idpARN = s.config.AWSIAMIdP()
+	if len(idpARNs) == 1 || w.config.AWSIAMIdP() != "" {
+		idpARN = w.config.AWSIAMIdP()
 		if len(idpARNs) == 1 {
 			idpARN = idpARNs[0]
 		}
-		if s.fedAppAlreadySelected {
+		if w.fedAppAlreadySelected {
 			return idpARN, nil
 		}
 
-		idpLabel := s.choiceFriendlyLabelIDP(idpARN, oktaConfig, idpARN)
+		idpLabel := w.choiceFriendlyLabelIDP(idpARN, oktaConfig, idpARN)
 		idpData := idpTemplateData{
 			IDP: idpLabel,
 		}
@@ -470,7 +453,7 @@ func (s *SessionToken) promptForIDP(idpARNs []string) (idpARN string, err error)
 	idpChoices := make(map[string]string, len(idpARNs))
 	idpChoiceLabels := make([]string, len(idpARNs))
 	for i, arn := range idpARNs {
-		idpLabel := s.choiceFriendlyLabelIDP(arn, oktaConfig, arn)
+		idpLabel := w.choiceFriendlyLabelIDP(arn, oktaConfig, arn)
 		idpChoices[idpLabel] = arn
 		idpChoiceLabels[i] = idpLabel
 	}
@@ -494,18 +477,18 @@ func (s *SessionToken) promptForIDP(idpARNs []string) (idpARN string, err error)
 
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
 // will be utilized.
-func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *idpAndRole, err error) {
+func (w *WebSSOAuthentication) promptForIdpAndRole(idpRoles map[string][]string) (iar *idpAndRole, err error) {
 	idps := make([]string, 0, len(idpRoles))
 	for idp := range idpRoles {
 		idps = append(idps, idp)
 	}
-	idp, err := s.promptForIDP(idps)
+	idp, err := w.promptForIDP(idps)
 	if err != nil {
 		return nil, err
 	}
 
 	roles := idpRoles[idp]
-	role, err := s.promptForRole(idp, roles)
+	role, err := w.promptForRole(idp, roles)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +503,7 @@ func (s *SessionToken) promptForIdpAndRole(idpRoles map[string][]string) (iar *i
 // extractIDPAndRolesMapFromAssertion Get AWS IdP and Roles from SAML assertion. Result
 // a map string string slice keyed by the IdP ARN value and slice of ARN role
 // values.
-func (s *SessionToken) extractIDPAndRolesMapFromAssertion(encoded string) (irmap map[string][]string, err error) {
+func (w *WebSSOAuthentication) extractIDPAndRolesMapFromAssertion(encoded string) (irmap map[string][]string, err error) {
 	assertion, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return nil, err
@@ -554,9 +537,9 @@ func (s *SessionToken) extractIDPAndRolesMapFromAssertion(encoded string) (irmap
 }
 
 // fetchSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
-func (s *SessionToken) fetchSAMLAssertion(at *okta.AccessToken) (assertion string, err error) {
+func (w *WebSSOAuthentication) fetchSAMLAssertion(at *okta.AccessToken) (assertion string, err error) {
 	params := url.Values{"token": {at.AccessToken}}
-	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", s.config.OrgDomain(), params.Encode())
+	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", w.config.OrgDomain(), params.Encode())
 
 	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 	if err != nil {
@@ -565,7 +548,7 @@ func (s *SessionToken) fetchSAMLAssertion(at *okta.AccessToken) (assertion strin
 	req.Header.Add(accept, "text/html")
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HTTPClient().Do(req)
+	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
 		return assertion, err
 	}
@@ -584,8 +567,8 @@ func (s *SessionToken) fetchSAMLAssertion(at *okta.AccessToken) (assertion strin
 
 // fetchSSOWebToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *okta.AccessToken) (token *okta.AccessToken, err error) {
-	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, s.config.OrgDomain())
+func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at *okta.AccessToken) (token *okta.AccessToken, err error) {
+	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, w.config.OrgDomain())
 
 	data := url.Values{
 		"client_id":            {clientID},
@@ -607,7 +590,7 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *okta.A
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HTTPClient().Do(req)
+	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -637,11 +620,11 @@ func (s *SessionToken) fetchSSOWebToken(clientID, awsFedAppID string, at *okta.A
 }
 
 // promptAuthentication UX to display activation URL and code.
-func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
+func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization) {
 	var qrBuf []byte
 	qrCode := ""
 
-	if s.config.QRCode() {
+	if w.config.QRCode() {
 		qrBuf = make([]byte, 4096)
 		buf := bytes.NewBufferString("")
 		qrterminal.GenerateHalfBlock(da.VerificationURIComplete, qrterminal.L, buf)
@@ -656,13 +639,13 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 
 `
 	openMsg := "Open"
-	if s.config.OpenBrowser() {
+	if w.config.OpenBrowser() {
 		openMsg = "System web browser will open"
 	}
 
 	fmt.Fprintf(os.Stderr, prompt, openMsg, qrCode, da.VerificationURIComplete)
 
-	if s.config.OpenBrowser() {
+	if w.config.OpenBrowser() {
 		brwsr.Stdout = os.Stderr
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to open activation URL with system browser: %v\n", err)
@@ -674,8 +657,8 @@ func (s *SessionToken) promptAuthentication(da *deviceAuthorization) {
 // after getting anything other than a 403 on /api/v1/apps will be wrapped as as
 // an error that is related having multiple fed apps available.  Requires
 // assoicated OIDC app has been granted okta.apps.read to its scope.
-func (s *SessionToken) listFedApps(clientID string, at *okta.AccessToken) (apps []*oktaApplication, err error) {
-	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", s.config.OrgDomain()))
+func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken) (apps []*okta.Application, err error) {
+	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", w.config.OrgDomain()))
 	if err != nil {
 		return nil, err
 	}
@@ -693,7 +676,7 @@ func (s *SessionToken) listFedApps(clientID string, at *okta.AccessToken) (apps 
 	req.Header.Add(utils.ContentType, utils.ApplicationJSON)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
-	resp, err := s.config.HTTPClient().Do(req)
+	resp, err := w.config.HTTPClient().Do(req)
 	if resp.StatusCode == http.StatusForbidden {
 		return nil, err
 	}
@@ -704,13 +687,13 @@ func (s *SessionToken) listFedApps(clientID string, at *okta.AccessToken) (apps 
 		return nil, newMultipleFedAppsError(err)
 	}
 
-	var oktaApps []oktaApplication
+	var oktaApps []okta.Application
 	err = json.NewDecoder(resp.Body).Decode(&oktaApps)
 	if err != nil {
 		return nil, newMultipleFedAppsError(err)
 	}
 
-	apps = make([]*oktaApplication, 0)
+	apps = make([]*okta.Application, 0)
 	for i, app := range oktaApps {
 		if app.Name != amazonAWS {
 			continue
@@ -730,8 +713,8 @@ func (s *SessionToken) listFedApps(clientID string, at *okta.AccessToken) (apps 
 
 // fetchAccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAuthorization) (at *okta.AccessToken, err error) {
-	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, s.config.OrgDomain())
+func (w *WebSSOAuthentication) fetchAccessToken(clientID string, deviceAuth *okta.DeviceAuthorization) (at *okta.AccessToken, err error) {
+	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, w.config.OrgDomain())
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
 	if err != nil {
@@ -754,7 +737,7 @@ func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAutho
 		body := strings.NewReader(data.Encode())
 		req.Body = io.NopCloser(body)
 
-		resp, err := s.config.HTTPClient().Do(req)
+		resp, err := w.config.HTTPClient().Do(req)
 		bodyBytes, _ = io.ReadAll(resp.Body)
 		if err != nil {
 			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
@@ -796,8 +779,8 @@ func (s *SessionToken) fetchAccessToken(clientID string, deviceAuth *deviceAutho
 
 // authorize see:
 // https://developer.okta.com/docs/reference/api/oidc/#device-authorize
-func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) {
-	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", s.config.OrgDomain())
+func (w *WebSSOAuthentication) authorize(clientID string) (*okta.DeviceAuthorization, error) {
+	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", w.config.OrgDomain())
 	data := url.Values{
 		"client_id": {clientID},
 		"scope":     {"openid okta.apps.sso okta.apps.read"},
@@ -811,7 +794,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HTTPClient().Do(req)
+	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -824,7 +807,7 @@ func (s *SessionToken) authorize(clientID string) (*deviceAuthorization, error) 
 		return nil, fmt.Errorf("authorize non-JSON API response content type %q", ct)
 	}
 
-	var da deviceAuthorization
+	var da okta.DeviceAuthorization
 	err = json.NewDecoder(resp.Body).Decode(&da)
 	if err != nil {
 		return nil, err
@@ -898,17 +881,10 @@ func apiErr(bodyBytes []byte) (ae *okta.APIError, err error) {
 	return
 }
 
-type oktaOrganization struct {
-	ID       string      `json:"id"`
-	Pipeline string      `json:"pipeline"`
-	Links    interface{} `json:"_links,omitempty"`
-	Settings interface{} `json:"settings,omitempty"`
-}
-
 // isClassicOrg Conduct simple check of well known endpoint to determine if the
 // org is a classic org. Will soft fail on errors.
-func (s *SessionToken) isClassicOrg() bool {
-	apiURL := fmt.Sprintf("https://%s/.well-known/okta-organization", s.config.OrgDomain())
+func (w *WebSSOAuthentication) isClassicOrg() bool {
+	apiURL := fmt.Sprintf("https://%s/.well-known/okta-organization", w.config.OrgDomain())
 	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 	if err != nil {
 		return false
@@ -916,14 +892,14 @@ func (s *SessionToken) isClassicOrg() bool {
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
 
-	resp, err := s.config.HTTPClient().Do(req)
+	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
 		return false
 	}
 	if resp.StatusCode != http.StatusOK {
 		return false
 	}
-	org := &oktaOrganization{}
+	org := &okta.Organization{}
 	err = json.NewDecoder(resp.Body).Decode(org)
 	if err != nil {
 		return false
@@ -939,7 +915,7 @@ func (s *SessionToken) isClassicOrg() bool {
 
 // cachedAccessToken will returned the cached access token if it exists and is
 // not expired.
-func (s *SessionToken) cachedAccessToken() (at *okta.AccessToken) {
+func (w *WebSSOAuthentication) cachedAccessToken() (at *okta.AccessToken) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
@@ -970,8 +946,8 @@ func (s *SessionToken) cachedAccessToken() (at *okta.AccessToken) {
 
 // cacheAccessToken will cache the access token for later use if enabled. Silent
 // if fails.
-func (s *SessionToken) cacheAccessToken(at *okta.AccessToken) {
-	if !s.config.CacheAccessToken() {
+func (w *WebSSOAuthentication) cacheAccessToken(at *okta.AccessToken) {
+	if !w.config.CacheAccessToken() {
 		return
 	}
 

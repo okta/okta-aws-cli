@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sessiontoken
+package webssoauth
 
 import "fmt"
 

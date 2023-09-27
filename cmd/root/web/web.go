@@ -21,7 +21,7 @@ import (
 
 	"github.com/okta/okta-aws-cli/internal/config"
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
-	"github.com/okta/okta-aws-cli/internal/sessiontoken"
+	"github.com/okta/okta-aws-cli/internal/webssoauth"
 )
 
 var (
@@ -80,11 +80,11 @@ func NewWebCommand() *cobra.Command {
 			// }
 			// return webAuth.EstablishIAMCredentials()
 
-			st, err := sessiontoken.NewSessionToken(config)
+			st, err := webssoauth.NewWebSSOAuthentication(config)
 			if err != nil {
 				return err
 			}
-			return st.EstablishToken()
+			return st.EstablishIAMCredentials()
 		},
 	}
 

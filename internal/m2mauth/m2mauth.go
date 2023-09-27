@@ -42,7 +42,7 @@ type M2MAuthentication struct {
 	config *config.Config
 }
 
-// NewM2MAuthentication New M2M Authenticator constructor
+// NewM2MAuthentication New M2M Authentication constructor
 func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
 	m := M2MAuthentication{
 		config: config,
@@ -52,6 +52,11 @@ func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
 
 // EstablishIAMCredentials Full operation to fetch temporary IAM credentials and
 // output them to preferred format.
+//
+// The overall API interactions are as follows:
+//
+// - CLI requests access token from custom authz server at /oauth2/{authzID}/v1/token
+// - CLI presents access token to AWS STS for temporary AWS IAM creds
 func (m *M2MAuthentication) EstablishIAMCredentials() error {
 	_, err := m.AccessToken()
 	if err != nil {
