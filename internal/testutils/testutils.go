@@ -23,14 +23,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"reflect"
 	"regexp"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/utils"
 	"gopkg.in/dnaeon/go-vcr.v3/cassette"
+	"gopkg.in/dnaeon/go-vcr.v3/recorder"
 )
 
 const (
@@ -104,6 +107,9 @@ func VCROktaAPIRequestHook(i *cassette.Interaction) error {
 	// %s/example.okta.com/test.dne-okta.com/
 	i.Request.Body = strings.ReplaceAll(i.Request.Body, orgHostname, vcrHostname)
 
+	// %s/example.okta.com/test.dne-okta.com/
+	i.Response.Body = strings.ReplaceAll(i.Response.Body, orgHostname, vcrHostname)
+
 	return nil
 }
 
@@ -154,4 +160,36 @@ func VCROktaAPIRequestMatcher(r *http.Request, i cassette.Request) bool {
 	}
 
 	return true
+}
+
+// NewVCRRecorder New VCR recording settings
+func NewVCRRecorder(t *testing.T, transport http.RoundTripper) (rec *recorder.Recorder, err error) {
+	dir, _ := os.Getwd()
+	vcrFixturesHome := path.Join(dir, "../../test/fixtures/vcr")
+	cassettesPath := path.Join(vcrFixturesHome, t.Name())
+	rec, err = recorder.NewWithOptions(&recorder.Options{
+		CassetteName:       cassettesPath,
+		Mode:               recorder.ModeRecordOnce,
+		SkipRequestLatency: true, // skip how vcr will mimic the real request latency that it can record allowing for fast playback
+		RealTransport:      transport,
+	})
+	if err != nil {
+		return
+	}
+
+	rec.SetMatcher(VCROktaAPIRequestMatcher)
+	rec.AddHook(VCROktaAPIRequestHook, recorder.AfterCaptureHook)
+
+	return
+}
+
+// OsSetEnvIfBlank Set env var if its blank and return a clearing function
+func OsSetEnvIfBlank(key, value string) func() {
+	if os.Getenv(key) != "" {
+		return func() {}
+	}
+	_ = os.Setenv(key, value)
+	return func() {
+		_ = os.Unsetenv(key)
+	}
 }

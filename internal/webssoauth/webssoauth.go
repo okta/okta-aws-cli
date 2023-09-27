@@ -140,14 +140,14 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 	for attempt := 1; attempt <= 2; attempt++ {
 		err = nil
 		if at == nil {
-			deviceAuth, err := w.authorize(clientID)
+			deviceAuth, err := w.authorize()
 			if err != nil {
 				return err
 			}
 
 			w.promptAuthentication(deviceAuth)
 
-			at, err = w.fetchAccessToken(clientID, deviceAuth)
+			at, err = w.AccessToken(deviceAuth)
 			if err != nil {
 				return err
 			}
@@ -711,9 +711,10 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 	return
 }
 
-// fetchAccessToken see:
+// AccessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (w *WebSSOAuthentication) fetchAccessToken(clientID string, deviceAuth *okta.DeviceAuthorization) (at *okta.AccessToken, err error) {
+func (w *WebSSOAuthentication) AccessToken(deviceAuth *okta.DeviceAuthorization) (at *okta.AccessToken, err error) {
+	clientID := w.config.OIDCAppID()
 	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, w.config.OrgDomain())
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, nil)
@@ -779,7 +780,8 @@ func (w *WebSSOAuthentication) fetchAccessToken(clientID string, deviceAuth *okt
 
 // authorize see:
 // https://developer.okta.com/docs/reference/api/oidc/#device-authorize
-func (w *WebSSOAuthentication) authorize(clientID string) (*okta.DeviceAuthorization, error) {
+func (w *WebSSOAuthentication) authorize() (*okta.DeviceAuthorization, error) {
+	clientID := w.config.OIDCAppID()
 	apiURL := fmt.Sprintf("https://%s/oauth2/v1/device/authorize", w.config.OrgDomain())
 	data := url.Values{
 		"client_id": {clientID},

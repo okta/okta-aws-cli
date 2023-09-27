@@ -1,0 +1,79 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - application/json
+        url: https://test.dne-okta.com/.well-known/okta-organization
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"id":"00o4wzh294nJMXp5P1d7","cell":"op3","_links":{"organization":{"href":"https://test.dne-okta.com"}},"pipeline":"idx","settings":{"analyticsCollectionEnabled":false,"bugReportingEnabled":true,"omEnabled":false,"pssoEnabled":false}}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Wed, 27 Sep 2023 22:39:38 GMT
+        status: 200 OK
+        code: 200
+        duration: 275.63154ms
+    - id: 1
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 72
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: client_id=0oa4x34ogyC1i1krJ1d7&scope=openid+okta.apps.sso+okta.apps.read
+        form:
+            client_id:
+                - 0oa4x34ogyC1i1krJ1d7
+            scope:
+                - openid okta.apps.sso okta.apps.read
+        headers:
+            Accept:
+                - application/json
+            Content-Type:
+                - application/x-www-form-urlencoded
+        url: https://test.dne-okta.com/oauth2/v1/device/authorize
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"device_code":"f8233539-ed2d-4d0d-8a58-342e36320712","user_code":"QXNMSLWF","verification_uri":"https://test.dne-okta.com/activate","verification_uri_complete":"https://test.dne-okta.com/activate?user_code=QXNMSLWF","expires_in":600,"interval":5}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Wed, 27 Sep 2023 22:39:38 GMT
+        status: 200 OK
+        code: 200
+        duration: 318.782199ms

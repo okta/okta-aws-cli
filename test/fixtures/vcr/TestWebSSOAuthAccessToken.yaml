@@ -1,0 +1,171 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - application/json
+        url: https://test.dne-okta.com/.well-known/okta-organization
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"id":"00o4wzh294nJMXp5P1d7","cell":"op3","_links":{"organization":{"href":"https://test.dne-okta.com"}},"pipeline":"idx","settings":{"analyticsCollectionEnabled":false,"bugReportingEnabled":true,"omEnabled":false,"pssoEnabled":false}}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Wed, 27 Sep 2023 22:58:43 GMT
+        status: 200 OK
+        code: 200
+        duration: 251.578087ms
+    - id: 1
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 72
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: client_id=0oa4x34ogyC1i1krJ1d7&scope=openid+okta.apps.sso+okta.apps.read
+        form:
+            client_id:
+                - 0oa4x34ogyC1i1krJ1d7
+            scope:
+                - openid okta.apps.sso okta.apps.read
+        headers:
+            Accept:
+                - application/json
+            Content-Type:
+                - application/x-www-form-urlencoded
+        url: https://test.dne-okta.com/oauth2/v1/device/authorize
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"device_code":"9c713a7b-026d-4c3a-9fb0-e91bae83741b","user_code":"NNBJWNSJ","verification_uri":"https://test.dne-okta.com/activate","verification_uri_complete":"https://test.dne-okta.com/activate?user_code=NNBJWNSJ","expires_in":600,"interval":5}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Wed, 27 Sep 2023 22:58:43 GMT
+            Report-To:
+                - '{"group":"csp","max_age":31536000,"endpoints":[{"url":"https://oktacsp.report-uri.com/a/t/g"}],"include_subdomains":true}'
+        status: 200 OK
+        code: 200
+        duration: 132.333388ms
+    - id: 2
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: client_id=0oa4x34ogyC1i1krJ1d7&device_code=9c713a7b-026d-4c3a-9fb0-e91bae83741b&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code
+        form:
+            client_id:
+                - 0oa4x34ogyC1i1krJ1d7
+            device_code:
+                - 9c713a7b-026d-4c3a-9fb0-e91bae83741b
+            grant_type:
+                - urn:ietf:params:oauth:grant-type:device_code
+        headers:
+            Accept:
+                - application/json
+            Content-Type:
+                - application/x-www-form-urlencoded
+        url: https://test.dne-okta.com/oauth2/v1/token
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"error":"authorization_pending","error_description":"The device authorization is pending. Please try again later."}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Wed, 27 Sep 2023 22:58:43 GMT
+            Report-To:
+                - '{"group":"csp","max_age":31536000,"endpoints":[{"url":"https://oktacsp.report-uri.com/a/t/g"}],"include_subdomains":true}'
+        status: 400 Bad Request
+        code: 400
+        duration: 74.627903ms
+    - id: 3
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: client_id=0oa4x34ogyC1i1krJ1d7&device_code=9c713a7b-026d-4c3a-9fb0-e91bae83741b&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code
+        form:
+            client_id:
+                - 0oa4x34ogyC1i1krJ1d7
+            device_code:
+                - 9c713a7b-026d-4c3a-9fb0-e91bae83741b
+            grant_type:
+                - urn:ietf:params:oauth:grant-type:device_code
+        headers:
+            Accept:
+                - application/json
+            Content-Type:
+                - application/x-www-form-urlencoded
+        url: https://test.dne-okta.com/oauth2/v1/token
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"token_type":"Bearer","expires_in":3600,"access_token":"eyJraWQiOiJpUXd1OGt6RExHMUU5TFQ0NkhjNEdsbDdZRFE2Sk10a2JyTGh6VHVtcENzIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkM2Mnp3OG1TRkZzWkpETVFaMURZMWJieDdGZHFYVHI0enhBNk9xcjQwOUUiLCJpc3MiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20iLCJhdWQiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20iLCJzdWIiOiJtaWtlLm1vbmRyYWdvbkBva3RhLmNvbSIsImlhdCI6MTY5NTg1NTU0OCwiZXhwIjoxNjk1ODU5MTQ4LCJjaWQiOiIwb2E0eDM0b2d5QzFpMWtySjFkNyIsInVpZCI6IjAwdTR3emgyY25EVXQxYXV3MWQ3Iiwic2NwIjpbIm9wZW5pZCIsIm9rdGEuYXBwcy5zc28iLCJva3RhLmFwcHMucmVhZCJdLCJhdXRoX3RpbWUiOjE2OTU4NTUwMDh9.nAMWB68btwGKmWSZSm_VRzqbc6QIaMQ-HHZVRH0hK0yuyVxK1Vref9RwciEyeDEEJgOmRxBv080tB0HIAp-5B-b_DGUyg5D8ZuovsuMJa-g7ajC_vBLpkdLWn5geeCPXq26JXkHbuLzc2Zf0XQRiTPGDrLvOfM7hVkH4g-ZyvKcQCUBk4OHn0iMosaoZJ3nzxXcfPhFb5V0Baf3tlPD7viKYlkNNM8rWMR2uP_a9XWyJyfkJSPHuTDqG-ZrUfC7FYztp_uivs_MDjZk246396aJRskF2KESY-wtFVZwFq-MTlNHoDpk0POY1CqwbcDDAtVz5cBoGPyI-BrmoJrzIIA","scope":"openid okta.apps.sso okta.apps.read","id_token":"eyJraWQiOiJ4TUdYV3ZfY1prTjViR1pyM2FUVW8yWnRHdGhyeVlhSmdwLUE1VWNLaE1VIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiIwMHU0d3poMmNuRFV0MWF1dzFkNyIsInZlciI6MSwiaXNzIjoiaHR0cHM6Ly9tbW9uZHJhZ29uLWF3cy1jbGktMDAub2t0YXByZXZpZXcuY29tIiwiYXVkIjoiMG9hNHgzNG9neUMxaTFrckoxZDciLCJpYXQiOjE2OTU4NTU1NDgsImV4cCI6MTY5NTg1OTE0OCwianRpIjoiSUQuWV9CWEgwQ2RIM3hVNkxHclRlYW93ekkxN0lPTGlRX2lwU3NUaE1sUUlrRSIsImFtciI6WyJzd2siLCJtZmEiLCJwd2QiXSwiaWRwIjoiMDBvNHd6aDI5NG5KTVhwNVAxZDciLCJzaWQiOiJpZHhVeThhWUR0TVFBVzhncGtmdTNuOGxRIiwiYXV0aF90aW1lIjoxNjk1ODU1MDA4LCJhdF9oYXNoIjoiTXVUR0tIUHJQeVV1bGlRSnBSX1BFUSJ9.a_UHSCX7_kejRMxxzGWJeh2fSpd6yGKZVIpsQ3J6JNVRUg70j8Wvik6nIXXq9e6j3vMZo_xWacJtpAE0rwy98Zltiq17mpVfRem7WAJXu99KdX8VD29yI-l_64fxhqYqmwm-GsTzApo5Yjm7WFqpH-GRGyCiNp9B854cL4rI-okqiAZfgQuY6mNBCKVWL_AwcX4ycC0acdaV1eETNIbidhSwOa1OHzUu59xx_d5Ihivhe4iJFOCoNedhTs7uzJUsGXX1a3-_4465JEK18l17XWUwUV8KxU6e23o-MpDoNu3imFK3Wl68dZYB8FtDHBD3iBwVdgK2dWaWxFD_OMxP9w"}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Wed, 27 Sep 2023 22:59:08 GMT
+            Report-To:
+                - '{"group":"csp","max_age":31536000,"endpoints":[{"url":"https://oktacsp.report-uri.com/a/t/g"}],"include_subdomains":true}'
+        status: 200 OK
+        code: 200
+        duration: 466.924928ms
