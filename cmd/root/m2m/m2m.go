@@ -17,17 +17,22 @@
 package m2m
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
+	"github.com/okta/okta-aws-cli/internal/m2mauth"
 )
 
 var (
 	flags = []cliFlag.Flag{
+		{
+			Name:   config.KeyIDFlag,
+			Short:  "i",
+			Value:  "",
+			Usage:  "Key ID",
+			EnvVar: config.KeyIDEnvVar,
+		},
 		{
 			Name:   config.PrivateKeyFlag,
 			Short:  "k",
@@ -42,8 +47,15 @@ var (
 			Usage:  "Custom Scope",
 			EnvVar: config.CustomScopeEnvVar,
 		},
+		{
+			Name:   config.AuthzIDFlag,
+			Short:  "u",
+			Value:  "",
+			Usage:  "Custom Authorization Server ID",
+			EnvVar: config.AuthzIDEnvVar,
+		},
 	}
-	requiredFlags = []string{"org-domain", "oidc-client-id", "aws-iam-role", "private-key"}
+	requiredFlags = []string{"org-domain", "oidc-client-id", "aws-iam-role", "key-id", "private-key", "authz-id"}
 )
 
 // NewM2MCommand Sets up the m2m cobra sub command
@@ -61,14 +73,11 @@ func NewM2MCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(os.Stderr, "WIP - m2m, get to work!\n")
-			fmt.Fprintf(os.Stderr, "Okta Org Domain: %s\n", config.OrgDomain())
-			fmt.Fprintf(os.Stderr, "OIDC Client ID: %s\n", config.OIDCAppID())
-			fmt.Fprintf(os.Stderr, "IAM Role ARN: %s\n", config.AWSIAMRole())
-			fmt.Fprintf(os.Stderr, "Private Key: %s\n", config.PrivateKey())
-			fmt.Fprintf(os.Stderr, "Custom Scope: %s\n", config.CustomScope())
-
-			return nil
+			m2mAuth, err := m2mauth.NewM2MAuthentication(config)
+			if err != nil {
+				return err
+			}
+			return m2mAuth.EstablishIAMCredentials()
 		},
 	}
 

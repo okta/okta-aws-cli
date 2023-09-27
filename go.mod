@@ -17,9 +17,13 @@ require (
 	github.com/tidwall/pretty v1.2.0
 	golang.org/x/net v0.7.0
 	golang.org/x/sys v0.5.0
+	gopkg.in/dnaeon/go-vcr.v3 v3.1.2
 	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+require golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

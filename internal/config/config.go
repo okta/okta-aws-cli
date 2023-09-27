@@ -38,6 +38,8 @@ const (
 	// EnvVarFormat format const
 	EnvVarFormat = "env-var"
 
+	// AuthzIDFlag cli flag const
+	AuthzIDFlag = "authz-id"
 	// AWSAcctFedAppIDFlag cli flag const
 	AWSAcctFedAppIDFlag = "aws-acct-fed-app-id"
 	// AWSCredentialsFlag cli flag const
@@ -62,6 +64,8 @@ const (
 	OrgDomainFlag = "org-domain"
 	// PrivateKeyFlag cli flag const
 	PrivateKeyFlag = "private-key"
+	// KeyIDFlag cli flag const
+	KeyIDFlag = "key-id"
 	// ProfileFlag cli flag const
 	ProfileFlag = "profile"
 	// QRCodeFlag cli flag const
@@ -77,6 +81,8 @@ const (
 	// CacheAccessTokenFlag cli flag const
 	CacheAccessTokenFlag = "cache-access-token"
 
+	// AuthzIDEnvVar env var const
+	AuthzIDEnvVar = "OKTA_AUTHZ_ID"
 	// AWSCredentialsEnvVar env var const
 	AWSCredentialsEnvVar = "OKTA_AWSCLI_AWS_CREDENTIALS"
 	// AWSIAMIdPEnvVar env var const
@@ -109,6 +115,8 @@ const (
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
 	// PrivateKeyEnvVar env var const
 	PrivateKeyEnvVar = "OKTA_AWSCLI_PRIVATE_KEY"
+	// KeyIDEnvVar env var const
+	KeyIDEnvVar = "OKTA_AWSCLI_KEY_ID"
 	// ProfileEnvVar env var const
 	ProfileEnvVar = "OKTA_AWSCLI_PROFILE"
 	// QRCodeEnvVar env var const
@@ -135,6 +143,11 @@ type OktaYamlConfig struct {
 	} `yaml:"awscli"`
 }
 
+// Clock interface to abstract time operations
+type Clock interface {
+	Now() time.Time
+}
+
 // Config A config object for the CLI
 //
 // External consumers of Config use its setters and getters to interact with the
@@ -142,6 +155,7 @@ type OktaYamlConfig struct {
 // control data access, be concerned with evaluation, validation, and not
 // allowing direct access to values as is done on structs in the generic case.
 type Config struct {
+	authzID             string
 	awsCredentials      string
 	awsIAMIdP           string
 	awsIAMRole          string
@@ -154,6 +168,7 @@ type Config struct {
 	fedAppID            string
 	format              string
 	httpClient          *http.Client
+	keyID               string
 	legacyAWSVariables  bool
 	oidcAppID           string
 	openBrowser         bool
@@ -162,29 +177,32 @@ type Config struct {
 	profile             string
 	qrCode              bool
 	writeAWSCredentials bool
+	clock               Clock
 }
 
-// attributes config construction
-type attributes struct {
-	awsCredentials      string
-	awsIAMIdP           string
-	awsIAMRole          string
-	awsSessionDuration  int64
-	cacheAccessToken    bool
-	customScope         string
-	debug               bool
-	debugAPICalls       bool
-	expiryAWSVariables  bool
-	fedAppID            string
-	format              string
-	legacyAWSVariables  bool
-	oidcAppID           string
-	openBrowser         bool
-	orgDomain           string
-	privateKey          string
-	profile             string
-	qrCode              bool
-	writeAWSCredentials bool
+// Attributes config construction
+type Attributes struct {
+	AuthzID             string
+	AWSCredentials      string
+	AWSIAMIdP           string
+	AWSIAMRole          string
+	AWSSessionDuration  int64
+	CacheAccessToken    bool
+	CustomScope         string
+	Debug               bool
+	DebugAPICalls       bool
+	ExpiryAWSVariables  bool
+	FedAppID            string
+	Format              string
+	KeyID               string
+	LegacyAWSVariables  bool
+	OIDCAppID           string
+	OpenBrowser         bool
+	OrgDomain           string
+	PrivateKey          string
+	Profile             string
+	QRCode              bool
+	WriteAWSCredentials bool
 }
 
 // EvaluateSettings Returns a new config gathering values in this order of precedence:
@@ -196,39 +214,41 @@ func EvaluateSettings() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewConfig(cfgAttrs)
+	return NewConfig(&cfgAttrs)
 }
 
 // NewConfig create config from attributes
-func NewConfig(attrs attributes) (*Config, error) {
+func NewConfig(attrs *Attributes) (*Config, error) {
 	var err error
 	cfg := &Config{
-		awsCredentials:      attrs.awsCredentials,
-		awsIAMIdP:           attrs.awsIAMIdP,
-		awsIAMRole:          attrs.awsIAMRole,
-		cacheAccessToken:    attrs.cacheAccessToken,
-		customScope:         attrs.customScope,
-		debug:               attrs.debug,
-		debugAPICalls:       attrs.debugAPICalls,
-		expiryAWSVariables:  attrs.expiryAWSVariables,
-		fedAppID:            attrs.fedAppID,
-		format:              attrs.format,
-		legacyAWSVariables:  attrs.legacyAWSVariables,
-		openBrowser:         attrs.openBrowser,
-		privateKey:          attrs.privateKey,
-		profile:             attrs.profile,
-		qrCode:              attrs.qrCode,
-		writeAWSCredentials: attrs.writeAWSCredentials,
+		authzID:             attrs.AuthzID,
+		awsCredentials:      attrs.AWSCredentials,
+		awsIAMIdP:           attrs.AWSIAMIdP,
+		awsIAMRole:          attrs.AWSIAMRole,
+		cacheAccessToken:    attrs.CacheAccessToken,
+		customScope:         attrs.CustomScope,
+		debug:               attrs.Debug,
+		debugAPICalls:       attrs.DebugAPICalls,
+		expiryAWSVariables:  attrs.ExpiryAWSVariables,
+		fedAppID:            attrs.FedAppID,
+		format:              attrs.Format,
+		legacyAWSVariables:  attrs.LegacyAWSVariables,
+		openBrowser:         attrs.OpenBrowser,
+		privateKey:          attrs.PrivateKey,
+		keyID:               attrs.KeyID,
+		profile:             attrs.Profile,
+		qrCode:              attrs.QRCode,
+		writeAWSCredentials: attrs.WriteAWSCredentials,
 	}
-	err = cfg.SetOrgDomain(attrs.orgDomain)
+	err = cfg.SetOrgDomain(attrs.OrgDomain)
 	if err != nil {
 		return nil, err
 	}
-	err = cfg.SetOIDCAppID(attrs.oidcAppID)
+	err = cfg.SetOIDCAppID(attrs.OIDCAppID)
 	if err != nil {
 		return nil, err
 	}
-	err = cfg.SetAWSSessionDuration(attrs.awsSessionDuration)
+	err = cfg.SetAWSSessionDuration(attrs.AWSSessionDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -240,133 +260,142 @@ func NewConfig(attrs attributes) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg.clock = &realClock{}
 	return cfg, nil
 }
 
-func readConfig() (attributes, error) {
-	attrs := attributes{
-		awsCredentials:      viper.GetString(AWSCredentialsFlag),
-		awsIAMIdP:           viper.GetString(AWSIAMIdPFlag),
-		awsIAMRole:          viper.GetString(AWSIAMRoleFlag),
-		awsSessionDuration:  viper.GetInt64(SessionDurationFlag),
-		customScope:         viper.GetString(CustomScopeFlag),
-		debug:               viper.GetBool(DebugFlag),
-		debugAPICalls:       viper.GetBool(DebugAPICallsFlag),
-		fedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
-		format:              viper.GetString(FormatFlag),
-		legacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
-		expiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
-		cacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
-		oidcAppID:           viper.GetString(OIDCClientIDFlag),
-		openBrowser:         viper.GetBool(OpenBrowserFlag),
-		orgDomain:           viper.GetString(OrgDomainFlag),
-		privateKey:          viper.GetString(PrivateKeyFlag),
-		profile:             viper.GetString(ProfileFlag),
-		qrCode:              viper.GetBool(QRCodeFlag),
-		writeAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
+func readConfig() (Attributes, error) {
+	attrs := Attributes{
+		AuthzID:             viper.GetString(AuthzIDFlag),
+		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
+		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
+		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
+		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
+		CustomScope:         viper.GetString(CustomScopeFlag),
+		Debug:               viper.GetBool(DebugFlag),
+		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
+		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
+		Format:              viper.GetString(FormatFlag),
+		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
+		ExpiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
+		CacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
+		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
+		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
+		OrgDomain:           viper.GetString(OrgDomainFlag),
+		PrivateKey:          viper.GetString(PrivateKeyFlag),
+		KeyID:               viper.GetString(KeyIDFlag),
+		Profile:             viper.GetString(ProfileFlag),
+		QRCode:              viper.GetBool(QRCodeFlag),
+		WriteAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
 	}
-	if attrs.format == "" {
-		attrs.format = EnvVarFormat
+	if attrs.Format == "" {
+		attrs.Format = EnvVarFormat
 	}
 
 	// mimic AWS CLI behavior, if profile value is not set by flag check
 	// the ENV VAR, else set to "default"
-	if attrs.profile == "" {
-		attrs.profile = viper.GetString(downCase(ProfileEnvVar))
+	if attrs.Profile == "" {
+		attrs.Profile = viper.GetString(downCase(ProfileEnvVar))
 	}
-	if attrs.profile == "" {
-		attrs.profile = "default"
+	if attrs.Profile == "" {
+		attrs.Profile = "default"
 	}
 
 	// Viper binds ENV VARs to a lower snake version, set the configs with them
 	// if they haven't already been set by cli flag binding.
-	if attrs.orgDomain == "" {
-		attrs.orgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
+	if attrs.OrgDomain == "" {
+		attrs.OrgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
 	}
-	if attrs.oidcAppID == "" {
-		attrs.oidcAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
+	if attrs.OIDCAppID == "" {
+		attrs.OIDCAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
 	}
-	if attrs.fedAppID == "" {
-		attrs.fedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
+	if attrs.FedAppID == "" {
+		attrs.FedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
 	}
-	if attrs.awsIAMIdP == "" {
-		attrs.awsIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
+	if attrs.AWSIAMIdP == "" {
+		attrs.AWSIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
 	}
-	if attrs.awsIAMRole == "" {
-		attrs.awsIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
+	if attrs.AWSIAMRole == "" {
+		attrs.AWSIAMRole = viper.GetString(downCase(AWSIAMRoleEnvVar))
 	}
-	if !attrs.qrCode {
-		attrs.qrCode = viper.GetBool(downCase(QRCodeEnvVar))
+	if !attrs.QRCode {
+		attrs.QRCode = viper.GetBool(downCase(QRCodeEnvVar))
 	}
-	if attrs.privateKey == "" {
-		attrs.privateKey = viper.GetString(downCase(PrivateKeyEnvVar))
+	if attrs.PrivateKey == "" {
+		attrs.PrivateKey = viper.GetString(downCase(PrivateKeyEnvVar))
 	}
-	if attrs.customScope == "" {
-		attrs.customScope = viper.GetString(downCase(CustomScopeEnvVar))
+	if attrs.KeyID == "" {
+		attrs.KeyID = viper.GetString(downCase(KeyIDEnvVar))
+	}
+	if attrs.CustomScope == "" {
+		attrs.CustomScope = viper.GetString(downCase(CustomScopeEnvVar))
+	}
+	if attrs.AuthzID == "" {
+		attrs.AuthzID = viper.GetString(downCase(AuthzIDEnvVar))
 	}
 
 	// if session duration is 0, inspect the ENV VAR for a value, else set
 	// a default of 3600
-	if attrs.awsSessionDuration == 0 {
-		attrs.awsSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
+	if attrs.AWSSessionDuration == 0 {
+		attrs.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
 	}
-	if attrs.awsSessionDuration == 0 {
-		attrs.awsSessionDuration = 3600
+	if attrs.AWSSessionDuration == 0 {
+		attrs.AWSSessionDuration = 3600
 	}
 
 	// correct org domain if it's in admin form
-	orgDomain := strings.Replace(attrs.orgDomain, "-admin", "", -1)
-	if orgDomain != attrs.orgDomain {
-		fmt.Fprintf(os.Stderr, "WARNING: proactively correcting org domain %q to non-admin form %q.\n\n", attrs.orgDomain, orgDomain)
-		attrs.orgDomain = orgDomain
+	orgDomain := strings.Replace(attrs.OrgDomain, "-admin", "", -1)
+	if orgDomain != attrs.OrgDomain {
+		fmt.Fprintf(os.Stderr, "WARNING: proactively correcting org domain %q to non-admin form %q.\n\n", attrs.OrgDomain, orgDomain)
+		attrs.OrgDomain = orgDomain
 	}
-	if strings.HasPrefix(attrs.orgDomain, "http") {
-		u, err := url.Parse(attrs.orgDomain)
+	if strings.HasPrefix(attrs.OrgDomain, "http") {
+		u, err := url.Parse(attrs.OrgDomain)
 		// try to help correct org domain value if parsing occurs correctly,
 		// else let the CLI error out else where
 		if err == nil {
 			orgDomain = u.Hostname()
-			fmt.Fprintf(os.Stderr, "WARNING: proactively correcting URL format org domain %q value to hostname only form %q.\n\n", attrs.orgDomain, orgDomain)
-			attrs.orgDomain = orgDomain
+			fmt.Fprintf(os.Stderr, "WARNING: proactively correcting URL format org domain %q value to hostname only form %q.\n\n", attrs.OrgDomain, orgDomain)
+			attrs.OrgDomain = orgDomain
 		}
 	}
-	if strings.HasSuffix(attrs.orgDomain, "/") {
-		orgDomain = string([]byte(attrs.orgDomain)[0 : len(attrs.orgDomain)-1])
+	if strings.HasSuffix(attrs.OrgDomain, "/") {
+		orgDomain = string([]byte(attrs.OrgDomain)[0 : len(attrs.OrgDomain)-1])
 		// try to help correct malformed org domain value
-		fmt.Fprintf(os.Stderr, "WARNING: proactively correcting malformed org domain %q value to hostname only form %q.\n\n", attrs.orgDomain, orgDomain)
-		attrs.orgDomain = orgDomain
+		fmt.Fprintf(os.Stderr, "WARNING: proactively correcting malformed org domain %q value to hostname only form %q.\n\n", attrs.OrgDomain, orgDomain)
+		attrs.OrgDomain = orgDomain
 	}
 
 	// There is always a default aws credentials path set in root.go's init
 	// function so overwrite the config value if the operator is attempting to
 	// set it by ENV VAR value.
 	if viper.GetString(downCase(AWSCredentialsEnvVar)) != "" {
-		attrs.awsCredentials = viper.GetString(downCase(AWSCredentialsEnvVar))
+		attrs.AWSCredentials = viper.GetString(downCase(AWSCredentialsEnvVar))
 	}
-	if !attrs.writeAWSCredentials {
-		attrs.writeAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
+	if !attrs.WriteAWSCredentials {
+		attrs.WriteAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
 	}
-	if attrs.writeAWSCredentials {
+	if attrs.WriteAWSCredentials {
 		// writing aws creds option implies "aws-credentials" format
-		attrs.format = AWSCredentialsFormat
+		attrs.Format = AWSCredentialsFormat
 	}
-	if !attrs.openBrowser {
-		attrs.openBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
+	if !attrs.OpenBrowser {
+		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
-	if !attrs.debug {
-		attrs.debug = viper.GetBool(downCase(DebugEnvVar))
+	if !attrs.Debug {
+		attrs.Debug = viper.GetBool(downCase(DebugEnvVar))
 	}
-	if !attrs.debugAPICalls {
-		attrs.debugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
+	if !attrs.DebugAPICalls {
+		attrs.DebugAPICalls = viper.GetBool(downCase(DebugAPICallsEnvVar))
 	}
-	if !attrs.legacyAWSVariables {
-		attrs.legacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
+	if !attrs.LegacyAWSVariables {
+		attrs.LegacyAWSVariables = viper.GetBool(downCase(LegacyAWSVariablesEnvVar))
 	}
-	if !attrs.expiryAWSVariables {
-		attrs.expiryAWSVariables = viper.GetBool(downCase(ExpiryAWSVariablesEnvVar))
+	if !attrs.ExpiryAWSVariables {
+		attrs.ExpiryAWSVariables = viper.GetBool(downCase(ExpiryAWSVariablesEnvVar))
 	}
-	if !attrs.cacheAccessToken {
-		attrs.cacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
+	if !attrs.CacheAccessToken {
+		attrs.CacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
 	}
 	return attrs, nil
 }
@@ -374,6 +403,17 @@ func readConfig() (attributes, error) {
 // downCase ToLower all alpha chars e.g. HELLO_WORLD -> hello_world
 func downCase(s string) string {
 	return strings.ToLower(s)
+}
+
+// AuthzID --
+func (c *Config) AuthzID() string {
+	return c.authzID
+}
+
+// SetAuthzID --
+func (c *Config) SetAuthzID(authzID string) error {
+	c.authzID = authzID
+	return nil
 }
 
 // AWSCredentials --
@@ -440,6 +480,16 @@ func (c *Config) CacheAccessToken() bool {
 func (c *Config) SetCacheAccessToken(cacheAccessToken bool) error {
 	c.cacheAccessToken = cacheAccessToken
 	return nil
+}
+
+// Clock --
+func (c *Config) Clock() Clock {
+	return c.clock
+}
+
+// SetClock --
+func (c *Config) SetClock(clock Clock) {
+	c.clock = clock
 }
 
 // CustomScope --
@@ -571,6 +621,17 @@ func (c *Config) PrivateKey() string {
 // SetPrivateKey --
 func (c *Config) SetPrivateKey(privateKey string) error {
 	c.privateKey = privateKey
+	return nil
+}
+
+// KeyID --
+func (c *Config) KeyID() string {
+	return c.keyID
+}
+
+// SetKeyID --
+func (c *Config) SetKeyID(keyID string) error {
+	c.keyID = keyID
 	return nil
 }
 
@@ -744,3 +805,7 @@ awscli:
 	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
 	return nil
 }
+
+type realClock struct{}
+
+func (realClock) Now() time.Time { return time.Now() }

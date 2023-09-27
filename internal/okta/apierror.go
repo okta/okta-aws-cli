@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package sessiontoken
+package okta
 
-import "fmt"
-
-//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
-func newMultipleFedAppsError(err error) multipleFedAppsError {
-	return multipleFedAppsError{err: err}
-}
-
-type multipleFedAppsError struct {
-	err error
-}
-
-func (n multipleFedAppsError) Error() string {
-	return fmt.Sprintf("Multiple AWS Federation Apps error: %+v", n.err)
+// APIError Wrapper for Okta API error
+type APIError struct {
+	Error            string `json:"error,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
 }
