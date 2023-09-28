@@ -31,7 +31,7 @@ import (
 
 const (
 	// Version app version
-	Version = "2.0.0"
+	Version = "2.0.0-beta.0"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"

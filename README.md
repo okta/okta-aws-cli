@@ -73,9 +73,9 @@ format.
 
 | Command | Description |
 |-----|-----|
-| web | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
-| m2m | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
-| debug | Debug okta.yaml config file and exit. |
+| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
+| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
+| `debug` | Debug okta.yaml config file and exit. |
 
 ## Web Command
 
@@ -199,6 +199,17 @@ around using a custom admin role.
 ## M2M Command
 
 ```shell
+# This example presumes its arguments are set as environment variables such as
+# one may find in a headless CI environment.
+# e.g.
+# export OKTA_AWSCLI_ORG_DOMAIN="test.oka.com"
+# export OKTA_AWSCLI_OIDC_CLIENT_ID="0oaa4htg72TNrkTDr1d7"
+# export OKTA_AWSCLI_IAM_ROLE="arn:aws:iam::1234:role/Circle-CI-ops
+# export OKTA_AWSCLI_CUSTOM_SCOPE="okta-aws-cli"
+# export OKTA_AWSCLI_KEY_ID="kid-rock"
+# export OKTA_AWSCLI_PRIVATE_KEY="... long string ..."
+# export OKTA_AWSCLI_AUTHZ_ID="aus8w23r13NvyUwln1d7"
+
 $ okta-aws-cli m2m
 export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY

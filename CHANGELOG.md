@@ -1,5 +1,101 @@
 # Changelog
 
+## 2.0.0 (TBD)
+
+NOTE: These are the expected 2.0.0 release items; see 2.0.0-beta.X notes for
+incremental changes during beta development
+
+### (completed) New commands
+
+`okta-aws-cli`'s functions are encapsulated as (sub)commands e.g. `$ okta-aws-cli [sub-command]`
+
+| Command | Description |
+|-----|-----|
+| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
+| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
+| `debug` | Debug okta.yaml config file and exit. |
+
+### (completed) Environment variable name changes
+
+A small number of environment variable names have been renamed to be consistent
+in the naming convention for `okta-aws-cli` specific names.
+
+| old name | new name |
+|----------|----------|
+| `OKTA_ORG_DOMAIN` | `OKTA_AWSCLI_ORG_DOMAIN` |
+| `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
+| `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
+
+### (expected) Credentials output as JSON
+
+Emits IAM temporary credentials as JSON in [process
+credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
+format.
+
+### (expected) Secondary command exec
+
+Instead of scripting and/or eval'ing `okta-aws-cli` into a shell and then
+running another command have `okta-aws-cli` run the command directly passing
+along the IAM credentials as environment variables.
+
+```
+# CLI exec's anything after the double dash "--" as another command.
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --exec -- aws ec2 describe-instances
+```
+
+### (expected) Alternate web browser open command
+
+The `web` command will open the system's default web browser when the
+`--open-browser` flag is present. It is convenient to have the browser open on a
+separate profile. If the command to open the browser is known for the host
+system and alternate open command can be specified.
+
+```
+# Use macOS open to open browser in Chrome incognito mode on macOS
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --open-browser \
+    --open-browser-command "open -na 'Google Chrome' --args -incognito"
+```
+
+```
+# Open browser in Chrome "Profile 1" on macOS calling the Chrome executable directly
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --open-browser \
+    --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --profile-directory='Profile 1'"
+```
+
+## 2.0.0-beta.0 (September 29, 2023)
+
+### New commands
+
+`okta-aws-cli`'s functions are encapsulated as (sub)commands e.g. `$ okta-aws-cli [sub-command]`
+
+| Command | Description |
+|-----|-----|
+| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
+| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
+| `debug` | Debug okta.yaml config file and exit. |
+
+### Environment variable name changes
+
+A small number of environment variable names have been renamed to be consistent
+in the naming convention for `okta-aws-cli` specific names.
+
+| old name | new name |
+|----------|----------|
+| `OKTA_ORG_DOMAIN` | `OKTA_AWSCLI_ORG_DOMAIN` |
+| `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
+| `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
+
+
+
 ## 1.2.2 (August 30, 2023)
 
 * Ensure evaluation of CLI flag for profile is in the same order as the other flags [#124](https://github.com/okta/okta-aws-cli/pull/124)
