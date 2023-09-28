@@ -64,7 +64,7 @@ func VCROktaAPIRequestHook(i *cassette.Interaction) error {
 	// test.dne-okta.com
 	vcrHostname := TestDomainName
 	// example.okta.com
-	orgHostname := os.Getenv("OKTA_ORG_DOMAIN")
+	orgHostname := os.Getenv("OKTA_AWSCLI_ORG_DOMAIN")
 
 	// save disk space, clean up what gets written to disk
 	i.Request.Headers.Del("User-Agent")

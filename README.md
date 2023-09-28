@@ -1,5 +1,9 @@
 # okta-aws-cli
 
+**NOTE**: *Some environment variable names changed with the v2.0.0 release of
+`okta-aws-cli`; double check your existing named variables in the [configuration
+documentation](#configuration).*
+
 `okta-aws-cli` is a CLI program allowing Okta to act as an identity provider and
 retrieve AWS IAM temporary credentials for use in AWS CLI, AWS SDKs, and other
 tools accessing the AWS API. There are two primary commands of operation: `web` -
@@ -336,8 +340,8 @@ These global settings are optional unless marked otherwise:
 
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
-| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `test.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_ORG_DOMAIN` |
-| OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_OIDC_CLIENT_ID` |
+| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `test.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_AWSCLI_ORG_DOMAIN` |
+| OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | AWS IAM Role ARN (**optional** for `web`, **required** for `m2m`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
 | AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
 | Output format | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file, `process-credentials` for credentials as JSON | `--format [value]` | `OKTA_AWSCLI_FORMAT` |
@@ -363,7 +367,7 @@ These settings are all optional:
 
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
-| Okta AWS Account Federation integration app ID | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason | `--aws-acct-fed-app-id [value]` | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` |
+| Okta AWS Account Federation integration app ID | See [AWS Account Federation integration app](#aws-account-federation-integration-app). This value is only required if the OIDC app doesn't have the `okta.apps.read` grant for whatever reason | `--aws-acct-fed-app-id [value]` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
 | AWS IAM Identity Provider ARN | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. | `--aws-iam-idp [value]` | `OKTA_AWSCLI_IAM_IDP` |
 | Display QR Code | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
 | Automatically open the activation URL with the system web browser | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
@@ -391,15 +395,15 @@ Example: `0oa9x1rifa2H6Q5d8325`
 #### Environment variables example
 
 ```shell
-export OKTA_ORG_DOMAIN=test.okta.com
-export OKTA_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
+export OKTA_AWSCLI_ORG_DOMAIN=test.okta.com
+export OKTA_AWSCLI_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 ```
 
 #### `.env` file variables example
 
 ```
-OKTA_ORG_DOMAIN=test.okta.com
-OKTA_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
+OKTA_AWSCLI_ORG_DOMAIN=test.okta.com
+OKTA_AWSCLI_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 ```
 
 #### Command line flags example
@@ -427,7 +431,7 @@ These settings are optional unless marked otherwise:
 
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
-| Custom Authorization Server ID (**required**) | The ID of the Okta custom authorization server | `--authz-id [value]` | `OKTA_AUTHZ_ID` |
+| Custom Authorization Server ID (**required**) | The ID of the Okta custom authorization server | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Key ID (kid) (**required**) | The ID of the key stored in the service app | `--key-id [value]` | `OKTA_AWSCLI_KEY_ID` |
 | Private Key (**required**) | PEM or JWKS format private key whose public key is stored on the service app | `--private-key [value]` | `OKTA_AWSCLI_PRIVATE_KEY` |
 | Custom scope name | The custom scope established in the custom authorization server. Default `okta-aws-cli` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |

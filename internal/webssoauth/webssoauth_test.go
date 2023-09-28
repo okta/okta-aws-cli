@@ -28,9 +28,9 @@ import (
 
 func TestMain(m *testing.M) {
 	var reset func()
-	reset = testutils.OsSetEnvIfBlank("OKTA_ORG_DOMAIN", testutils.TestDomainName)
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_ORG_DOMAIN", testutils.TestDomainName)
 	defer reset()
-	reset = testutils.OsSetEnvIfBlank("OKTA_OIDC_CLIENT_ID", "0oa4x34ogyC1i1krJ1d7")
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_OIDC_CLIENT_ID", "0oa4x34ogyC1i1krJ1d7")
 	defer reset()
 
 	os.Exit(m.Run())
@@ -68,7 +68,7 @@ func TestWebSSOAuthAccessToken(t *testing.T) {
 	require.NoError(t, err)
 	da, err := w.authorize()
 	require.NoError(t, err)
-	at, err := w.AccessToken(da)
+	at, err := w.accessToken(da)
 	require.NoError(t, err)
 	require.Equal(t, at.ExpiresIn, int64(3600))
 	require.Equal(t, at.TokenType, "Bearer")
@@ -78,8 +78,8 @@ func TestWebSSOAuthAccessToken(t *testing.T) {
 
 func setupTest(t *testing.T) (*config.Config, func(t *testing.T)) {
 	attrs := &config.Attributes{
-		OrgDomain: os.Getenv("OKTA_ORG_DOMAIN"),
-		OIDCAppID: os.Getenv("OKTA_OIDC_CLIENT_ID"),
+		OrgDomain: os.Getenv("OKTA_AWSCLI_ORG_DOMAIN"),
+		OIDCAppID: os.Getenv("OKTA_AWSCLI_OIDC_CLIENT_ID"),
 	}
 	config, err := config.NewConfig(attrs)
 	require.NoError(t, err)

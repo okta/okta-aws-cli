@@ -31,6 +31,21 @@ const (
 	dotEnvFilename = ".env"
 )
 
+var (
+	altFlagNames map[string]string
+)
+
+func init() {
+	altFlagNames = map[string]string{
+		"org-domain":     "okta_awscli_org_domain",
+		"oidc-client-id": "okta_awscli_oidc_client_id",
+		"aws-iam-role":   "okta_awscli_iam_role",
+		"key-id":         "okta_awscli_key_id",
+		"private-key":    "okta_awscli_private_key",
+		"authz-id":       "okta_awscli_authz_id",
+	}
+}
+
 // Flag Convenience struct for Viper flag parameters
 type Flag struct {
 	Name   string
@@ -102,7 +117,8 @@ func MakeFlagBindings(cmd *cobra.Command, flags []Flag, persistent bool) {
 func CheckRequiredFlags(flags []string) error {
 	unsetFlags := []string{}
 	for _, f := range flags {
-		if !viper.GetViper().IsSet(f) {
+		altName := altFlagName(f)
+		if !viper.GetViper().IsSet(f) && !viper.GetViper().IsSet(altName) {
 			unsetFlags = append(unsetFlags, fmt.Sprintf("  --%s", f))
 		}
 	}
@@ -110,4 +126,14 @@ func CheckRequiredFlags(flags []string) error {
 		return fmt.Errorf("missing flags:\n%s", strings.Join(unsetFlags, "\n"))
 	}
 	return nil
+}
+
+// altFlagName Helper function for looking up viper values as it key CLI flag
+// and ENV VAR name items differently For example	as a CLI flag the PK key name
+// would be h"private-key" and "okta_awscli_private_key" as an ENV VAR.
+func altFlagName(name string) string {
+	if alt, ok := altFlagNames[name]; ok {
+		return alt
+	}
+	return name
 }

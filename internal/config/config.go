@@ -31,7 +31,7 @@ import (
 
 const (
 	// Version app version
-	Version = "1.2.2"
+	Version = "2.0.0"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
@@ -82,7 +82,7 @@ const (
 	CacheAccessTokenFlag = "cache-access-token"
 
 	// AuthzIDEnvVar env var const
-	AuthzIDEnvVar = "OKTA_AUTHZ_ID"
+	AuthzIDEnvVar = "OKTA_AWSCLI_AUTHZ_ID"
 	// AWSCredentialsEnvVar env var const
 	AWSCredentialsEnvVar = "OKTA_AWSCLI_AWS_CREDENTIALS"
 	// AWSIAMIdPEnvVar env var const
@@ -106,11 +106,11 @@ const (
 	// LegacyAWSVariablesEnvVar env var const
 	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 	// OktaOIDCClientIDEnvVar env var const
-	OktaOIDCClientIDEnvVar = "OKTA_OIDC_CLIENT_ID"
+	OktaOIDCClientIDEnvVar = "OKTA_AWSCLI_OIDC_CLIENT_ID"
 	// OktaOrgDomainEnvVar env var const
-	OktaOrgDomainEnvVar = "OKTA_ORG_DOMAIN"
+	OktaOrgDomainEnvVar = "OKTA_AWSCLI_ORG_DOMAIN"
 	// OktaAWSAccountFederationAppIDEnvVar env var const
-	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
+	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID"
 	// OpenBrowserEnvVar env var const
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
 	// PrivateKeyEnvVar env var const

@@ -68,16 +68,17 @@ func NewM2MCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			err = cliFlag.CheckRequiredFlags(requiredFlags)
 			if err != nil {
 				return err
 			}
 
-			m2mAuth, err := m2mauth.NewM2MAuthentication(config)
+			m2ma, err := m2mauth.NewM2MAuthentication(config)
 			if err != nil {
 				return err
 			}
-			return m2mAuth.EstablishIAMCredentials()
+			return m2ma.EstablishIAMCredentials()
 		},
 	}
 
