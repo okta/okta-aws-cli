@@ -156,6 +156,9 @@ func NewRootCommand() *cobra.Command {
 Okta authentication in support of AWS CLI.  okta-aws-cli handles authentication
 with Okta and token exchange with AWS STS to collect temporary IAM credentials
 associated with a given IAM Role for the AWS CLI operator.`,
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd: true,
+		},
 	}
 
 	cmd.SetUsageTemplate(resourceUsageTemplate())
