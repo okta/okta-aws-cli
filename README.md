@@ -204,10 +204,10 @@ around using a custom admin role.
 # e.g.
 # export OKTA_AWSCLI_ORG_DOMAIN="test.oka.com"
 # export OKTA_AWSCLI_OIDC_CLIENT_ID="0oaa4htg72TNrkTDr1d7"
-# export OKTA_AWSCLI_IAM_ROLE="arn:aws:iam::1234:role/Circle-CI-ops
+# export OKTA_AWSCLI_IAM_ROLE="arn:aws:iam::1234:role/Circle-CI-ops"
 # export OKTA_AWSCLI_CUSTOM_SCOPE="okta-m2m-access"
 # export OKTA_AWSCLI_KEY_ID="kid-rock"
-# export OKTA_AWSCLI_PRIVATE_KEY="... long string ..."
+# export OKTA_AWSCLI_PRIVATE_KEY="... long string with new lines ..."
 # export OKTA_AWSCLI_AUTHZ_ID="aus8w23r13NvyUwln1d7"
 
 $ okta-aws-cli m2m
@@ -244,7 +244,7 @@ The `Session Token` has a default expiry of 60 minutes.
 M2M is an integration of:
 
 - [Okta API service app](https://developer.okta.com/docs/guides/implement-oauth-for-okta-serviceapp/main/)
-- Okta default or a [custom](https://developer.okta.com/docs/guides/customize-authz-server/main/) authorization server with a custom scope
+- Okta default or [custom](https://developer.okta.com/docs/guides/customize-authz-server/main/) authorization server with a custom scope
 - [Okta access policy](https://developer.okta.com/docs/guides/configure-access-policy/main/) associated with the service app and have rule(s) for the client credentials flow
 - [AWS IAM OpenID Connect (OIDC) identity provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
 
@@ -254,9 +254,9 @@ The Okta API services app requires "Public key / Private key" for "Client
 authentication". This is set at `Applications > [the API services app] > General
 Settings > Client Credentials`. In the "Public Keys" section select "Add Key"
 then either add your own public key in JWKS format, or have Okta generate a new
-key pair and copy either JWKS or PEM formatted private key. Where ever the
-private key resides it needs to be available to `okta-aws-cli m2m` at runtime;
-for instance injected as an environment variable from a secrets manager / vault.
+key pair and copy the PEM formatted private key. Where ever the private key
+resides it needs to be available to `okta-aws-cli m2m` at runtime; for instance
+injected as an environment variable from a secrets manager / vault.
 
 #### Okta Authorization Server
 
@@ -280,7 +280,7 @@ A [custom Okta
 scope](https://support.okta.com/help/s/article/Creating-a-Scope-for-an-Authorization-Server-in-Okta)
 needs to be set on the authorization server. This is at `Security > API > [the
 authorization server] > Scopes` and choose "Add Scope". `okta-aws-cli` will
-assume the scope is named `okta-aws-cli`, but if it isn't the CLI flag
+assume the scope is named `okta-m2m-access`, but if it isn't the CLI flag
 `--custom-scope` argument trains the CLI for the scope to use.
 
 #### Okta Access Policy
@@ -305,15 +305,16 @@ rule.
 From the AWS Console, in the IAM panel, select "Identity providers". Then click
 "Add provider". In the add provider form select "OpenID Connect". Set the
 "Provider URL" to the issuer URL from the Okta API Authorization Servers list
-for your custom authorization server (example: https://[your
-org].okta.com/oauth2/[custom auth server id or default]). Set the "Audience"
-value the "Audience" value listed for the authorization server in the Okta
+for your custom authorization server (example: `https://[your
+org].okta.com/oauth2/[custom auth server id or 'default']`). Set the "Audience"
+value from the "Audience" value listed for the authorization server in the Okta
 panel.
 
 After the IdP is created note it's ARN value. Any IAM roles that need to be
 associated with the IdP need to have a trust relationship established on the
-role of the `sts:AssumeRoleWithWebIdentity` action type. Also not the ARNs of
-these roles for later use.
+role of the `sts:AssumeRoleWithWebIdentity` action type. This setting is on the
+trust relationship tab when viewing a specific role in the AWS Console. Also
+note the ARNs of these roles for later use.
 
 ## Configuration
 ### Global settings
@@ -449,7 +450,7 @@ These settings are optional unless marked otherwise:
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
 | Key ID (kid) (**required**) | The ID of the key stored in the service app | `--key-id [value]` | `OKTA_AWSCLI_KEY_ID` |
-| Private Key (**required**) | PEM or JWKS format private key whose public key is stored on the service app | `--private-key [value]` | `OKTA_AWSCLI_PRIVATE_KEY` |
+| Private Key (**required**) | PEM (pkcs#1 or pkcs#9) private key whose public key is stored on the service app | `--private-key [value]` | `OKTA_AWSCLI_PRIVATE_KEY` |
 | Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use default otherwise. Default `default` | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Custom scope name | The custom scope established in the custom authorization server. Default `okta-m2m-access` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |
 

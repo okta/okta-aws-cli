@@ -94,8 +94,6 @@ in the naming convention for `okta-aws-cli` specific names.
 | `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
 
-
-
 ## 1.2.2 (August 30, 2023)
 
 * Ensure evaluation of CLI flag for profile is in the same order as the other flags [#124](https://github.com/okta/okta-aws-cli/pull/124)
