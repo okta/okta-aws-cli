@@ -27,13 +27,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	dotEnvFilename = ".env"
-)
+const dotEnvFilename = ".env"
 
-var (
-	altFlagNames map[string]string
-)
+var altFlagNames map[string]string
 
 func init() {
 	altFlagNames = map[string]string{

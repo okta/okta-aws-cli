@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/okta/okta-aws-cli/internal/aws"
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
 
@@ -32,7 +31,7 @@ type Outputter interface {
 }
 
 // RenderAWSCredential Renders the credentials in the prescribed format.
-func RenderAWSCredential(cfg *config.Config, ac *oaws.Credential) error {
+func RenderAWSCredential(cfg *config.Config, ac *aws.Credential) error {
 	var o Outputter
 	switch cfg.Format() {
 	case config.AWSCredentialsFormat:

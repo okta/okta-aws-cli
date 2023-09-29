@@ -42,6 +42,13 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+const (
+	// DefaultScope The default scope value
+	DefaultScope = "okta-m2m-access"
+	// DefaultAuthzID The default authorization server id
+	DefaultAuthzID = "default"
+)
+
 // M2MAuthentication Object structure for headless authentication
 type M2MAuthentication struct {
 	config *config.Config
@@ -51,10 +58,10 @@ type M2MAuthentication struct {
 func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
 	// need to set our config defaults
 	if config.CustomScope() == "" {
-		config.SetCustomScope("okta-m2m-access")
+		_ = config.SetCustomScope(DefaultScope)
 	}
 	if config.AuthzID() == "" {
-		config.SetAuthzID("default")
+		_ = config.SetAuthzID(DefaultAuthzID)
 	}
 
 	m := M2MAuthentication{
@@ -217,7 +224,7 @@ func (m *M2MAuthentication) accessToken() (*okta.AccessToken, error) {
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
-		return nil, fmt.Errorf(baseErrStr+", error: %q, description: %q", resp.Status, apiErr.Error, apiErr.ErrorDescription)
+		return nil, fmt.Errorf(baseErrStr+okta.AccessTokenErrorFormat, resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
 	token := &okta.AccessToken{}
