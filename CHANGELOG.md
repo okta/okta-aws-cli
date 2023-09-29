@@ -51,10 +51,10 @@ $ okta-aws-cli web \
 The `web` command will open the system's default web browser when the
 `--open-browser` flag is present. It is convenient to have the browser open on a
 separate profile. If the command to open the browser is known for the host
-system and alternate open command can be specified.
+system an alternate open command can be specified.
 
 ```
-# Use macOS open to open browser in Chrome incognito mode on macOS
+# Use macOS open to open browser in Chrome incognito mode
 $ okta-aws-cli web \
     --org-domain test.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
