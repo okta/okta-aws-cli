@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	defer reset()
 	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_AUTHZ_ID", "aus8w23r13NvyUwln1d7")
 	defer reset()
-	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_CUSTOM_SCOPE", "okta-aws-cli")
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_CUSTOM_SCOPE", "okta-m2m-access")
 	defer reset()
 	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_KEY_ID", "kid-rock")
 	defer reset()
@@ -87,7 +87,7 @@ func TestM2MAuthAccessToken(t *testing.T) {
 
 	require.Equal(t, "Bearer", at.TokenType)
 	require.Equal(t, int64(3600), at.ExpiresIn)
-	require.Equal(t, "okta-aws-cli", at.Scope)
+	require.Equal(t, "okta-m2m-access", at.Scope)
 	require.Regexp(t, regexp.MustCompile("^eyJ"), at.AccessToken)
 }
 

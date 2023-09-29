@@ -19,7 +19,7 @@ interactions:
                 - application/json
             Content-Type:
                 - application/x-www-form-urlencoded
-        url: https://test.dne-okta.com/oauth2/aus8w23r13NvyUwln1d7/v1/token?client_assertion=abc123&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&grant_type=client_credentials&scope=okta-aws-cli
+        url: https://test.dne-okta.com/oauth2/aus8w23r13NvyUwln1d7/v1/token?client_assertion=abc123&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&grant_type=client_credentials&scope=okta-m2m-access
         method: POST
       response:
         proto: HTTP/2.0
@@ -29,14 +29,14 @@ interactions:
         trailer: {}
         content_length: -1
         uncompressed: false
-        body: '{"token_type":"Bearer","expires_in":3600,"access_token":"eyJraWQiOiJjRnZ0bHRBbzF1cVhMT0ZLOGxFTVA2a3czd25pVVRHMVFSckhvQXBNTkF3IiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULjYxZTdVRU1oUGZWUkQ0LU51Wm9TbUsxSDJ2VGpjbXp2Njl4ZFd0VXpBVkkiLCJpc3MiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20vb2F1dGgyL2F1czh3MjNyMTNOdnlVd2xuMWQ3IiwiYXVkIjoiaHR0cHM6Ly9va3RhLWF3cy1jbGktYXV0aG9yaXplciIsImlhdCI6MTY5NTc2NzAzNCwiZXhwIjoxNjk1NzcwNjM0LCJjaWQiOiIwb2FhNGh0ZzcyVE5ya1REcjFkNyIsInNjcCI6WyJva3RhLWF3cy1jbGkiXSwic3ViIjoiMG9hYTRodGc3MlROcmtURHIxZDcifQ.jE6sEw1acXo_pccQUaOXrT4uQ0KI9fLYKHsh23aCsXPBrdfaVYe_yEPdZM7GWg3VYpG9VQVo-I26IKb88Nqnxw11ABMIIglHXlUx0AJHHPZP7PXi8p91y0WG7lDoU2seiX9ce8DXX83R831qLSbQImUOKOz9aNemmvSzwPvDPnjnWNQq_Dmn_MDFiaS4cqMcWB_d_SFVAFVoa-ZC-Rli0kZ63-0ZAtmyv8unHAd1eLCyq3eikeFKXRuSKaAlAgdix2OUHnC9IL_gym9xiZDXDqASmKOqRdIcJ6Q0vn8ujvKwcO_LYPAZkkfkVkDeMEvm_ee43jgcPNF-xdmLJ3YnWg","scope":"okta-aws-cli"}'
+        body: '{"token_type":"Bearer","expires_in":3600,"access_token":"eyJraWQiOiJjRnZ0bHRBbzF1cVhMT0ZLOGxFTVA2a3czd25pVVRHMVFSckhvQXBNTkF3IiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULktJNVd6YzBQYUFZZC14YjB5UXJXX0NHZUhoZnNNdUtrZGxUVkZlbXhQblEiLCJpc3MiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20vb2F1dGgyL2F1czh3MjNyMTNOdnlVd2xuMWQ3IiwiYXVkIjoiaHR0cHM6Ly9va3RhLWF3cy1jbGktYXV0aG9yaXplciIsImlhdCI6MTY5NTk1MDE5MywiZXhwIjoxNjk1OTUzNzkzLCJjaWQiOiIwb2FhNGh0ZzcyVE5ya1REcjFkNyIsInNjcCI6WyJva3RhLW0ybS1hY2Nlc3MiXSwic3ViIjoiMG9hYTRodGc3MlROcmtURHIxZDcifQ.OAs2_oZtpDnZdy4jTcjXA8D9VTFibiJeXZ3YfrntaTr6CRNQdKtWCoJHR4yPQvTEU8IjHW2uZA635ozdubhRfYd0Hv688bQHHyR8xZOC-BfyXA1xmVph1ei4HNwAZQpG-4VL1L99KvuvEh0FjtwZpcZx5_B_0Ag7LoQTVhj2nfPrjLYctIzVYRzIE29dVmDefqgJ5gG6FcK4GthMJBMK2H_mMiJQHDtlBGX7GXb7Hkt9FfA5J0HcMxq9x7yKJM6S_fTePXJwFMOBwQJX4zZa1jstDT0squxgPMh14asko8_dFXe9lC8NVrixbhs6TkiOEKGvma1u0V8yAS0qC5jvbg","scope":"okta-m2m-access"}'
         headers:
             Content-Type:
                 - application/json
             Date:
-                - Tue, 26 Sep 2023 22:23:54 GMT
+                - Fri, 29 Sep 2023 01:16:34 GMT
             Report-To:
                 - '{"group":"csp","max_age":31536000,"endpoints":[{"url":"https://oktacsp.report-uri.com/a/t/g"}],"include_subdomains":true}'
         status: 200 OK
         code: 200
-        duration: 620.35651ms
+        duration: 504.687465ms
