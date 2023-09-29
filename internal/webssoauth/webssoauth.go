@@ -147,7 +147,7 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 
 			w.promptAuthentication(deviceAuth)
 
-			at, err = w.AccessToken(deviceAuth)
+			at, err = w.accessToken(deviceAuth)
 			if err != nil {
 				return err
 			}
@@ -292,12 +292,12 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		return err
 	}
 
-	ac, err := w.fetchAWSCredentialWithSAMLRole(iar, assertion)
+	cred, err := w.awsAssumeRoleWithSAML(iar, assertion)
 	if err != nil {
 		return err
 	}
 
-	err = w.renderCredential(ac)
+	err = output.RenderAWSCredential(w.config, cred)
 	if err != nil {
 		return err
 	}
@@ -305,24 +305,9 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 	return nil
 }
 
-// renderCredential Renders the credentials in the prescribed format.
-func (w *WebSSOAuthentication) renderCredential(ac *oaws.Credential) error {
-	var o output.Outputter
-	switch w.config.Format() {
-	case config.AWSCredentialsFormat:
-		expiry := time.Now().Add(time.Duration(w.config.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
-		o = output.NewAWSCredentialsFile(w.config.LegacyAWSVariables(), w.config.ExpiryAWSVariables(), expiry)
-	default:
-		o = output.NewEnvVar(w.config.LegacyAWSVariables())
-		fmt.Fprintf(os.Stderr, "\n")
-	}
-
-	return o.Output(w.config, ac)
-}
-
-// fetchAWSCredentialWithSAMLRole Get AWS Credentials with an STS Assume Role With SAML AWS
+// awsAssumeRoleWithSAML Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (w *WebSSOAuthentication) fetchAWSCredentialWithSAMLRole(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
+func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(w.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
@@ -607,7 +592,7 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
-		return nil, fmt.Errorf(baseErrStr+", error: %q, description: %q", resp.Status, apiErr.Error, apiErr.ErrorDescription)
+		return nil, fmt.Errorf(baseErrStr+okta.AccessTokenErrorFormat, resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
 	token = &okta.AccessToken{}
@@ -711,9 +696,9 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 	return
 }
 
-// AccessToken see:
+// accessToken see:
 // https://developer.okta.com/docs/reference/api/oidc/#token
-func (w *WebSSOAuthentication) AccessToken(deviceAuth *okta.DeviceAuthorization) (at *okta.AccessToken, err error) {
+func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization) (at *okta.AccessToken, err error) {
 	clientID := w.config.OIDCAppID()
 	apiURL := fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, w.config.OrgDomain())
 

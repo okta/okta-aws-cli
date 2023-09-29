@@ -16,6 +16,9 @@
 
 package okta
 
+// AccessTokenErrorFormat string format for access token error
+const AccessTokenErrorFormat = ", error: %q, description: %q"
+
 // AccessToken Encapsulates an Okta access token
 // https://developer.okta.com/docs/reference/api/oidc/#token
 type AccessToken struct {

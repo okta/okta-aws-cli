@@ -17,6 +17,10 @@
 package output
 
 import (
+	"fmt"
+	"os"
+	"time"
+
 	"github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
@@ -24,4 +28,19 @@ import (
 // Outputter Interface to output AWS credentials in different formats.
 type Outputter interface {
 	Output(c *config.Config, ac *aws.Credential) error
+}
+
+// RenderAWSCredential Renders the credentials in the prescribed format.
+func RenderAWSCredential(cfg *config.Config, ac *aws.Credential) error {
+	var o Outputter
+	switch cfg.Format() {
+	case config.AWSCredentialsFormat:
+		expiry := time.Now().Add(time.Duration(cfg.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
+		o = NewAWSCredentialsFile(cfg.LegacyAWSVariables(), cfg.ExpiryAWSVariables(), expiry)
+	default:
+		o = NewEnvVar(cfg.LegacyAWSVariables())
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	return o.Output(cfg, ac)
 }

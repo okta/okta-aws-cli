@@ -30,11 +30,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
+	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/okta"
+	"github.com/okta/okta-aws-cli/internal/output"
 	"github.com/okta/okta-aws-cli/internal/utils"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
+)
+
+const (
+	// DefaultScope The default scope value
+	DefaultScope = "okta-m2m-access"
+	// DefaultAuthzID The default authorization server id
+	DefaultAuthzID = "default"
 )
 
 // M2MAuthentication Object structure for headless authentication
@@ -44,6 +56,14 @@ type M2MAuthentication struct {
 
 // NewM2MAuthentication New M2M Authentication constructor
 func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
+	// need to set our config defaults
+	if config.CustomScope() == "" {
+		_ = config.SetCustomScope(DefaultScope)
+	}
+	if config.AuthzID() == "" {
+		_ = config.SetAuthzID(DefaultAuthzID)
+	}
+
 	m := M2MAuthentication{
 		config: config,
 	}
@@ -58,14 +78,49 @@ func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
 // - CLI requests access token from custom authz server at /oauth2/{authzID}/v1/token
 // - CLI presents access token to AWS STS for temporary AWS IAM creds
 func (m *M2MAuthentication) EstablishIAMCredentials() error {
-	_, err := m.AccessToken()
+	at, err := m.accessToken()
 	if err != nil {
 		return err
 	}
-	// WIP
-	// out, err := m.AssumeRole(at) (*sts.AssumeRoleWithWebIdentityOutput, error) {
-	// err = m.OutputCredentials(out)
+
+	cred, err := m.awsAssumeRoleWithWebIdentity(at)
+	if err != nil {
+		return err
+	}
+
+	err = output.RenderAWSCredential(m.config, cred)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (credential *oaws.Credential, err error) {
+	awsCfg := aws.NewConfig().WithHTTPClient(m.config.HTTPClient())
+	sess, err := session.NewSession(awsCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := sts.New(sess)
+	input := &sts.AssumeRoleWithWebIdentityInput{
+		DurationSeconds:  aws.Int64(m.config.AWSSessionDuration()),
+		RoleArn:          aws.String(m.config.AWSIAMRole()),
+		RoleSessionName:  aws.String("okta-aws-cli"),
+		WebIdentityToken: &at.AccessToken,
+	}
+	svcResp, err := svc.AssumeRoleWithWebIdentity(input)
+	if err != nil {
+		return nil, err
+	}
+
+	credential = &oaws.Credential{
+		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
+		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
+		SessionToken:    *svcResp.Credentials.SessionToken,
+	}
+	return credential, nil
 }
 
 func (m *M2MAuthentication) createKeySigner() (jose.Signer, error) {
@@ -127,9 +182,9 @@ func (m *M2MAuthentication) makeClientAssertion() (string, error) {
 	return jwtBuilder.CompactSerialize()
 }
 
-// AccessToken Takes okta-aws-cli private key and presents a client_credentials
+// accessToken Takes okta-aws-cli private key and presents a client_credentials
 // flow assertion to /oauth2/{authzServerID}/v1/token to gather an access token.
-func (m *M2MAuthentication) AccessToken() (*okta.AccessToken, error) {
+func (m *M2MAuthentication) accessToken() (*okta.AccessToken, error) {
 	clientAssertion, err := m.makeClientAssertion()
 	if err != nil {
 		return nil, err
@@ -169,7 +224,7 @@ func (m *M2MAuthentication) AccessToken() (*okta.AccessToken, error) {
 			return nil, fmt.Errorf(baseErrStr, resp.Status)
 		}
 
-		return nil, fmt.Errorf(baseErrStr+", error: %q, description: %q", resp.Status, apiErr.Error, apiErr.ErrorDescription)
+		return nil, fmt.Errorf(baseErrStr+okta.AccessTokenErrorFormat, resp.Status, apiErr.Error, apiErr.ErrorDescription)
 	}
 
 	token := &okta.AccessToken{}

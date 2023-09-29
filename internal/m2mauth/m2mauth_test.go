@@ -29,15 +29,15 @@ import (
 
 func TestMain(m *testing.M) {
 	var reset func()
-	reset = testutils.OsSetEnvIfBlank("OKTA_ORG_DOMAIN", testutils.TestDomainName)
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_ORG_DOMAIN", testutils.TestDomainName)
 	defer reset()
-	reset = testutils.OsSetEnvIfBlank("OKTA_OIDC_CLIENT_ID", "0oaa4htg72TNrkTDr1d7")
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_OIDC_CLIENT_ID", "0oaa4htg72TNrkTDr1d7")
 	defer reset()
 	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_IAM_ROLE", "arn:aws:iam::123:role/RickRollNeverGonnaGiveYouUp")
 	defer reset()
-	reset = testutils.OsSetEnvIfBlank("OKTA_AUTHZ_ID", "aus8w23r13NvyUwln1d7")
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_AUTHZ_ID", "aus8w23r13NvyUwln1d7")
 	defer reset()
-	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_CUSTOM_SCOPE", "okta-aws-cli")
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_CUSTOM_SCOPE", "okta-m2m-access")
 	defer reset()
 	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_KEY_ID", "kid-rock")
 	defer reset()
@@ -81,22 +81,22 @@ func TestM2MAuthAccessToken(t *testing.T) {
 	m, err := NewM2MAuthentication(config)
 	require.NoError(t, err)
 
-	at, err := m.AccessToken()
+	at, err := m.accessToken()
 	require.NoError(t, err)
 	require.NotNil(t, at)
 
 	require.Equal(t, "Bearer", at.TokenType)
 	require.Equal(t, int64(3600), at.ExpiresIn)
-	require.Equal(t, "okta-aws-cli", at.Scope)
+	require.Equal(t, "okta-m2m-access", at.Scope)
 	require.Regexp(t, regexp.MustCompile("^eyJ"), at.AccessToken)
 }
 
 func setupTest(t *testing.T) (*config.Config, func(t *testing.T)) {
 	attrs := &config.Attributes{
-		OrgDomain:   os.Getenv("OKTA_ORG_DOMAIN"),
-		OIDCAppID:   os.Getenv("OKTA_OIDC_CLIENT_ID"),
+		OrgDomain:   os.Getenv("OKTA_AWSCLI_ORG_DOMAIN"),
+		OIDCAppID:   os.Getenv("OKTA_AWSCLI_OIDC_CLIENT_ID"),
 		AWSIAMRole:  os.Getenv("OKTA_AWSCLI_IAM_ROLE"),
-		AuthzID:     os.Getenv("OKTA_AUTHZ_ID"),
+		AuthzID:     os.Getenv("OKTA_AWSCLI_AUTHZ_ID"),
 		CustomScope: os.Getenv("OKTA_AWSCLI_CUSTOM_SCOPE"),
 		KeyID:       os.Getenv("OKTA_AWSCLI_KEY_ID"),
 		PrivateKey:  os.Getenv("OKTA_AWSCLI_PRIVATE_KEY"),
