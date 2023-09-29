@@ -22,12 +22,20 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
+
+// UserAgentValue the user agent value
+var UserAgentValue string
+
+func init() {
+	UserAgentValue = fmt.Sprintf("okta-aws-cli/%s (%s; %s; %s)", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
 
 const (
 	// Version app version

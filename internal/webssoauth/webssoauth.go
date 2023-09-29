@@ -43,7 +43,6 @@ import (
 	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
 
-	"github.com/okta/okta-aws-cli/internal/agent"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	boff "github.com/okta/okta-aws-cli/internal/backoff"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -55,7 +54,6 @@ import (
 const (
 	amazonAWS                = "amazon_aws"
 	accept                   = "Accept"
-	userAgent                = "User-Agent"
 	nameKey                  = "name"
 	saml2Attribute           = "saml2:attribute"
 	samlAttributesRole       = "https://aws.amazon.com/SAML/Attributes/Role"
@@ -531,7 +529,8 @@ func (w *WebSSOAuthentication) fetchSAMLAssertion(at *okta.AccessToken) (asserti
 		return assertion, err
 	}
 	req.Header.Add(accept, "text/html")
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -573,7 +572,8 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -659,7 +659,8 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationJSON)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
 	resp, err := w.config.HTTPClient().Do(req)
 	if resp.StatusCode == http.StatusForbidden {
@@ -708,7 +709,8 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	var bodyBytes []byte
 
@@ -779,7 +781,8 @@ func (w *WebSSOAuthentication) authorize() (*okta.DeviceAuthorization, error) {
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -877,7 +880,8 @@ func (w *WebSSOAuthentication) isClassicOrg() bool {
 		return false
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
