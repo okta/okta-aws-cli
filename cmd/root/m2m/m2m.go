@@ -43,7 +43,7 @@ var (
 		{
 			Name:   config.CustomScopeFlag,
 			Short:  "m",
-			Value:  "okta-aws-cli",
+			Value:  "",
 			Usage:  "Custom Scope",
 			EnvVar: config.CustomScopeEnvVar,
 		},
@@ -55,7 +55,7 @@ var (
 			EnvVar: config.AuthzIDEnvVar,
 		},
 	}
-	requiredFlags = []string{"org-domain", "oidc-client-id", "aws-iam-role", "key-id", "private-key", "authz-id"}
+	requiredFlags = []string{"org-domain", "oidc-client-id", "aws-iam-role", "key-id", "private-key"}
 )
 
 // NewM2MCommand Sets up the m2m cobra sub command

@@ -49,6 +49,14 @@ type M2MAuthentication struct {
 
 // NewM2MAuthentication New M2M Authentication constructor
 func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
+	// need to set our config defaults
+	if config.CustomScope() == "" {
+		config.SetCustomScope("okta-m2m-access")
+	}
+	if config.AuthzID() == "" {
+		config.SetAuthzID("default")
+	}
+
 	m := M2MAuthentication{
 		config: config,
 	}
