@@ -26,7 +26,7 @@ in the naming convention for `okta-aws-cli` specific names.
 | `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
 
-### (expected) Credentials output as JSON
+### (Completed) Process credential provider output as JSON
 
 Emits IAM temporary credentials as JSON in [process
 credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
@@ -69,6 +69,17 @@ $ okta-aws-cli web \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
     --open-browser \
     --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --profile-directory='Profile 1'"
+```
+
+## 2.0.0-beta.1 (October 2, 2023)
+
+Support for AWS CLI [process credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
+
+```
+# $/.aws/config
+[default]
+# presumes OKTA_AWSCLI_* env vars are set
+credential_process = okta-aws-cli m2m --format process-credentials
 ```
 
 ## 2.0.0-beta.0 (September 29, 2023)

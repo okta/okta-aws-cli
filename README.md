@@ -679,6 +679,23 @@ aws --profile example s3 ls
 Unable to parse config file: /home/user/.aws/credentials
 ```
 
+### Process credentials provider
+
+`okta-aws-cli` supports JSON output for the AWS CLI [credential process
+argument](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html).
+Add this line to the `default` section of `$/.aws/config`. First m2m example
+presumes `m2m` arguments are in `OKTA_AWSCLI_*` environment variables, AWS CLI
+passes those through. Second web example has args spelled out directly in the
+credential process values.
+
+M2M example:
+
+`credential_process = okta-aws-cli m2m --format process-credentials`
+
+Web example:
+
+`credential_process = okta-aws-cli web --format process-credentials --oidc-client-id abc --org-domain test.okat.com --aws-iam-idp arn:aws:iam::123:saml-provider/my-idp --aws-iam-role arn:aws:iam::294719231913:role/s3 --open-browser`
+
 ### Help
 
 ```shell
