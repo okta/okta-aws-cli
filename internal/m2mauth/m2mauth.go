@@ -119,7 +119,9 @@ func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
+		Expiration:      svcResp.Credentials.Expiration,
 	}
+
 	return credential, nil
 }
 
@@ -199,14 +201,15 @@ func (m *M2MAuthentication) accessToken() (*okta.AccessToken, error) {
 	query.Add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
 	query.Add("client_assertion", clientAssertion)
 	tokenRequestURL += "?" + query.Encode()
-	tokenRequest, err := http.NewRequest("POST", tokenRequestURL, tokenRequestBuff)
+	req, err := http.NewRequest("POST", tokenRequestURL, tokenRequestBuff)
 	if err != nil {
 		return nil, err
 	}
-
-	tokenRequest.Header.Add("Accept", utils.ApplicationJSON)
-	tokenRequest.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	resp, err := m.config.HTTPClient().Do(tokenRequest)
+	req.Header.Add("Accept", utils.ApplicationJSON)
+	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIM2MOperation)
+	resp, err := m.config.HTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}

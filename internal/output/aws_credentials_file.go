@@ -156,12 +156,6 @@ func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars boo
 	if len(comments) > 0 {
 		fmt.Fprintf(os.Stderr, "WARNING: Commented out %q profile keys \"%s\". Uncomment if third party tools use these values.\n", profile, strings.Join(comments, "\", \""))
 	}
-	if legacyVars {
-		fmt.Fprintf(os.Stderr, "WARNING: %q includes legacy variable \"aws_security_token\". Update tools making use of this deprecated value.\n", profile)
-	}
-	if expiryVars {
-		fmt.Fprintf(os.Stderr, "WARNING: %q includes 3rd party variable \"x_security_token_expires\".\n", profile)
-	}
 
 	return config, nil
 }

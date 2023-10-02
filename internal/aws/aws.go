@@ -16,9 +16,36 @@
 
 package aws
 
+import (
+	"encoding/json"
+	"time"
+)
+
 // Credential Convenience representation of an AWS credential.
 type Credential struct {
-	AccessKeyID     string `ini:"aws_access_key_id"`
-	SecretAccessKey string `ini:"aws_secret_access_key"`
-	SessionToken    string `ini:"aws_session_token"`
+	AccessKeyID     string     `ini:"aws_access_key_id"     json:"AccessKeyId,omitempty"`
+	SecretAccessKey string     `ini:"aws_secret_access_key" json:"SecretAccessKey,omitempty"`
+	SessionToken    string     `ini:"aws_session_token"     json:"SessionToken,omitempty"`
+	Version         int        `ini:"aws_version"           json:"Version,omitempty"`
+	Expiration      *time.Time `ini:"aws_expiration"        json:"Expiration,omitempty"`
+}
+
+// MarshalJSON ensure Expiration date time is formatted RFC 3339 format.
+func (c *Credential) MarshalJSON() ([]byte, error) {
+	type Alias Credential
+	var exp string
+	if c.Expiration != nil {
+		exp = c.Expiration.Format(time.RFC3339)
+	}
+
+	obj := &struct {
+		*Alias
+		Expiration string `json:"Expiration"`
+	}{
+		Alias: (*Alias)(c),
+	}
+	if exp != "" {
+		obj.Expiration = exp
+	}
+	return json.Marshal(obj)
 }

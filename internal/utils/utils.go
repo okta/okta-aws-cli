@@ -23,4 +23,12 @@ const (
 	ApplicationJSON = "application/json"
 	// ApplicationXFORM content type value for web form
 	ApplicationXFORM = "application/x-www-form-urlencoded"
+	// UserAgentHeader user agent header
+	UserAgentHeader = "User-Agent"
+	// XOktaAWSCLIOperationHeader the okta aws cli header
+	XOktaAWSCLIOperationHeader = "X-Okta-Aws-Cli-Operation"
+	// XOktaAWSCLIWebOperation web op value for the x okta aws cli header
+	XOktaAWSCLIWebOperation = "web"
+	// XOktaAWSCLIM2MOperation m2m op value for the x okta aws cli header
+	XOktaAWSCLIM2MOperation = "m2m"
 )

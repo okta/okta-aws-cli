@@ -43,7 +43,6 @@ import (
 	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
 
-	"github.com/okta/okta-aws-cli/internal/agent"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	boff "github.com/okta/okta-aws-cli/internal/backoff"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -55,7 +54,6 @@ import (
 const (
 	amazonAWS                = "amazon_aws"
 	accept                   = "Accept"
-	userAgent                = "User-Agent"
 	nameKey                  = "name"
 	saml2Attribute           = "saml2:attribute"
 	samlAttributesRole       = "https://aws.amazon.com/SAML/Attributes/Role"
@@ -114,15 +112,17 @@ var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
 }
 
 // NewWebSSOAuthentication New Web SSO Authentication constructor
-func NewWebSSOAuthentication(config *config.Config) (token *WebSSOAuthentication, err error) {
-	if err != nil {
-		return nil, err
-	}
+func NewWebSSOAuthentication(cfg *config.Config) (token *WebSSOAuthentication, err error) {
 	token = &WebSSOAuthentication{
-		config: config,
+		config: cfg,
 	}
 	if token.isClassicOrg() {
-		return nil, fmt.Errorf("%q is a Classic org, okta-aws-cli is an-OIE only tool", config.OrgDomain())
+		return nil, fmt.Errorf("%q is a Classic org, okta-aws-cli is an-OIE only tool", cfg.OrgDomain())
+	}
+	if cfg.IsProcessCredentialsFormat() {
+		if cfg.AWSIAMIdP() == "" || cfg.AWSIAMRole() == "" || !cfg.OpenBrowser() {
+			return nil, fmt.Errorf("arguments --%s , --%s , and --%s must be set for %q format", config.AWSIAMIdPFlag, config.AWSIAMRoleFlag, config.OpenBrowserFlag, cfg.Format())
+		}
 	}
 	return token, nil
 }
@@ -215,15 +215,15 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelIDP(alternative string, oktaCo
 
 	if label, ok := oktaConfig.AWSCLI.IDPS[arn]; ok {
 		if w.config.Debug() {
-			fmt.Fprintf(os.Stderr, "  found IdP ARN %q having friendly label %q\n", arn, label)
+			w.consolePrint("  found IdP ARN %q having friendly label %q\n", arn, label)
 		}
 		return label
 	} else if w.config.Debug() {
-		fmt.Fprintf(os.Stderr, "  did not find friendly label for IdP ARN\n")
-		fmt.Fprintf(os.Stderr, arnPrintFmt, arn)
-		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.idps map:\n")
+		w.consolePrint("  did not find friendly label for IdP ARN\n")
+		w.consolePrint(arnPrintFmt, arn)
+		w.consolePrint("    in okta.yaml awscli.idps map:\n")
 		for arn, label := range oktaConfig.AWSCLI.IDPS {
-			fmt.Fprintf(os.Stderr, arnLabelPrintFmt, arn, label)
+			w.consolePrint(arnLabelPrintFmt, arn, label)
 		}
 	}
 	return alternative
@@ -240,14 +240,16 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 
 		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
 		if w.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
-			idpData := idpTemplateData{
-				IDP: choiceLabel,
+			if !w.config.IsProcessCredentialsFormat() {
+				idpData := idpTemplateData{
+					IDP: choiceLabel,
+				}
+				rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
+				if err != nil {
+					return "", err
+				}
+				fmt.Fprintln(os.Stderr, rich)
 			}
-			rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
-			if err != nil {
-				return "", err
-			}
-			fmt.Fprintln(os.Stderr, rich)
 
 			return app.ID, nil
 		}
@@ -329,6 +331,7 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
+		Expiration:      svcResp.Credentials.Expiration,
 	}
 	return credential, nil
 }
@@ -343,15 +346,15 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, oktaConfig *c
 
 	if label, ok := oktaConfig.AWSCLI.ROLES[arn]; ok {
 		if w.config.Debug() {
-			fmt.Fprintf(os.Stderr, "  found Role ARN %q having friendly label %q\n", arn, label)
+			w.consolePrint("  found Role ARN %q having friendly label %q\n", arn, label)
 		}
 		return label
 	} else if w.config.Debug() {
-		fmt.Fprintf(os.Stderr, "  did not find friendly label for Role ARN\n")
-		fmt.Fprintf(os.Stderr, arnPrintFmt, arn)
-		fmt.Fprintf(os.Stderr, "    in okta.yaml awscli.roles map:\n")
+		w.consolePrint("  did not find friendly label for Role ARN\n")
+		w.consolePrint(arnPrintFmt, arn)
+		w.consolePrint("    in okta.yaml awscli.roles map:\n")
 		for arn, label := range oktaConfig.AWSCLI.ROLES {
-			fmt.Fprintf(os.Stderr, arnLabelPrintFmt, arn, label)
+			w.consolePrint(arnLabelPrintFmt, arn, label)
 		}
 	}
 	return arn
@@ -370,11 +373,13 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 		roleData := roleTemplateData{
 			Role: roleLabel,
 		}
-		rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
-		if err != nil {
-			return "", err
+		if !w.config.IsProcessCredentialsFormat() {
+			rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
+			if err != nil {
+				return "", err
+			}
+			fmt.Fprintln(os.Stderr, rich)
 		}
-		fmt.Fprintln(os.Stderr, rich)
 		return roleARN, nil
 	}
 
@@ -531,7 +536,8 @@ func (w *WebSSOAuthentication) fetchSAMLAssertion(at *okta.AccessToken) (asserti
 		return assertion, err
 	}
 	req.Header.Add(accept, "text/html")
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -573,7 +579,8 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -628,12 +635,12 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 		openMsg = "System web browser will open"
 	}
 
-	fmt.Fprintf(os.Stderr, prompt, openMsg, qrCode, da.VerificationURIComplete)
+	w.consolePrint(prompt, openMsg, qrCode, da.VerificationURIComplete)
 
 	if w.config.OpenBrowser() {
 		brwsr.Stdout = os.Stderr
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to open activation URL with system browser: %v\n", err)
+			w.consolePrint("Failed to open activation URL with system browser: %v\n", err)
 		}
 	}
 }
@@ -659,7 +666,8 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationJSON)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 	req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
 	resp, err := w.config.HTTPClient().Do(req)
 	if resp.StatusCode == http.StatusForbidden {
@@ -708,7 +716,8 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	var bodyBytes []byte
 
@@ -779,7 +788,8 @@ func (w *WebSSOAuthentication) authorize() (*okta.DeviceAuthorization, error) {
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -877,7 +887,8 @@ func (w *WebSSOAuthentication) isClassicOrg() bool {
 		return false
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
-	req.Header.Add(userAgent, agent.NewUserAgent(config.Version).String())
+	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
 	if err != nil {
@@ -960,4 +971,12 @@ func (w *WebSSOAuthentication) cacheAccessToken(at *okta.AccessToken) {
 
 	configPath := filepath.Join(cUser.HomeDir, dotOktaDir, tokenFileName)
 	_ = os.WriteFile(configPath, atJSON, 0o600)
+}
+
+func (w *WebSSOAuthentication) consolePrint(format string, a ...any) {
+	if w.config.IsProcessCredentialsFormat() {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, format, a...)
 }

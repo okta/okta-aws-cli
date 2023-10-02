@@ -367,8 +367,8 @@ These global settings are optional unless marked otherwise:
 | Cache Okta access token at `$HOME/.okta/awscli-access-token.json` to reduce need to open device authorization URL | `true` if flag is present | `--cache-access-token` | `OKTA_AWSCLI_CACHE_ACCESS_TOKEN=true` |
 | Alternate AWS credentials file path | Path to alternative credentials file other than AWS CLI default | `--aws-credentials` | `OKTA_AWSCLI_AWS_CREDENTIALS` |
 | (Over)write the given profile to the AWS credentials file. WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `true` if flag is present | `--write-aws-credentials` | `OKTA_AWSCLI_WRITE_AWS_CREDENTIALS=true` |
-| Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token` | `true` if flag is present | `--legacy-aws-variables` | `OKTA_AWSCLI_LEGACY_AWS_VARIABLES=true` |
-| Emit expiry timestamp `x_security_token_expires` in RFC3339 format for the session/security token (AWS credentials file only) | `true` if flag is present | `--expiry-aws-variables` | `OKTA_AWSCLI_EXPIRY_AWS_VARIABLES=true` |
+| Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token`. AWS CLI removed any reference and documentation for `aws_security_token` in November 2014. | `true` if flag is present | `--legacy-aws-variables` | `OKTA_AWSCLI_LEGACY_AWS_VARIABLES=true` |
+| Emit expiry timestamp `x_security_token_expires` in RFC3339 format for the session/security token (AWS credentials file only). This is a non-standard profile variable. | `true` if flag is present | `--expiry-aws-variables` | `OKTA_AWSCLI_EXPIRY_AWS_VARIABLES=true` |
 | Print operational information to the screen for debugging purposes | `true` if flag is present | `--debug` | `OKTA_AWSCLI_DEBUG=true` |
 | Verbosely print all API calls/responses to the screen | `true` if flag is present | `--debug-api-calls` | `OKTA_AWSCLI_DEBUG_API_CALLS=true` |
 | HTTP/HTTPS Proxy support | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) | n/a | `HTTP_PROXY` or `HTTPS_PROXY` |
@@ -678,6 +678,23 @@ aws --profile example s3 ls
 
 Unable to parse config file: /home/user/.aws/credentials
 ```
+
+### Process credentials provider
+
+`okta-aws-cli` supports JSON output for the AWS CLI [credential process
+argument](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html).
+Add this line to the `default` section of `$/.aws/config`. First m2m example
+presumes `m2m` arguments are in `OKTA_AWSCLI_*` environment variables, AWS CLI
+passes those through. Second web example has args spelled out directly in the
+credential process values.
+
+M2M example:
+
+`credential_process = okta-aws-cli m2m --format process-credentials`
+
+Web example:
+
+`credential_process = okta-aws-cli web --format process-credentials --oidc-client-id abc --org-domain test.okat.com --aws-iam-idp arn:aws:iam::123:saml-provider/my-idp --aws-iam-role arn:aws:iam::294719231913:role/s3 --open-browser`
 
 ### Help
 

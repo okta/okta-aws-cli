@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -29,14 +30,23 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// UserAgentValue the user agent value
+var UserAgentValue string
+
+func init() {
+	UserAgentValue = fmt.Sprintf("okta-aws-cli/%s (%s; %s; %s)", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
+
 const (
 	// Version app version
-	Version = "2.0.0-beta.0"
+	Version = "2.0.0-beta.1"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
 	// EnvVarFormat format const
 	EnvVarFormat = "env-var"
+	// ProcessCredentialsFormat format const
+	ProcessCredentialsFormat = "process-credentials"
 
 	// AuthzIDFlag cli flag const
 	AuthzIDFlag = "authz-id"
@@ -804,6 +814,11 @@ awscli:
 
 	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
 	return nil
+}
+
+// IsProcessCredentialsFormat is our format process credentials?
+func (c *Config) IsProcessCredentialsFormat() bool {
+	return c.format == ProcessCredentialsFormat
 }
 
 type realClock struct{}
