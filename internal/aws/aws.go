@@ -23,7 +23,6 @@ import (
 
 // Credential Convenience representation of an AWS credential.
 type Credential struct {
-	// NOTE JSON process credentials format uses same came cased names as this struct
 	AccessKeyID     string     `ini:"aws_access_key_id"     json:"AccessKeyId,omitempty"`
 	SecretAccessKey string     `ini:"aws_secret_access_key" json:"SecretAccessKey,omitempty"`
 	SessionToken    string     `ini:"aws_session_token"     json:"SessionToken,omitempty"`
