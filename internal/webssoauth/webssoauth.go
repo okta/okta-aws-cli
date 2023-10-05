@@ -46,6 +46,7 @@ import (
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	boff "github.com/okta/okta-aws-cli/internal/backoff"
 	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/exec"
 	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/output"
 	"github.com/okta/okta-aws-cli/internal/utils"
@@ -124,6 +125,14 @@ func NewWebSSOAuthentication(cfg *config.Config) (token *WebSSOAuthentication, e
 			return nil, fmt.Errorf("arguments --%s , --%s , and --%s must be set for %q format", config.AWSIAMIdPFlag, config.AWSIAMRoleFlag, config.OpenBrowserFlag, cfg.Format())
 		}
 	}
+
+	// Check if exec arg is present and that there are args for it before doing any work
+	if cfg.Exec() {
+		if _, err := exec.NewExec(); err != nil {
+			return nil, err
+		}
+	}
+
 	return token, nil
 }
 
@@ -294,14 +303,21 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		return err
 	}
 
-	cred, err := w.awsAssumeRoleWithSAML(iar, assertion)
+	oc, ac, err := w.awsAssumeRoleWithSAML(iar, assertion)
 	if err != nil {
 		return err
 	}
 
-	err = output.RenderAWSCredential(w.config, cred)
+	err = output.RenderAWSCredential(w.config, oc, ac)
 	if err != nil {
 		return err
+	}
+
+	if w.config.Exec() {
+		exe, _ := exec.NewExec()
+		if err := exe.Run(oc); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -309,11 +325,11 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 
 // awsAssumeRoleWithSAML Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (credential *oaws.Credential, err error) {
+func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (oc *oaws.Credential, ac *sts.Credentials, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(w.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
-		return nil, err
+		return
 	}
 	svc := sts.New(sess)
 	input := &sts.AssumeRoleWithSAMLInput{
@@ -324,16 +340,15 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 	}
 	svcResp, err := svc.AssumeRoleWithSAML(input)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	credential = &oaws.Credential{
+	oc = &oaws.Credential{
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
-		Expiration:      svcResp.Credentials.Expiration,
 	}
-	return credential, nil
+	return oc, svcResp.Credentials, nil
 }
 
 // choiceFriendlyLabelRole returns a friendly choice for pretty printing Role
@@ -621,7 +636,7 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 		buf := bytes.NewBufferString("")
 		qrterminal.GenerateHalfBlock(da.VerificationURIComplete, qrterminal.L, buf)
 		if _, err := buf.Read(qrBuf); err == nil {
-			qrCode = fmt.Sprintf("%s\n", qrBuf)
+			qrCode = fmt.Sprintf(utils.PassThroughStringNewLineFMT, qrBuf)
 		}
 	}
 

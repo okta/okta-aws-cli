@@ -32,14 +32,14 @@ Emits IAM temporary credentials as JSON in [process
 credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
 format.
 
-### (expected) Secondary command exec
+### (Complete) Execute follow-on command
 
 Instead of scripting and/or eval'ing `okta-aws-cli` into a shell and then
 running another command have `okta-aws-cli` run the command directly passing
 along the IAM credentials as environment variables.
 
 ```
-# CLI exec's anything after the double dash "--" as another command.
+# CLI exec's anything after the double dash "--" arguments terminator as another command.
 $ okta-aws-cli web \
     --org-domain test.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
@@ -69,6 +69,16 @@ $ okta-aws-cli web \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
     --open-browser \
     --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --profile-directory='Profile 1'"
+```
+
+## 2.0.0-beta.2 (October 5, 2023)
+
+Execute a subcommand directly from `okta-aws-cli`
+
+```
+$ okta-aws-cli m2m --format noop --exec -- aws s3 ls s3://example
+                           PRE aaa/
+2023-03-08 16:01:01          4 a.log
 ```
 
 ## 2.0.0-beta.1 (October 2, 2023)

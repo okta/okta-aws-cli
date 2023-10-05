@@ -35,6 +35,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/exec"
 	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/output"
 	"github.com/okta/okta-aws-cli/internal/utils"
@@ -55,17 +56,24 @@ type M2MAuthentication struct {
 }
 
 // NewM2MAuthentication New M2M Authentication constructor
-func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
+func NewM2MAuthentication(cfg *config.Config) (*M2MAuthentication, error) {
 	// need to set our config defaults
-	if config.CustomScope() == "" {
-		_ = config.SetCustomScope(DefaultScope)
+	if cfg.CustomScope() == "" {
+		_ = cfg.SetCustomScope(DefaultScope)
 	}
-	if config.AuthzID() == "" {
-		_ = config.SetAuthzID(DefaultAuthzID)
+	if cfg.AuthzID() == "" {
+		_ = cfg.SetAuthzID(DefaultAuthzID)
+	}
+
+	// Check if exec arg is present and that there are args for it before doing any work
+	if cfg.Exec() {
+		if _, err := exec.NewExec(); err != nil {
+			return nil, err
+		}
 	}
 
 	m := M2MAuthentication{
-		config: config,
+		config: cfg,
 	}
 	return &m, nil
 }
@@ -83,24 +91,31 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 		return err
 	}
 
-	cred, err := m.awsAssumeRoleWithWebIdentity(at)
+	oc, ac, err := m.awsAssumeRoleWithWebIdentity(at)
 	if err != nil {
 		return err
 	}
 
-	err = output.RenderAWSCredential(m.config, cred)
+	err = output.RenderAWSCredential(m.config, oc, ac)
 	if err != nil {
 		return err
+	}
+
+	if m.config.Exec() {
+		exe, _ := exec.NewExec()
+		if err := exe.Run(oc); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (credential *oaws.Credential, err error) {
+func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (oc *oaws.Credential, ac *sts.Credentials, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(m.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	svc := sts.New(sess)
@@ -112,17 +127,16 @@ func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (
 	}
 	svcResp, err := svc.AssumeRoleWithWebIdentity(input)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	credential = &oaws.Credential{
+	oc = &oaws.Credential{
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
-		Expiration:      svcResp.Credentials.Expiration,
 	}
 
-	return credential, nil
+	return oc, svcResp.Credentials, nil
 }
 
 func (m *M2MAuthentication) createKeySigner() (jose.Signer, error) {

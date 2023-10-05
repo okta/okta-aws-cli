@@ -362,7 +362,7 @@ These global settings are optional unless marked otherwise:
 | OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | AWS IAM Role ARN (**optional** for `web`, **required** for `m2m`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
 | AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
-| Output format | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file, `process-credentials` for credentials as JSON | `--format [value]` | `OKTA_AWSCLI_FORMAT` |
+| Output format | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file, `process-credentials` for credentials as JSON, or `noop` for no output which can be useful with `--exec` | `--format [value]` | `OKTA_AWSCLI_FORMAT` |
 | Profile | Default is `default` | `--profile [value]` | `OKTA_AWSCLI_PROFILE` |
 | Cache Okta access token at `$HOME/.okta/awscli-access-token.json` to reduce need to open device authorization URL | `true` if flag is present | `--cache-access-token` | `OKTA_AWSCLI_CACHE_ACCESS_TOKEN=true` |
 | Alternate AWS credentials file path | Path to alternative credentials file other than AWS CLI default | `--aws-credentials` | `OKTA_AWSCLI_AWS_CREDENTIALS` |
@@ -372,6 +372,7 @@ These global settings are optional unless marked otherwise:
 | Print operational information to the screen for debugging purposes | `true` if flag is present | `--debug` | `OKTA_AWSCLI_DEBUG=true` |
 | Verbosely print all API calls/responses to the screen | `true` if flag is present | `--debug-api-calls` | `OKTA_AWSCLI_DEBUG_API_CALLS=true` |
 | HTTP/HTTPS Proxy support | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) | n/a | `HTTP_PROXY` or `HTTPS_PROXY` |
+| Execute arguments after CLI arg terminator `--` as a separate process. Process will be executed with AWS cred values as AWS env vars `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`. | `true` if flag is present | `--exec` | `OKTA_AWSCLI_EXEC=true` |
 
 
 ### Web command settings
@@ -695,6 +696,45 @@ M2M example:
 Web example:
 
 `credential_process = okta-aws-cli web --format process-credentials --oidc-client-id abc --org-domain test.okat.com --aws-iam-idp arn:aws:iam::123:saml-provider/my-idp --aws-iam-role arn:aws:iam::294719231913:role/s3 --open-browser`
+
+### Execute follow-on process
+
+`okta-aws-cli` can execute a process after it has collected credentials. It will
+do so with any existing env vars prefaced by `AWS_` such as `AWS_REGION` and
+also append the env vars for the new AWS credentials `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`. Use `noop` format so `aws-aws-cli`
+doesn't emit credentials to stdeout itself but passes them to the process it
+executes. The output from the process will be printed to the screen properly to
+STDOUT, and also STDERR if the process also writes to STDERR.
+
+Example 1
+
+```
+$ okta-aws-cli m2m --format noop --exec -- printenv
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=ASIAUJHVCS6UYRTRTSQE
+AWS_SECRET_ACCESS_KEY=TmvLOM/doSWfmIMK...
+AWS_SESSION_TOKEN=FwoGZXIvYXdzEF8aDKrf...
+```
+
+Example 2
+
+```
+$ okta-aws-cli m2m --format noop --exec -- aws s3 ls s3://example
+                           PRE aaa/
+2023-03-08 16:01:01          4 a.log
+```
+
+Example 3 (process had error and also writes to STDERR)
+
+```
+$ okta-aws-cli m2m --format noop --exec -- aws s3 mb s3://no-access-example
+error running process
+aws s3 mb s3://yz-nomad-og
+make_bucket failed: s3://no-access-example An error occurred (AccessDenied) when calling the CreateBucket operation: Access Denied
+
+Error: exit status 1
+```
 
 ### Help
 

@@ -31,4 +31,6 @@ const (
 	XOktaAWSCLIWebOperation = "web"
 	// XOktaAWSCLIM2MOperation m2m op value for the x okta aws cli header
 	XOktaAWSCLIM2MOperation = "m2m"
+	// PassThroughStringNewLineFMT string formatter to make lint happy
+	PassThroughStringNewLineFMT = "%s\n"
 )
