@@ -39,7 +39,7 @@ func init() {
 
 const (
 	// Version app version
-	Version = "2.0.0-beta.1"
+	Version = "2.0.0-beta.2"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
