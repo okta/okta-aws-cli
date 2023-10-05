@@ -134,6 +134,13 @@ func init() {
 			Usage:  "Verbosely print all API calls/responses to the screen",
 			EnvVar: config.DebugAPICallsEnvVar,
 		},
+		{
+			Name:   config.ExecFlag,
+			Short:  "j",
+			Value:  false,
+			Usage:  "Execute any shell commands after the '--' CLI arguments termination",
+			EnvVar: config.ExecEnvVar,
+		},
 	}
 
 	rootCmd = NewRootCommand()

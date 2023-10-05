@@ -21,17 +21,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/okta/okta-aws-cli/internal/aws"
+	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
 
 // Outputter Interface to output AWS credentials in different formats.
 type Outputter interface {
-	Output(c *config.Config, ac *aws.Credential) error
+	Output(c *config.Config, oc *oaws.Credential) error
 }
 
 // RenderAWSCredential Renders the credentials in the prescribed format.
-func RenderAWSCredential(cfg *config.Config, ac *aws.Credential) error {
+func RenderAWSCredential(cfg *config.Config, oc *oaws.Credential) error {
 	var o Outputter
 	switch cfg.Format() {
 	case config.AWSCredentialsFormat:
@@ -39,10 +39,12 @@ func RenderAWSCredential(cfg *config.Config, ac *aws.Credential) error {
 		o = NewAWSCredentialsFile(cfg.LegacyAWSVariables(), cfg.ExpiryAWSVariables(), expiry)
 	case config.ProcessCredentialsFormat:
 		o = NewProcessCredentials()
+	case config.NoopFormat:
+		o = NewNoopCredentials()
 	default:
 		o = NewEnvVar(cfg.LegacyAWSVariables())
 		fmt.Fprintf(os.Stderr, "\n")
 	}
 
-	return o.Output(cfg, ac)
+	return o.Output(cfg, oc)
 }

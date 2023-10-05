@@ -35,6 +35,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/exec"
 	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/output"
 	"github.com/okta/okta-aws-cli/internal/utils"
@@ -55,17 +56,24 @@ type M2MAuthentication struct {
 }
 
 // NewM2MAuthentication New M2M Authentication constructor
-func NewM2MAuthentication(config *config.Config) (*M2MAuthentication, error) {
+func NewM2MAuthentication(cfg *config.Config) (*M2MAuthentication, error) {
 	// need to set our config defaults
-	if config.CustomScope() == "" {
-		_ = config.SetCustomScope(DefaultScope)
+	if cfg.CustomScope() == "" {
+		_ = cfg.SetCustomScope(DefaultScope)
 	}
-	if config.AuthzID() == "" {
-		_ = config.SetAuthzID(DefaultAuthzID)
+	if cfg.AuthzID() == "" {
+		_ = cfg.SetAuthzID(DefaultAuthzID)
+	}
+
+	// Check if exec arg is present and that there are args for it before doing any work
+	if cfg.Exec() {
+		if _, err := exec.NewExec(); err != nil {
+			return nil, err
+		}
 	}
 
 	m := M2MAuthentication{
-		config: config,
+		config: cfg,
 	}
 	return &m, nil
 }
@@ -91,6 +99,13 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 	err = output.RenderAWSCredential(m.config, cred)
 	if err != nil {
 		return err
+	}
+
+	if m.config.Exec() {
+		exe, _ := exec.NewExec()
+		if err := exe.Run(cred); err != nil {
+			return err
+		}
 	}
 
 	return nil

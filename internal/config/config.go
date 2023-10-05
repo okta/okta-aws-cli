@@ -47,6 +47,8 @@ const (
 	EnvVarFormat = "env-var"
 	// ProcessCredentialsFormat format const
 	ProcessCredentialsFormat = "process-credentials"
+	// NoopFormat format const
+	NoopFormat = "noop"
 
 	// AuthzIDFlag cli flag const
 	AuthzIDFlag = "authz-id"
@@ -64,6 +66,8 @@ const (
 	DebugFlag = "debug"
 	// DebugAPICallsFlag cli flag const
 	DebugAPICallsFlag = "debug-api-calls"
+	// ExecFlag cli flag const
+	ExecFlag = "exec"
 	// FormatFlag cli flag const
 	FormatFlag = "format"
 	// OIDCClientIDFlag cli flag const
@@ -111,6 +115,8 @@ const (
 	DebugAPICallsEnvVar = "OKTA_AWSCLI_DEBUG_API_CALLS"
 	// ExpiryAWSVariablesEnvVar env var const
 	ExpiryAWSVariablesEnvVar = "OKTA_AWSCLI_EXPIRY_AWS_VARIABLES"
+	// ExecEnvVar env var const
+	ExecEnvVar = "OKTA_AWSCLI_EXEC"
 	// FormatEnvVar env var const
 	FormatEnvVar = "OKTA_AWSCLI_FORMAT"
 	// LegacyAWSVariablesEnvVar env var const
@@ -174,6 +180,7 @@ type Config struct {
 	customScope         string
 	debug               bool
 	debugAPICalls       bool
+	exec                bool
 	expiryAWSVariables  bool
 	fedAppID            string
 	format              string
@@ -201,6 +208,7 @@ type Attributes struct {
 	CustomScope         string
 	Debug               bool
 	DebugAPICalls       bool
+	Exec                bool
 	ExpiryAWSVariables  bool
 	FedAppID            string
 	Format              string
@@ -240,6 +248,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 		debug:               attrs.Debug,
 		debugAPICalls:       attrs.DebugAPICalls,
 		expiryAWSVariables:  attrs.ExpiryAWSVariables,
+		exec:                attrs.Exec,
 		fedAppID:            attrs.FedAppID,
 		format:              attrs.Format,
 		legacyAWSVariables:  attrs.LegacyAWSVariables,
@@ -284,6 +293,7 @@ func readConfig() (Attributes, error) {
 		CustomScope:         viper.GetString(CustomScopeFlag),
 		Debug:               viper.GetBool(DebugFlag),
 		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
+		Exec:                viper.GetBool(ExecFlag),
 		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
 		Format:              viper.GetString(FormatFlag),
 		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
@@ -406,6 +416,9 @@ func readConfig() (Attributes, error) {
 	}
 	if !attrs.CacheAccessToken {
 		attrs.CacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
+	}
+	if !attrs.Exec {
+		attrs.Exec = viper.GetBool(downCase(ExecEnvVar))
 	}
 	return attrs, nil
 }
@@ -532,6 +545,17 @@ func (c *Config) DebugAPICalls() bool {
 // SetDebugAPICalls --
 func (c *Config) SetDebugAPICalls(debugAPICalls bool) error {
 	c.debugAPICalls = debugAPICalls
+	return nil
+}
+
+// Exec --
+func (c *Config) Exec() bool {
+	return c.exec
+}
+
+// SetExec --
+func (c *Config) SetExec(exec bool) error {
+	c.exec = exec
 	return nil
 }
 

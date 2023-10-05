@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/okta/okta-aws-cli/internal/aws"
+	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
 
@@ -38,20 +38,20 @@ func NewEnvVar(legacyVars bool) *EnvVar {
 
 // Output Satisfies the Outputter interface and outputs AWS credentials as shell
 // export statements to STDOUT
-func (e *EnvVar) Output(c *config.Config, ac *aws.Credential) error {
+func (e *EnvVar) Output(c *config.Config, oc *oaws.Credential) error {
 	if runtime.GOOS == "windows" {
-		fmt.Printf("setx AWS_ACCESS_KEY_ID %s\n", ac.AccessKeyID)
-		fmt.Printf("setx AWS_SECRET_ACCESS_KEY %s\n", ac.SecretAccessKey)
-		fmt.Printf("setx AWS_SESSION_TOKEN %s\n", ac.SessionToken)
+		fmt.Printf("setx AWS_ACCESS_KEY_ID %s\n", oc.AccessKeyID)
+		fmt.Printf("setx AWS_SECRET_ACCESS_KEY %s\n", oc.SecretAccessKey)
+		fmt.Printf("setx AWS_SESSION_TOKEN %s\n", oc.SessionToken)
 		if e.LegacyAWSVariables {
-			fmt.Printf("setx AWS_SECURITY_TOKEN %s\n", ac.SessionToken)
+			fmt.Printf("setx AWS_SECURITY_TOKEN %s\n", oc.SessionToken)
 		}
 	} else {
-		fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", ac.AccessKeyID)
-		fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", ac.SecretAccessKey)
-		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", ac.SessionToken)
+		fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", oc.AccessKeyID)
+		fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", oc.SecretAccessKey)
+		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", oc.SessionToken)
 		if e.LegacyAWSVariables {
-			fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", ac.SessionToken)
+			fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", oc.SessionToken)
 		}
 	}
 
