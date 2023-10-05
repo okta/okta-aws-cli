@@ -34,7 +34,7 @@ func TestProcessCredentials(t *testing.T) {
 	"SessionToken": "the AWS session token for temporary credentials", 
 	"Expiration": "2009-11-10T23:00:00Z"
 }`
-	result := aws.Credential{}
+	result := aws.ProcessCredential{}
 	err := json.Unmarshal([]byte(credsJSON), &result)
 	require.NoError(t, err)
 	require.Equal(t, "an AWS access key", result.AccessKeyID)

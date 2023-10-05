@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
+	"github.com/okta/okta-aws-cli/internal/utils"
 )
 
 // Exec is a executor / a process runner
@@ -86,7 +87,7 @@ func (e *Exec) Run(oc *oaws.Credential) error {
 	if ee, ok := err.(*osexec.ExitError); ok {
 		fmt.Fprintf(os.Stderr, "error running process\n")
 		fmt.Fprintf(os.Stderr, "%s %s\n", e.name, strings.Join(e.args, " "))
-		fmt.Fprintf(os.Stderr, "%s\n", ee.Stderr)
+		fmt.Fprintf(os.Stderr, utils.PassThroughStringNewLineFMT, ee.Stderr)
 	}
 	if err != nil {
 		return err

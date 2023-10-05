@@ -23,16 +23,21 @@ import (
 
 // Credential Convenience representation of an AWS credential.
 type Credential struct {
-	AccessKeyID     string     `ini:"aws_access_key_id"     json:"AccessKeyId,omitempty"`
-	SecretAccessKey string     `ini:"aws_secret_access_key" json:"SecretAccessKey,omitempty"`
-	SessionToken    string     `ini:"aws_session_token"     json:"SessionToken,omitempty"`
-	Version         int        `ini:"aws_version"           json:"Version,omitempty"`
-	Expiration      *time.Time `ini:"aws_expiration"        json:"Expiration,omitempty"`
+	AccessKeyID     string `ini:"aws_access_key_id"     json:"AccessKeyId,omitempty"`
+	SecretAccessKey string `ini:"aws_secret_access_key" json:"SecretAccessKey,omitempty"`
+	SessionToken    string `ini:"aws_session_token"     json:"SessionToken,omitempty"`
+}
+
+// ProcessCredential Convenience representation of an AWS credential used for process credential format.
+type ProcessCredential struct {
+	Credential
+	Version    int        `json:"Version,omitempty"`
+	Expiration *time.Time `json:"Expiration,omitempty"`
 }
 
 // MarshalJSON ensure Expiration date time is formatted RFC 3339 format.
-func (c *Credential) MarshalJSON() ([]byte, error) {
-	type Alias Credential
+func (c *ProcessCredential) MarshalJSON() ([]byte, error) {
+	type Alias ProcessCredential
 	var exp string
 	if c.Expiration != nil {
 		exp = c.Expiration.Format(time.RFC3339)

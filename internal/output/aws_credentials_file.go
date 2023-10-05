@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/service/sts"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	"github.com/pkg/errors"
 	"gopkg.in/ini.v1"
@@ -178,7 +179,7 @@ func NewAWSCredentialsFile(legacyVars bool, expiryVars bool, expiry string) *AWS
 
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
-func (e *AWSCredentialsFile) Output(c *config.Config, oc *oaws.Credential) error {
+func (e *AWSCredentialsFile) Output(c *config.Config, oc *oaws.Credential, ac *sts.Credentials) error {
 	if c.WriteAWSCredentials() {
 		return e.writeConfig(c, oc)
 	}

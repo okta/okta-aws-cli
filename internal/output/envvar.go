@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/aws/aws-sdk-go/service/sts"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
@@ -38,7 +39,7 @@ func NewEnvVar(legacyVars bool) *EnvVar {
 
 // Output Satisfies the Outputter interface and outputs AWS credentials as shell
 // export statements to STDOUT
-func (e *EnvVar) Output(c *config.Config, oc *oaws.Credential) error {
+func (e *EnvVar) Output(c *config.Config, oc *oaws.Credential, ac *sts.Credentials) error {
 	if runtime.GOOS == "windows" {
 		fmt.Printf("setx AWS_ACCESS_KEY_ID %s\n", oc.AccessKeyID)
 		fmt.Printf("setx AWS_SECRET_ACCESS_KEY %s\n", oc.SecretAccessKey)

@@ -303,12 +303,12 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		return err
 	}
 
-	oc, err := w.awsAssumeRoleWithSAML(iar, assertion)
+	oc, ac, err := w.awsAssumeRoleWithSAML(iar, assertion)
 	if err != nil {
 		return err
 	}
 
-	err = output.RenderAWSCredential(w.config, oc)
+	err = output.RenderAWSCredential(w.config, oc, ac)
 	if err != nil {
 		return err
 	}
@@ -325,7 +325,7 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 
 // awsAssumeRoleWithSAML Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (oc *oaws.Credential, err error) {
+func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (oc *oaws.Credential, ac *sts.Credentials, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(w.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
@@ -347,9 +347,8 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
-		Expiration:      svcResp.Credentials.Expiration,
 	}
-	return oc, nil
+	return oc, svcResp.Credentials, nil
 }
 
 // choiceFriendlyLabelRole returns a friendly choice for pretty printing Role
@@ -637,7 +636,7 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 		buf := bytes.NewBufferString("")
 		qrterminal.GenerateHalfBlock(da.VerificationURIComplete, qrterminal.L, buf)
 		if _, err := buf.Read(qrBuf); err == nil {
-			qrCode = fmt.Sprintf("%s\n", qrBuf)
+			qrCode = fmt.Sprintf(utils.PassThroughStringNewLineFMT, qrBuf)
 		}
 	}
 

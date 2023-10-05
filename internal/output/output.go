@@ -21,17 +21,18 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sts"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
 
 // Outputter Interface to output AWS credentials in different formats.
 type Outputter interface {
-	Output(c *config.Config, oc *oaws.Credential) error
+	Output(c *config.Config, oc *oaws.Credential, ac *sts.Credentials) error
 }
 
 // RenderAWSCredential Renders the credentials in the prescribed format.
-func RenderAWSCredential(cfg *config.Config, oc *oaws.Credential) error {
+func RenderAWSCredential(cfg *config.Config, oc *oaws.Credential, ac *sts.Credentials) error {
 	var o Outputter
 	switch cfg.Format() {
 	case config.AWSCredentialsFormat:
@@ -46,5 +47,5 @@ func RenderAWSCredential(cfg *config.Config, oc *oaws.Credential) error {
 		fmt.Fprintf(os.Stderr, "\n")
 	}
 
-	return o.Output(cfg, oc)
+	return o.Output(cfg, oc, ac)
 }
