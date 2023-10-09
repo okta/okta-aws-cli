@@ -123,10 +123,16 @@ const (
 	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 	// OktaOIDCClientIDEnvVar env var const
 	OktaOIDCClientIDEnvVar = "OKTA_AWSCLI_OIDC_CLIENT_ID"
+	// OldOktaOIDCClientIDEnvVar env var const
+	OldOktaOIDCClientIDEnvVar = "OKTA_OIDC_CLIENT_ID"
 	// OktaOrgDomainEnvVar env var const
 	OktaOrgDomainEnvVar = "OKTA_AWSCLI_ORG_DOMAIN"
+	// OldOktaOrgDomainEnvVar env var const
+	OldOktaOrgDomainEnvVar = "OKTA_ORG_DOMAIN"
 	// OktaAWSAccountFederationAppIDEnvVar env var const
 	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID"
+	// OldOktaAWSAccountFederationAppIDEnvVar env var const
+	OldOktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
 	// OpenBrowserEnvVar env var const
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
 	// PrivateKeyEnvVar env var const
@@ -326,11 +332,21 @@ func readConfig() (Attributes, error) {
 	if attrs.OrgDomain == "" {
 		attrs.OrgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
 	}
+	if attrs.OrgDomain == "" {
+		// legacy support OKTA_ORG_DOMAIN
+		attrs.OrgDomain = viper.GetString(downCase(OldOktaOrgDomainEnvVar))
+	}
 	if attrs.OIDCAppID == "" {
 		attrs.OIDCAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
 	}
+	if attrs.OIDCAppID == "" {
+		attrs.OIDCAppID = viper.GetString(downCase(OldOktaOIDCClientIDEnvVar))
+	}
 	if attrs.FedAppID == "" {
 		attrs.FedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
+	}
+	if attrs.FedAppID == "" {
+		attrs.FedAppID = viper.GetString(downCase(OldOktaAWSAccountFederationAppIDEnvVar))
 	}
 	if attrs.AWSIAMIdP == "" {
 		attrs.AWSIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
