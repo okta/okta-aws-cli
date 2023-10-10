@@ -33,4 +33,11 @@ const (
 	XOktaAWSCLIM2MOperation = "m2m"
 	// PassThroughStringNewLineFMT string formatter to make lint happy
 	PassThroughStringNewLineFMT = "%s\n"
+
+	// AccessKeyID AWS creds access key ID
+	AccessKeyID = "AccessKeyID"
+	// SecretAccessKey AWS creds secret access key
+	SecretAccessKey = "SecretAccessKey"
+	// SessionToken AWS creds session tokne
+	SessionToken = "SessionToken"
 )

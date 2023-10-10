@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/sts"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
@@ -36,16 +35,10 @@ func NewProcessCredentials() *ProcessCredentials {
 
 // Output Satisfies the Outputter interface and outputs AWS credentials as JSON
 // to STDOUT
-func (p *ProcessCredentials) Output(c *config.Config, oc *oaws.Credential, ac *sts.Credentials) error {
-	// See AWS docs: "Note As of this writing, the Version key must be set to 1.
-	// This might increment over time as the structure evolves."
-	poc := &oaws.ProcessCredential{
-		Credential: *oc,
-		Expiration: ac.Expiration,
-		Version:    1,
-	}
+func (p *ProcessCredentials) Output(c *config.Config, oc oaws.Credential) error {
+	pc := oc.(*oaws.ProcessCredential)
 
-	credJSON, err := json.MarshalIndent(poc, "", "  ")
+	credJSON, err := json.MarshalIndent(pc, "", "  ")
 	if err != nil {
 		return err
 	}

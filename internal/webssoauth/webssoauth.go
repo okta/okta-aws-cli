@@ -30,13 +30,16 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mdp/qrterminal"
@@ -298,26 +301,41 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		return err
 	}
 
-	iar, err := w.promptForIdpAndRole(idpRolesMap)
-	if err != nil {
-		return err
-	}
-
-	oc, ac, err := w.awsAssumeRoleWithSAML(iar, assertion)
-	if err != nil {
-		return err
-	}
-
-	err = output.RenderAWSCredential(w.config, oc, ac)
-	if err != nil {
-		return err
-	}
-
-	if w.config.Exec() {
-		exe, _ := exec.NewExec()
-		if err := exe.Run(oc); err != nil {
+	if !w.config.AllProfiles() {
+		iar, err := w.promptForIdpAndRole(idpRolesMap)
+		if err != nil {
 			return err
 		}
+
+		cc, err := w.awsAssumeRoleWithSAML(iar, assertion)
+		if err != nil {
+			return err
+		}
+
+		err = output.RenderAWSCredential(w.config, cc)
+		if err != nil {
+			return err
+		}
+
+		if w.config.Exec() {
+			exe, _ := exec.NewExec()
+			if err := exe.Run(cc); err != nil {
+				return err
+			}
+		}
+	} else {
+		ccch := w.fetchAllAWSCredentialsWithSAMLRole(idpRolesMap, assertion)
+		if err != nil {
+			return err
+		}
+		for cc := range ccch {
+			err = output.RenderAWSCredential(w.config, cc)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to render credential %s: %s\n", cc.Profile, err)
+				continue
+			}
+		}
+
 	}
 
 	return nil
@@ -325,7 +343,7 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 
 // awsAssumeRoleWithSAML Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (oc *oaws.Credential, ac *sts.Credentials, err error) {
+func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (cc *oaws.CredentialContainer, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(w.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
@@ -343,12 +361,38 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		return
 	}
 
-	oc = &oaws.Credential{
+	cc = &oaws.CredentialContainer{
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
+		Expiration:      svcResp.Credentials.Expiration,
 	}
-	return oc, svcResp.Credentials, nil
+	if w.config.Profile() != "" {
+		cc.Profile = w.config.Profile()
+		return cc, nil
+	}
+
+	var profileName string
+	var roleName string
+	if _, after, found := strings.Cut(iar.role, "/"); found {
+		roleName = "-" + after
+	}
+	sessCopy := sess.Copy(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(
+			cc.AccessKeyID,
+			cc.SecretAccessKey,
+			cc.SessionToken,
+		),
+	})
+	if p, err := w.fetchAWSAccountAlias(sessCopy); err != nil {
+		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting profile name to %q\n", iar.idp)
+		profileName = iar.idp
+	} else {
+		profileName = p
+	}
+	cc.Profile = fmt.Sprintf("%s%s", profileName, roleName)
+
+	return cc, nil
 }
 
 // choiceFriendlyLabelRole returns a friendly choice for pretty printing Role
@@ -994,4 +1038,46 @@ func (w *WebSSOAuthentication) consolePrint(format string, a ...any) {
 	}
 
 	fmt.Fprintf(os.Stderr, format, a...)
+}
+
+// fetchAllAWSCredentialsWithSAMLRole Gets all AWS Credentials with an STS Assume Role with SAML AWS API call.
+func (w *WebSSOAuthentication) fetchAllAWSCredentialsWithSAMLRole(idpRolesMap map[string][]string, assertion string) <-chan *oaws.CredentialContainer {
+	ccch := make(chan *oaws.CredentialContainer)
+	var wg sync.WaitGroup
+
+	for idp, roles := range idpRolesMap {
+		for _, role := range roles {
+			iar := &idpAndRole{idp, role}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				cc, err := w.awsAssumeRoleWithSAML(iar, assertion)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "failed to fetch AWS creds IdP %q, and Role %q, error:\n%+v\n", iar.idp, iar.role, err)
+					return
+				}
+				ccch <- cc
+			}()
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		close(ccch)
+	}()
+
+	return ccch
+}
+
+func (w *WebSSOAuthentication) fetchAWSAccountAlias(sess *session.Session) (string, error) {
+	svc := iam.New(sess)
+	input := &iam.ListAccountAliasesInput{}
+	svcResp, err := svc.ListAccountAliases(input)
+	if err != nil {
+		return "", err
+	}
+	if len(svcResp.AccountAliases) < 1 {
+		return "", fmt.Errorf("no alias configured for account")
+	}
+	return *svcResp.AccountAliases[0], nil
 }

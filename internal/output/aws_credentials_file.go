@@ -23,13 +23,13 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/sts"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	"github.com/pkg/errors"
 	"gopkg.in/ini.v1"
 
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/utils"
 )
 
 const (
@@ -65,8 +65,8 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, awsCreds *oaws.Credential, legacyVars, expiryVars bool, expiry string) error {
-	config, err := updateConfig(filename, profile, awsCreds, legacyVars, expiryVars, expiry)
+func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string) error {
+	config, err := updateConfig(filename, profile, cfc, legacyVars, expiryVars, expiry)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func saveProfile(filename, profile string, awsCreds *oaws.Credential, legacyVars
 	return nil
 }
 
-func updateConfig(filename, profile string, awsCreds *oaws.Credential, legacyVars, expiryVars bool, expiry string) (config *ini.File, err error) {
+func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string) (config *ini.File, err error) {
 	config, err = ini.Load(filename)
 	if err != nil {
 		return
@@ -91,7 +91,10 @@ func updateConfig(filename, profile string, awsCreds *oaws.Credential, legacyVar
 		return
 	}
 
-	builder := dynamicstruct.ExtendStruct(oaws.Credential{})
+	builder := dynamicstruct.NewStruct().
+		AddField(utils.AccessKeyID, "", `ini:"aws_access_key_id"`).
+		AddField(utils.SecretAccessKey, "", `ini:"aws_secret_access_key"`).
+		AddField(utils.SessionToken, "", `ini:"aws_session_token"`)
 
 	if expiryVars {
 		builder.AddField(ExpirationField, "", `ini:"x_security_token_expires"`)
@@ -99,16 +102,17 @@ func updateConfig(filename, profile string, awsCreds *oaws.Credential, legacyVar
 	if legacyVars {
 		builder.AddField(SecurityTokenField, "", `ini:"aws_security_token"`)
 	}
+
 	instance := builder.Build().New()
-	reflect.ValueOf(instance).Elem().FieldByName("AccessKeyID").SetString(awsCreds.AccessKeyID)
-	reflect.ValueOf(instance).Elem().FieldByName("SecretAccessKey").SetString(awsCreds.SecretAccessKey)
-	reflect.ValueOf(instance).Elem().FieldByName("SessionToken").SetString(awsCreds.SessionToken)
+	reflect.ValueOf(instance).Elem().FieldByName(utils.AccessKeyID).SetString(cfc.AccessKeyID)
+	reflect.ValueOf(instance).Elem().FieldByName(utils.SecretAccessKey).SetString(cfc.SecretAccessKey)
+	reflect.ValueOf(instance).Elem().FieldByName(utils.SessionToken).SetString(cfc.SessionToken)
 
 	if expiryVars {
 		reflect.ValueOf(instance).Elem().FieldByName(ExpirationField).SetString(expiry)
 	}
 	if legacyVars {
-		reflect.ValueOf(instance).Elem().FieldByName(SecurityTokenField).SetString(awsCreds.SessionToken)
+		reflect.ValueOf(instance).Elem().FieldByName(SecurityTokenField).SetString(cfc.SessionToken)
 	}
 
 	err = iniProfile.ReflectFrom(instance)
@@ -179,15 +183,16 @@ func NewAWSCredentialsFile(legacyVars bool, expiryVars bool, expiry string) *AWS
 
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
-func (e *AWSCredentialsFile) Output(c *config.Config, oc *oaws.Credential, ac *sts.Credentials) error {
+func (a *AWSCredentialsFile) Output(c *config.Config, oc oaws.Credential) error {
+	cfc := oc.(*oaws.CredsFileCredential)
 	if c.WriteAWSCredentials() {
-		return e.writeConfig(c, oc)
+		return a.writeConfig(c, cfc)
 	}
 
-	return e.appendConfig(c, oc)
+	return a.appendConfig(c, cfc)
 }
 
-func (e *AWSCredentialsFile) appendConfig(c *config.Config, oc *oaws.Credential) error {
+func (a *AWSCredentialsFile) appendConfig(c *config.Config, cfc *oaws.CredsFileCredential) error {
 	f, err := os.OpenFile(c.AWSCredentials(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
@@ -196,22 +201,27 @@ func (e *AWSCredentialsFile) appendConfig(c *config.Config, oc *oaws.Credential)
 		_ = f.Close()
 	}()
 
+	profile := cfc.Profile()
+	if profile == "" {
+		profile = c.Profile()
+	}
+
 	creds := `
 [%s]
 aws_access_key_id = %s
 aws_secret_access_key = %s
 aws_session_token = %s
 `
-	credArgs := []interface{}{c.Profile(), oc.AccessKeyID, oc.SecretAccessKey, oc.SessionToken}
+	credArgs := []interface{}{profile, cfc.AccessKeyID, cfc.SecretAccessKey, cfc.SessionToken}
 
-	if e.LegacyAWSVariables {
+	if a.LegacyAWSVariables {
 		creds = fmt.Sprintf("%saws_security_token = %%s\n", creds)
-		credArgs = append(credArgs, oc.SessionToken)
+		credArgs = append(credArgs, cfc.SessionToken)
 	}
 
-	if e.ExpiryAWSVariables {
+	if a.ExpiryAWSVariables {
 		creds = fmt.Sprintf("%sx_security_token_expires = %%s\n", creds)
-		credArgs = append(credArgs, e.Expiry)
+		credArgs = append(credArgs, a.Expiry)
 	}
 
 	creds = fmt.Sprintf(creds, credArgs...)
@@ -222,21 +232,24 @@ aws_session_token = %s
 	}
 	_ = f.Sync()
 
-	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", c.Profile(), c.AWSCredentials())
+	fmt.Fprintf(os.Stderr, "Appended profile %q to %s\n", profile, c.AWSCredentials())
 
 	return nil
 }
 
-func (e *AWSCredentialsFile) writeConfig(c *config.Config, oc *oaws.Credential) error {
+func (a *AWSCredentialsFile) writeConfig(c *config.Config, cfc *oaws.CredsFileCredential) error {
 	filename := c.AWSCredentials()
-	profile := c.Profile()
+	profile := cfc.Profile()
+	if profile == "" {
+		profile = c.Profile()
+	}
 
 	err := ensureConfigExists(filename, profile)
 	if err != nil {
 		return err
 	}
 
-	return saveProfile(filename, profile, oc, e.LegacyAWSVariables, e.ExpiryAWSVariables, e.Expiry)
+	return saveProfile(filename, profile, cfc, a.LegacyAWSVariables, a.ExpiryAWSVariables, a.Expiry)
 }
 
 func contains(ignore []string, name string) bool {

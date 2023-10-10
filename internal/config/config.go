@@ -50,6 +50,8 @@ const (
 	// NoopFormat format const
 	NoopFormat = "noop"
 
+	// AllProfilesFlag cli flag const
+	AllProfilesFlag = "all-profiles"
 	// AuthzIDFlag cli flag const
 	AuthzIDFlag = "authz-id"
 	// AWSAcctFedAppIDFlag cli flag const
@@ -95,6 +97,8 @@ const (
 	// CacheAccessTokenFlag cli flag const
 	CacheAccessTokenFlag = "cache-access-token"
 
+	// AllProfilesEnvVar env var const
+	AllProfilesEnvVar = "OKTA_AWSCLI_ALL_PROFILES"
 	// AuthzIDEnvVar env var const
 	AuthzIDEnvVar = "OKTA_AWSCLI_AUTHZ_ID"
 	// AWSCredentialsEnvVar env var const
@@ -177,6 +181,7 @@ type Clock interface {
 // control data access, be concerned with evaluation, validation, and not
 // allowing direct access to values as is done on structs in the generic case.
 type Config struct {
+	allProfiles         bool
 	authzID             string
 	awsCredentials      string
 	awsIAMIdP           string
@@ -205,6 +210,7 @@ type Config struct {
 
 // Attributes config construction
 type Attributes struct {
+	AllProfiles         bool
 	AuthzID             string
 	AWSCredentials      string
 	AWSIAMIdP           string
@@ -245,6 +251,7 @@ func EvaluateSettings() (*Config, error) {
 func NewConfig(attrs *Attributes) (*Config, error) {
 	var err error
 	cfg := &Config{
+		allProfiles:         attrs.AllProfiles,
 		authzID:             attrs.AuthzID,
 		awsCredentials:      attrs.AWSCredentials,
 		awsIAMIdP:           attrs.AWSIAMIdP,
@@ -291,6 +298,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 
 func readConfig() (Attributes, error) {
 	attrs := Attributes{
+		AllProfiles:         viper.GetBool(AllProfilesFlag),
 		AuthzID:             viper.GetString(AuthzIDFlag),
 		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
 		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
@@ -369,6 +377,9 @@ func readConfig() (Attributes, error) {
 	if attrs.AuthzID == "" {
 		attrs.AuthzID = viper.GetString(downCase(AuthzIDEnvVar))
 	}
+	if !attrs.AllProfiles {
+		attrs.AllProfiles = viper.GetBool(downCase(AllProfilesEnvVar))
+	}
 
 	// if session duration is 0, inspect the ENV VAR for a value, else set
 	// a default of 3600
@@ -415,6 +426,10 @@ func readConfig() (Attributes, error) {
 		// writing aws creds option implies "aws-credentials" format
 		attrs.Format = AWSCredentialsFormat
 	}
+	if attrs.AllProfiles {
+		// writing all aws profiles option implies "aws-credentials" format
+		attrs.Format = AWSCredentialsFormat
+	}
 	if !attrs.OpenBrowser {
 		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
@@ -442,6 +457,17 @@ func readConfig() (Attributes, error) {
 // downCase ToLower all alpha chars e.g. HELLO_WORLD -> hello_world
 func downCase(s string) string {
 	return strings.ToLower(s)
+}
+
+// AllProfiles --
+func (c *Config) AllProfiles() bool {
+	return c.allProfiles
+}
+
+// SetAllProfiles --
+func (c *Config) SetAllProfiles(allProfiles bool) error {
+	c.allProfiles = allProfiles
+	return nil
 }
 
 // AuthzID --

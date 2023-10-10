@@ -91,19 +91,19 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 		return err
 	}
 
-	oc, ac, err := m.awsAssumeRoleWithWebIdentity(at)
+	cc, err := m.awsAssumeRoleWithWebIdentity(at)
 	if err != nil {
 		return err
 	}
 
-	err = output.RenderAWSCredential(m.config, oc, ac)
+	err = output.RenderAWSCredential(m.config, cc)
 	if err != nil {
 		return err
 	}
 
 	if m.config.Exec() {
 		exe, _ := exec.NewExec()
-		if err := exe.Run(oc); err != nil {
+		if err := exe.Run(cc); err != nil {
 			return err
 		}
 	}
@@ -111,7 +111,7 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 	return nil
 }
 
-func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (oc *oaws.Credential, ac *sts.Credentials, err error) {
+func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (cc *oaws.CredentialContainer, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(m.config.HTTPClient())
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
@@ -130,13 +130,14 @@ func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (
 		return
 	}
 
-	oc = &oaws.Credential{
+	cc = &oaws.CredentialContainer{
 		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
 		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
 		SessionToken:    *svcResp.Credentials.SessionToken,
+		Expiration:      svcResp.Credentials.Expiration,
 	}
 
-	return oc, svcResp.Credentials, nil
+	return cc, nil
 }
 
 func (m *M2MAuthentication) createKeySigner() (jose.Signer, error) {
