@@ -50,6 +50,8 @@ const (
 	// NoopFormat format const
 	NoopFormat = "noop"
 
+	// AllProfilesFlag cli flag const
+	AllProfilesFlag = "all-profiles"
 	// AuthzIDFlag cli flag const
 	AuthzIDFlag = "authz-id"
 	// AWSAcctFedAppIDFlag cli flag const
@@ -95,6 +97,8 @@ const (
 	// CacheAccessTokenFlag cli flag const
 	CacheAccessTokenFlag = "cache-access-token"
 
+	// AllProfilesEnvVar env var const
+	AllProfilesEnvVar = "OKTA_AWSCLI_ALL_PROFILES"
 	// AuthzIDEnvVar env var const
 	AuthzIDEnvVar = "OKTA_AWSCLI_AUTHZ_ID"
 	// AWSCredentialsEnvVar env var const
@@ -123,10 +127,16 @@ const (
 	LegacyAWSVariablesEnvVar = "OKTA_AWSCLI_LEGACY_AWS_VARIABLES"
 	// OktaOIDCClientIDEnvVar env var const
 	OktaOIDCClientIDEnvVar = "OKTA_AWSCLI_OIDC_CLIENT_ID"
+	// OldOktaOIDCClientIDEnvVar env var const
+	OldOktaOIDCClientIDEnvVar = "OKTA_OIDC_CLIENT_ID"
 	// OktaOrgDomainEnvVar env var const
 	OktaOrgDomainEnvVar = "OKTA_AWSCLI_ORG_DOMAIN"
+	// OldOktaOrgDomainEnvVar env var const
+	OldOktaOrgDomainEnvVar = "OKTA_ORG_DOMAIN"
 	// OktaAWSAccountFederationAppIDEnvVar env var const
 	OktaAWSAccountFederationAppIDEnvVar = "OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID"
+	// OldOktaAWSAccountFederationAppIDEnvVar env var const
+	OldOktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
 	// OpenBrowserEnvVar env var const
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
 	// PrivateKeyEnvVar env var const
@@ -171,6 +181,7 @@ type Clock interface {
 // control data access, be concerned with evaluation, validation, and not
 // allowing direct access to values as is done on structs in the generic case.
 type Config struct {
+	allProfiles         bool
 	authzID             string
 	awsCredentials      string
 	awsIAMIdP           string
@@ -199,6 +210,7 @@ type Config struct {
 
 // Attributes config construction
 type Attributes struct {
+	AllProfiles         bool
 	AuthzID             string
 	AWSCredentials      string
 	AWSIAMIdP           string
@@ -239,6 +251,7 @@ func EvaluateSettings() (*Config, error) {
 func NewConfig(attrs *Attributes) (*Config, error) {
 	var err error
 	cfg := &Config{
+		allProfiles:         attrs.AllProfiles,
 		authzID:             attrs.AuthzID,
 		awsCredentials:      attrs.AWSCredentials,
 		awsIAMIdP:           attrs.AWSIAMIdP,
@@ -285,6 +298,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 
 func readConfig() (Attributes, error) {
 	attrs := Attributes{
+		AllProfiles:         viper.GetBool(AllProfilesFlag),
 		AuthzID:             viper.GetString(AuthzIDFlag),
 		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
 		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
@@ -326,11 +340,21 @@ func readConfig() (Attributes, error) {
 	if attrs.OrgDomain == "" {
 		attrs.OrgDomain = viper.GetString(downCase(OktaOrgDomainEnvVar))
 	}
+	if attrs.OrgDomain == "" {
+		// legacy support OKTA_ORG_DOMAIN
+		attrs.OrgDomain = viper.GetString(downCase(OldOktaOrgDomainEnvVar))
+	}
 	if attrs.OIDCAppID == "" {
 		attrs.OIDCAppID = viper.GetString(downCase(OktaOIDCClientIDEnvVar))
 	}
+	if attrs.OIDCAppID == "" {
+		attrs.OIDCAppID = viper.GetString(downCase(OldOktaOIDCClientIDEnvVar))
+	}
 	if attrs.FedAppID == "" {
 		attrs.FedAppID = viper.GetString(downCase(OktaAWSAccountFederationAppIDEnvVar))
+	}
+	if attrs.FedAppID == "" {
+		attrs.FedAppID = viper.GetString(downCase(OldOktaAWSAccountFederationAppIDEnvVar))
 	}
 	if attrs.AWSIAMIdP == "" {
 		attrs.AWSIAMIdP = viper.GetString(downCase(AWSIAMIdPEnvVar))
@@ -352,6 +376,9 @@ func readConfig() (Attributes, error) {
 	}
 	if attrs.AuthzID == "" {
 		attrs.AuthzID = viper.GetString(downCase(AuthzIDEnvVar))
+	}
+	if !attrs.AllProfiles {
+		attrs.AllProfiles = viper.GetBool(downCase(AllProfilesEnvVar))
 	}
 
 	// if session duration is 0, inspect the ENV VAR for a value, else set
@@ -399,6 +426,10 @@ func readConfig() (Attributes, error) {
 		// writing aws creds option implies "aws-credentials" format
 		attrs.Format = AWSCredentialsFormat
 	}
+	if attrs.AllProfiles {
+		// writing all aws profiles option implies "aws-credentials" format
+		attrs.Format = AWSCredentialsFormat
+	}
 	if !attrs.OpenBrowser {
 		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
@@ -426,6 +457,17 @@ func readConfig() (Attributes, error) {
 // downCase ToLower all alpha chars e.g. HELLO_WORLD -> hello_world
 func downCase(s string) string {
 	return strings.ToLower(s)
+}
+
+// AllProfiles --
+func (c *Config) AllProfiles() bool {
+	return c.allProfiles
+}
+
+// SetAllProfiles --
+func (c *Config) SetAllProfiles(allProfiles bool) error {
+	c.allProfiles = allProfiles
+	return nil
 }
 
 // AuthzID --

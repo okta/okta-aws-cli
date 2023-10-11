@@ -6,12 +6,12 @@ documentation](#configuration).*
 
 `okta-aws-cli` is a CLI program allowing Okta to act as an identity provider and
 retrieve AWS IAM temporary credentials for use in AWS CLI, AWS SDKs, and other
-tools accessing the AWS API. There are two primary commands of operation: `web` -
-combined human and device authorization; and `m2m` - headless authorization.
+tools accessing the AWS API. There are two primary commands of operation: `web`
+- combined human and device authorization; and `m2m` - headless authorization.
 `okta-aws-cli web` is native to the Okta Identity Engine and its authentication
 and device authorization flows. `okta-aws-cli web` is not compatible with Okta
-Classic orgs. `okta-aws-cli m2m` makes use of public/private authorization and
-OIDC. 
+Classic orgs. `okta-aws-cli m2m` makes use of private key  (OAuth2)
+authorization and OIDC. 
 
 Example `okta-aws-cli` `web` command with environment variables (when command is
 missing *defaults* to `web`) output:
@@ -390,6 +390,7 @@ These settings are all optional:
 | AWS IAM Identity Provider ARN | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. | `--aws-iam-idp [value]` | `OKTA_AWSCLI_IAM_IDP` |
 | Display QR Code | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
 | Automatically open the activation URL with the system web browser | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
+| Gather all profiles for a given IdP (implies aws-credentials file output format)) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 
 #### Allowed Web SSO Client ID
 
@@ -734,6 +735,28 @@ aws s3 mb s3://yz-nomad-og
 make_bucket failed: s3://no-access-example An error occurred (AccessDenied) when calling the CreateBucket operation: Access Denied
 
 Error: exit status 1
+```
+
+### Collect all roles for an AWS Fed App (IdP) at once
+
+`okta-aws-cli web` will collect all available AWS IAM Roles for a given Okta AWS
+Federation app (IdP) at once.  This is a feature specific to writing the
+`$HOME/.aws/credentials` file. Roles will be AWS account alias name (if STS list
+aliases is available on the given role) then `-` then abbreviated role name.
+
+```
+# AWS account alias "myorg", given IdP associated with "AWS Account Federation"
+# and an app associated with two roles.
+
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --write-aws-credentials \
+    --all-profiles
+
+? Choose an IdP: AWS Account Federation
+Updated profile "myorg-S3-read" in credentials file "/Users/me/.aws/credentials".
+Updated profile "myorg-S3-write" in credentials file "/Users/me/.aws/credentials".
 ```
 
 ### Help

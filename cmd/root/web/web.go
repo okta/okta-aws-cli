@@ -54,6 +54,13 @@ var (
 			Usage:  "Automatically open the activation URL with the system web browser",
 			EnvVar: config.OpenBrowserEnvVar,
 		},
+		{
+			Name:   config.AllProfilesFlag,
+			Short:  "k",
+			Value:  false,
+			Usage:  "Collect all profiles for a given IdP (implies aws-credentials file output format)",
+			EnvVar: config.AllProfilesEnvVar,
+		},
 	}
 	requiredFlags = []string{"org-domain", "oidc-client-id"}
 )

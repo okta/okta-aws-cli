@@ -17,7 +17,6 @@
 package output
 
 import (
-	"github.com/aws/aws-sdk-go/service/sts"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 )
@@ -31,7 +30,7 @@ func NewNoopCredentials() *NoopCredentials {
 }
 
 // Output Satisfies the Outputter interface and outputs nothing
-func (n *NoopCredentials) Output(c *config.Config, oc *oaws.Credential, ac *sts.Credentials) error {
+func (n *NoopCredentials) Output(c *config.Config, oc oaws.Credential) error {
 	// no-op
 	return nil
 }

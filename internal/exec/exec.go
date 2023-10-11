@@ -63,7 +63,7 @@ func NewExec() (*Exec, error) {
 }
 
 // Run Run the executor
-func (e *Exec) Run(oc *oaws.Credential) error {
+func (e *Exec) Run(cc *oaws.CredentialContainer) error {
 	pairs := map[string]string{}
 	// pre-populate pairs with any existing env var starting with "AWS_"
 	for _, kv := range os.Environ() {
@@ -74,9 +74,9 @@ func (e *Exec) Run(oc *oaws.Credential) error {
 		}
 	}
 	// add creds env var names to pairs
-	pairs["AWS_ACCESS_KEY_ID"] = oc.AccessKeyID
-	pairs["AWS_SECRET_ACCESS_KEY"] = oc.SecretAccessKey
-	pairs["AWS_SESSION_TOKEN"] = oc.SessionToken
+	pairs["AWS_ACCESS_KEY_ID"] = cc.AccessKeyID
+	pairs["AWS_SECRET_ACCESS_KEY"] = cc.SecretAccessKey
+	pairs["AWS_SESSION_TOKEN"] = cc.SessionToken
 
 	cmd := osexec.Command(e.name, e.args...)
 	for k, v := range pairs {
