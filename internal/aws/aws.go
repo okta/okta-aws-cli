@@ -21,13 +21,6 @@ import (
 	"time"
 )
 
-// Credential Interface to represent AWS credentials in different formats.
-type Credential interface {
-	// Trivial function to allow concrete structs to be represented by this
-	// interface.
-	IsCredential() bool
-}
-
 // CredentialContainer denormalized struct of all the values can be presented in
 // the different credentials formats
 type CredentialContainer struct {
@@ -47,9 +40,6 @@ type EnvVarCredential struct {
 	SessionToken    string
 }
 
-// IsCredential env var credential is a credential
-func (e *EnvVarCredential) IsCredential() bool { return true }
-
 // CredsFileCredential representation of an AWS credential for the AWS
 // credentials file
 type CredsFileCredential struct {
@@ -59,9 +49,6 @@ type CredsFileCredential struct {
 
 	profile string
 }
-
-// IsCredential creds file credential is a credential
-func (c *CredsFileCredential) IsCredential() bool { return true }
 
 // SetProfile sets the profile name associated with this AWS credential.
 func (c *CredsFileCredential) SetProfile(p string) { c.profile = p }
@@ -78,9 +65,6 @@ type ProcessCredential struct {
 	Expiration      *time.Time `json:"Expiration,omitempty"`
 	Version         int        `json:"Version,omitempty"`
 }
-
-// IsCredential process credential is a credential
-func (c *ProcessCredential) IsCredential() bool { return true }
 
 // MarshalJSON ensure Expiration date time is formatted RFC 3339 format.
 func (c *ProcessCredential) MarshalJSON() ([]byte, error) {
@@ -101,9 +85,3 @@ func (c *ProcessCredential) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(obj)
 }
-
-// NoopCredential Convenience representation for not printing credentials
-type NoopCredential struct{}
-
-// IsCredential noop credential is a credential
-func (n *NoopCredential) IsCredential() bool { return true }

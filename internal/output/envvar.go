@@ -18,6 +18,7 @@ package output
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
@@ -38,8 +39,13 @@ func NewEnvVar(legacyVars bool) *EnvVar {
 
 // Output Satisfies the Outputter interface and outputs AWS credentials as shell
 // export statements to STDOUT
-func (e *EnvVar) Output(c *config.Config, oc oaws.Credential) error {
-	evc := oc.(*oaws.EnvVarCredential)
+func (e *EnvVar) Output(c *config.Config, cc *oaws.CredentialContainer) error {
+	evc := &oaws.EnvVarCredential{
+		AccessKeyID:     cc.AccessKeyID,
+		SecretAccessKey: cc.SecretAccessKey,
+		SessionToken:    cc.SessionToken,
+	}
+	fmt.Fprintf(os.Stderr, "\n")
 	if runtime.GOOS == "windows" {
 		fmt.Printf("setx AWS_ACCESS_KEY_ID %s\n", evc.AccessKeyID)
 		fmt.Printf("setx AWS_SECRET_ACCESS_KEY %s\n", evc.SecretAccessKey)
