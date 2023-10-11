@@ -46,6 +46,29 @@ $ okta-aws-cli web \
     --exec -- aws ec2 describe-instances
 ```
 
+### (Complete) Collect all roles for an AWS Fed App (IdP) at once
+
+`okta-aws-cli web` will collect all available AWS IAM Roles for a given Okta AWS
+Federation app (IdP) at once.  This is a feature specific to writing the
+`$HOME/.aws/credentials` file. Roles will be AWS account alias name (if STS list
+aliases is available on the given role) then `-` then abbreviated role name.
+
+
+```
+# AWS account alias "myorg", given IdP associated with "AWS Account Federation"
+# and an app associated with two roles.
+
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --write-aws-credentials \
+    --all-profiles
+
+? Choose an IdP: AWS Account Federation
+Updated profile "myorg-S3-read" in credentials file "/Users/me/.aws/credentials".
+Updated profile "myorg-S3-write" in credentials file "/Users/me/.aws/credentials".
+```
+
 ### (expected) Alternate web browser open command
 
 The `web` command will open the system's default web browser when the
@@ -70,6 +93,11 @@ $ okta-aws-cli web \
     --open-browser \
     --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --profile-directory='Profile 1'"
 ```
+
+## 2.0.0-beta.3 (October 10, 2023)
+
+`okta-aws-cli web` can collect all roles to an AWS credentials file for a given
+AWS Federation App (IdP) in one invocation of the CLI.
 
 ## 2.0.0-beta.2 (October 5, 2023)
 
