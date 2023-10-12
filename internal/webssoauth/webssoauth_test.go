@@ -118,7 +118,8 @@ func TestOpenBrowserCommandSplitArgs(t *testing.T) {
 				"-na",
 				"Google Chrome",
 				"--args",
-				"--incognito"},
+				"--incognito",
+			},
 		},
 		{
 			name:    "osx open named app google chrome in incognito mode",

@@ -399,8 +399,9 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		),
 	})
 	if p, err := w.fetchAWSAccountAlias(sessCopy); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting alias name to %q\n", "org")
-		profileName = "org"
+		org := "org"
+		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting alias name to %q\n", org)
+		profileName = org
 	} else {
 		profileName = p
 	}
