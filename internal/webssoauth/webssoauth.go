@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	osexec "os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/google/shlex"
 	"github.com/mdp/qrterminal"
 	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
@@ -203,6 +205,16 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 	if len(apps) == 1 {
 		// only one app, we don't need to prompt selection of idp / fed app
 		fedAppID = apps[0].ID
+	} else if w.config.AllProfiles() {
+		// special case, we're going to run the table and get all profiles for all apps
+		errArr := []error{}
+		for _, app := range apps {
+			if err = w.establishTokenWithFedAppID(clientID, app.ID, at); err != nil {
+				errArr = append(errArr, err)
+			}
+		}
+
+		return errors.Join(errArr...)
 	} else {
 		// Here, we do want to prompt for selection of the Fed App.
 		// If the app is making use of "Role value pattern" on AWS settings we
@@ -367,15 +379,17 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		SessionToken:    *svcResp.Credentials.SessionToken,
 		Expiration:      svcResp.Credentials.Expiration,
 	}
-	if w.config.Profile() != "" {
+	if !w.config.AllProfiles() && w.config.Profile() != "" {
 		cc.Profile = w.config.Profile()
 		return cc, nil
 	}
 
-	var profileName string
-	var roleName string
+	var profileName, idpName, roleName string
+	if _, after, found := strings.Cut(iar.idp, "/"); found {
+		idpName = after
+	}
 	if _, after, found := strings.Cut(iar.role, "/"); found {
-		roleName = "-" + after
+		roleName = after
 	}
 	sessCopy := sess.Copy(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
@@ -385,12 +399,13 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		),
 	})
 	if p, err := w.fetchAWSAccountAlias(sessCopy); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting profile name to %q\n", iar.idp)
-		profileName = iar.idp
+		org := "org"
+		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting alias name to %q\n", org)
+		profileName = org
 	} else {
 		profileName = p
 	}
-	cc.Profile = fmt.Sprintf("%s%s", profileName, roleName)
+	cc.Profile = fmt.Sprintf("%s-%s-%s", profileName, idpName, roleName)
 
 	return cc, nil
 }
@@ -691,12 +706,32 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 `
 	openMsg := "Open"
 	if w.config.OpenBrowser() {
-		openMsg = "System web browser will open"
+		openMsg = "Web browser will open"
 	}
 
 	w.consolePrint(prompt, openMsg, qrCode, da.VerificationURIComplete)
 
-	if w.config.OpenBrowser() {
+	if w.config.OpenBrowserCommand() != "" {
+		bCmd := w.config.OpenBrowserCommand()
+		if bCmd != "" {
+			bArgs, err := splitArgs(bCmd)
+			if err != nil {
+				w.consolePrint("Browser command %q is invalid: %v\n", bCmd, err)
+				return
+			}
+			bArgs = append(bArgs, da.VerificationURIComplete)
+			cmd := osexec.Command(bArgs[0], bArgs[1:]...)
+			out, err := cmd.Output()
+			if _, ok := err.(*osexec.ExitError); ok {
+				w.consolePrint("Failed to open activation URL with given browser: %v\n", err)
+				w.consolePrint("  %s\n", strings.Join(bArgs, " "))
+			}
+			if len(out) > 0 {
+				w.consolePrint("browser output:\n%s\n", string(out))
+			}
+		}
+
+	} else if w.config.OpenBrowser() {
 		brwsr.Stdout = os.Stderr
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
 			w.consolePrint("Failed to open activation URL with system browser: %v\n", err)
@@ -1080,4 +1115,8 @@ func (w *WebSSOAuthentication) fetchAWSAccountAlias(sess *session.Session) (stri
 		return "", fmt.Errorf("no alias configured for account")
 	}
 	return *svcResp.AccountAliases[0], nil
+}
+
+func splitArgs(args string) ([]string, error) {
+	return shlex.Split(args)
 }

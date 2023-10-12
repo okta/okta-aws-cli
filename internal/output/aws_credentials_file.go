@@ -183,8 +183,13 @@ func NewAWSCredentialsFile(legacyVars bool, expiryVars bool, expiry string) *AWS
 
 // Output Satisfies the Outputter interface and appends AWS credentials to
 // credentials file.
-func (a *AWSCredentialsFile) Output(c *config.Config, oc oaws.Credential) error {
-	cfc := oc.(*oaws.CredsFileCredential)
+func (a *AWSCredentialsFile) Output(c *config.Config, cc *oaws.CredentialContainer) error {
+	cfc := &oaws.CredsFileCredential{
+		AccessKeyID:     cc.AccessKeyID,
+		SecretAccessKey: cc.SecretAccessKey,
+		SessionToken:    cc.SessionToken,
+	}
+	cfc.SetProfile(cc.Profile)
 	if c.WriteAWSCredentials() {
 		return a.writeConfig(c, cfc)
 	}

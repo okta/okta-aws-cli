@@ -30,7 +30,7 @@ func NewNoopCredentials() *NoopCredentials {
 }
 
 // Output Satisfies the Outputter interface and outputs nothing
-func (n *NoopCredentials) Output(c *config.Config, oc oaws.Credential) error {
+func (n *NoopCredentials) Output(c *config.Config, cc *oaws.CredentialContainer) error {
 	// no-op
 	return nil
 }

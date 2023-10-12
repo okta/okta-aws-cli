@@ -1,6 +1,6 @@
 module github.com/okta/okta-aws-cli
 
-go 1.19
+go 1.21
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
@@ -23,7 +23,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+require (
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

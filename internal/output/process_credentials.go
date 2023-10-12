@@ -35,8 +35,16 @@ func NewProcessCredentials() *ProcessCredentials {
 
 // Output Satisfies the Outputter interface and outputs AWS credentials as JSON
 // to STDOUT
-func (p *ProcessCredentials) Output(c *config.Config, oc oaws.Credential) error {
-	pc := oc.(*oaws.ProcessCredential)
+func (p *ProcessCredentials) Output(c *config.Config, cc *oaws.CredentialContainer) error {
+	pc := &oaws.ProcessCredential{
+		AccessKeyID:     cc.AccessKeyID,
+		SecretAccessKey: cc.SecretAccessKey,
+		SessionToken:    cc.SessionToken,
+		Expiration:      cc.Expiration,
+		// See AWS docs: "Note As of this writing, the Version key must be set to 1.
+		// This might increment over time as the structure evolves."
+		Version: 1,
+	}
 
 	credJSON, err := json.MarshalIndent(pc, "", "  ")
 	if err != nil {

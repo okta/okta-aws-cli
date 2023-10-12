@@ -390,7 +390,8 @@ These settings are all optional:
 | AWS IAM Identity Provider ARN | Preselects the IdP list to this preferred IAM Identity Provider. If there are other IdPs available they will not be listed. | `--aws-iam-idp [value]` | `OKTA_AWSCLI_IAM_IDP` |
 | Display QR Code | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
 | Automatically open the activation URL with the system web browser | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
-| Gather all profiles for a given IdP (implies aws-credentials file output format)) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
+| Automatically open the activation URL with the given web browser command | Shell escaped browser command | `--open-browser-command [command]` | `OKTA_AWSCLI_OPEN_BROWSER_COMMAND` |
+| Gather all profiles for all IdPs and Roles associated with an AWS Fed App (implies aws-credentials file output format)) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 
 #### Allowed Web SSO Client ID
 
@@ -745,8 +746,9 @@ Federation app (IdP) at once.  This is a feature specific to writing the
 aliases is available on the given role) then `-` then abbreviated role name.
 
 ```
-# AWS account alias "myorg", given IdP associated with "AWS Account Federation"
-# and an app associated with two roles.
+# Two Okta "AWS Account Federation" apps, one on AWS alias "prod-org", the other
+# on alias "dev-org". Includes short name for the actual IAM IdPs and IAM Roles
+# on the Fed App.
 
 $ okta-aws-cli web \
     --org-domain test.okta.com \
@@ -755,8 +757,28 @@ $ okta-aws-cli web \
     --all-profiles
 
 ? Choose an IdP: AWS Account Federation
-Updated profile "myorg-S3-read" in credentials file "/Users/me/.aws/credentials".
-Updated profile "myorg-S3-write" in credentials file "/Users/me/.aws/credentials".
+Updated profile "dev-org-s3ops-read" in credentials file "/Users/me/.aws/credentials".
+Updated profile "dev-org-s3ops-write" in credentials file "/Users/me/.aws/credentials".
+Updated profile "prod-org-containerops-ec2-full" in credentials file "/Users/me/.aws/credentials".
+Updated profile "prod-org-containerops-eks-full" in credentials file "/Users/me/.aws/credentials".
+```
+
+### Alternative open browser command
+
+`okta-aws-cli web` can have it's open browser command customized.
+
+```
+# OSX examples, the device authorization URL is appended to the browser args.
+
+$ okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Profile\ 1\""
+
+$ okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "open -na \"Google\ Chrome\" --args --incognito"
 ```
 
 ### Help

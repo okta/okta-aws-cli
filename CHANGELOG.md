@@ -26,13 +26,20 @@ in the naming convention for `okta-aws-cli` specific names.
 | `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
 
-### (Completed) Process credential provider output as JSON
+### (completed) Process credential provider output as JSON
 
 Emits IAM temporary credentials as JSON in [process
 credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
 format.
 
-### (Complete) Execute follow-on command
+```
+# In $/.aws/config
+[default]
+  # presumes OKTA_AWSCLI_* env vars are set
+  credential_process = okta-aws-cli m2m --format process-credentials
+```
+
+### (completed) Execute follow-on command
 
 Instead of scripting and/or eval'ing `okta-aws-cli` into a shell and then
 running another command have `okta-aws-cli` run the command directly passing
@@ -46,7 +53,7 @@ $ okta-aws-cli web \
     --exec -- aws ec2 describe-instances
 ```
 
-### (Complete) Collect all roles for an AWS Fed App (IdP) at once
+### (completed) Collect all roles for an AWS Fed App (IdP) at once
 
 `okta-aws-cli web` will collect all available AWS IAM Roles for a given Okta AWS
 Federation app (IdP) at once.  This is a feature specific to writing the
@@ -64,12 +71,17 @@ $ okta-aws-cli web \
     --write-aws-credentials \
     --all-profiles
 
-? Choose an IdP: AWS Account Federation
-Updated profile "myorg-S3-read" in credentials file "/Users/me/.aws/credentials".
-Updated profile "myorg-S3-write" in credentials file "/Users/me/.aws/credentials".
+Web browser will open the following URL to begin Okta device authorization for the AWS CLI
+
+https://test.okta.com/activate?user_code=QHDMVQTZ
+
+Updated profile "devorg-idp1-role1" in credentials file "/Users/me/.aws/credentials".
+Updated profile "devorg-idp1-role2" in credentials file "/Users/me/.aws/credentials".
+Updated profile "devorg-idp2-role1" in credentials file "/Users/me/.aws/credentials".
+Updated profile "prodorg-idp1-role1" in credentials file "/Users/me/.aws/credentials".
 ```
 
-### (expected) Alternate web browser open command
+### (completed) Alternate web browser open command
 
 The `web` command will open the system's default web browser when the
 `--open-browser` flag is present. It is convenient to have the browser open on a
@@ -81,8 +93,7 @@ system an alternate open command can be specified.
 $ okta-aws-cli web \
     --org-domain test.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
-    --open-browser \
-    --open-browser-command "open -na 'Google Chrome' --args -incognito"
+    --open-browser-command "open -na \"Google\ Chrome\" --args --incognito"
 ```
 
 ```
@@ -90,9 +101,12 @@ $ okta-aws-cli web \
 $ okta-aws-cli web \
     --org-domain test.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
-    --open-browser \
-    --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --profile-directory='Profile 1'"
+    --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Profile\ 1\""
 ```
+
+## 2.0.0-beta.4 (October 12, 2023)
+
+`okta-aws-cli web` can have it's open browser command customized.
 
 ## 2.0.0-beta.3 (October 10, 2023)
 
@@ -103,45 +117,16 @@ AWS Federation App (IdP) in one invocation of the CLI.
 
 Execute a subcommand directly from `okta-aws-cli`
 
-```
-$ okta-aws-cli m2m --format noop --exec -- aws s3 ls s3://example
-                           PRE aaa/
-2023-03-08 16:01:01          4 a.log
-```
-
 ## 2.0.0-beta.1 (October 2, 2023)
 
 Support for AWS CLI [process credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
 
-```
-# $/.aws/config
-[default]
-# presumes OKTA_AWSCLI_* env vars are set
-credential_process = okta-aws-cli m2m --format process-credentials
-```
-
 ## 2.0.0-beta.0 (September 29, 2023)
 
-### New commands
-
-`okta-aws-cli`'s functions are encapsulated as (sub)commands e.g. `$ okta-aws-cli [sub-command]`
-
-| Command | Description |
-|-----|-----|
-| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
-| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
-| `debug` | Debug okta.yaml config file and exit. |
-
-### Environment variable name changes
+`okta-aws-cli`'s functions are encapsulated as (sub)commands `web`, `m2m`, `debug`
 
 A small number of environment variable names have been renamed to be consistent
 in the naming convention for `okta-aws-cli` specific names.
-
-| old name | new name |
-|----------|----------|
-| `OKTA_ORG_DOMAIN` | `OKTA_AWSCLI_ORG_DOMAIN` |
-| `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
-| `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
 
 ## 1.2.2 (August 30, 2023)
 
