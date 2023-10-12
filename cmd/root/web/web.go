@@ -55,6 +55,13 @@ var (
 			EnvVar: config.OpenBrowserEnvVar,
 		},
 		{
+			Name:   config.OpenBrowserCommandFlag,
+			Short:  "m",
+			Value:  "",
+			Usage:  "Automatically open the activation URL with the given web browser command",
+			EnvVar: config.OpenBrowserCommandEnvVar,
+		},
+		{
 			Name:   config.AllProfilesFlag,
 			Short:  "k",
 			Value:  false,

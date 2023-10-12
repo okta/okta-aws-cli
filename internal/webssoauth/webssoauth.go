@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	osexec "os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/google/shlex"
 	"github.com/mdp/qrterminal"
 	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
@@ -703,12 +705,32 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 `
 	openMsg := "Open"
 	if w.config.OpenBrowser() {
-		openMsg = "System web browser will open"
+		openMsg = "Web browser will open"
 	}
 
 	w.consolePrint(prompt, openMsg, qrCode, da.VerificationURIComplete)
 
-	if w.config.OpenBrowser() {
+	if w.config.OpenBrowserCommand() != "" {
+		bCmd := w.config.OpenBrowserCommand()
+		if bCmd != "" {
+			bArgs, err := splitArgs(bCmd)
+			if err != nil {
+				w.consolePrint("Browser command %q is invalid: %v\n", bCmd, err)
+				return
+			}
+			bArgs = append(bArgs, da.VerificationURIComplete)
+			cmd := osexec.Command(bArgs[0], bArgs[1:]...)
+			out, err := cmd.Output()
+			if _, ok := err.(*osexec.ExitError); ok {
+				w.consolePrint("Failed to open activation URL with given browser: %v\n", err)
+				w.consolePrint("  %s\n", strings.Join(bArgs, " "))
+			}
+			if len(out) > 0 {
+				w.consolePrint("browser output:\n%s\n", string(out))
+			}
+		}
+
+	} else if w.config.OpenBrowser() {
 		brwsr.Stdout = os.Stderr
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
 			w.consolePrint("Failed to open activation URL with system browser: %v\n", err)
@@ -1092,4 +1114,8 @@ func (w *WebSSOAuthentication) fetchAWSAccountAlias(sess *session.Session) (stri
 		return "", fmt.Errorf("no alias configured for account")
 	}
 	return *svcResp.AccountAliases[0], nil
+}
+
+func splitArgs(args string) ([]string, error) {
+	return shlex.Split(args)
 }

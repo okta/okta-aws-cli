@@ -19,6 +19,7 @@ package webssoauth
 import (
 	"net/http"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -96,4 +97,50 @@ func setupTest(t *testing.T) (*config.Config, func(t *testing.T)) {
 	}
 
 	return config, tearDown
+}
+
+func TestOpenBrowserCommandSplitArgs(t *testing.T) {
+	testCases := []struct {
+		name     string
+		command  string
+		expected []string
+	}{
+		{
+			name:     "osx open",
+			command:  `open`,
+			expected: []string{"open"},
+		},
+		{
+			name:    "osx open named app google chrome in incognito mode",
+			command: `open -na "Google Chrome" --args --incognito`,
+			expected: []string{
+				"open",
+				"-na",
+				"Google Chrome",
+				"--args",
+				"--incognito"},
+		},
+		{
+			name:    "osx open named app google chrome in incognito mode",
+			command: `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Person\ 1\"`,
+			expected: []string{
+				"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+				`--profile-directory="Person 1"`,
+			},
+		},
+	}
+	t.Parallel()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := splitArgs(tc.command)
+			if err != nil {
+				t.Errorf("didn't expect error for command %q: %+v", tc.command, err)
+				return
+			}
+			equal := reflect.DeepEqual(result, tc.expected)
+			if !equal {
+				t.Errorf("expected %+v to equal %+v", tc.expected, result)
+			}
+		})
+	}
 }

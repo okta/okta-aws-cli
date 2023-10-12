@@ -39,7 +39,7 @@ func init() {
 
 const (
 	// Version app version
-	Version = "2.0.0-beta.3"
+	Version = "2.0.0-beta.4"
 
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
@@ -76,6 +76,8 @@ const (
 	OIDCClientIDFlag = "oidc-client-id"
 	// OpenBrowserFlag cli flag const
 	OpenBrowserFlag = "open-browser"
+	// OpenBrowserCommandFlag cli flag const
+	OpenBrowserCommandFlag = "open-browser-command"
 	// OrgDomainFlag cli flag const
 	OrgDomainFlag = "org-domain"
 	// PrivateKeyFlag cli flag const
@@ -139,6 +141,8 @@ const (
 	OldOktaAWSAccountFederationAppIDEnvVar = "OKTA_AWS_ACCOUNT_FEDERATION_APP_ID"
 	// OpenBrowserEnvVar env var const
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
+	// OpenBrowserCommandEnvVar env var const
+	OpenBrowserCommandEnvVar = "OKTA_AWSCLI_OPEN_BROWSER_COMMAND"
 	// PrivateKeyEnvVar env var const
 	PrivateKeyEnvVar = "OKTA_AWSCLI_PRIVATE_KEY"
 	// KeyIDEnvVar env var const
@@ -200,6 +204,7 @@ type Config struct {
 	legacyAWSVariables  bool
 	oidcAppID           string
 	openBrowser         bool
+	openBrowserCommand  string
 	orgDomain           string
 	privateKey          string
 	profile             string
@@ -228,6 +233,7 @@ type Attributes struct {
 	LegacyAWSVariables  bool
 	OIDCAppID           string
 	OpenBrowser         bool
+	OpenBrowserCommand  string
 	OrgDomain           string
 	PrivateKey          string
 	Profile             string
@@ -266,6 +272,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 		format:              attrs.Format,
 		legacyAWSVariables:  attrs.LegacyAWSVariables,
 		openBrowser:         attrs.OpenBrowser,
+		openBrowserCommand:  attrs.OpenBrowserCommand,
 		privateKey:          attrs.PrivateKey,
 		keyID:               attrs.KeyID,
 		profile:             attrs.Profile,
@@ -315,6 +322,7 @@ func readConfig() (Attributes, error) {
 		CacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
 		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
 		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
+		OpenBrowserCommand:  viper.GetString(OpenBrowserCommandFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
 		PrivateKey:          viper.GetString(PrivateKeyFlag),
 		KeyID:               viper.GetString(KeyIDFlag),
@@ -432,6 +440,11 @@ func readConfig() (Attributes, error) {
 	}
 	if !attrs.OpenBrowser {
 		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
+	}
+	if attrs.OpenBrowserCommand == "" {
+		// open browser command implies open browser
+		attrs.OpenBrowser = true
+		attrs.OpenBrowserCommand = viper.GetString(downCase(OpenBrowserCommandEnvVar))
 	}
 	if !attrs.Debug {
 		attrs.Debug = viper.GetBool(downCase(DebugEnvVar))
@@ -675,6 +688,17 @@ func (c *Config) OpenBrowser() bool {
 // SetOpenBrowser --
 func (c *Config) SetOpenBrowser(openBrowser bool) error {
 	c.openBrowser = openBrowser
+	return nil
+}
+
+// OpenBrowserCommand --
+func (c *Config) OpenBrowserCommand() string {
+	return c.openBrowserCommand
+}
+
+// SetOpenBrowserCommand --
+func (c *Config) SetOpenBrowserCommand(openBrowserCommand string) error {
+	c.openBrowserCommand = openBrowserCommand
 	return nil
 }
 
