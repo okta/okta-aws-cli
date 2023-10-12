@@ -65,8 +65,8 @@ $ okta-aws-cli web \
     --all-profiles
 
 ? Choose an IdP: AWS Account Federation
-Updated profile "myorg-S3-read" in credentials file "/Users/me/.aws/credentials".
-Updated profile "myorg-S3-write" in credentials file "/Users/me/.aws/credentials".
+Updated profile "dev-org-s3-write" in credentials file "/Users/me/.aws/credentials".
+Updated profile "prod-org-Admin-containers" in credentials file "/Users/me/.aws/credentials".
 ```
 
 ### (expected) Alternate web browser open command

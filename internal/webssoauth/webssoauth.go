@@ -203,6 +203,16 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 	if len(apps) == 1 {
 		// only one app, we don't need to prompt selection of idp / fed app
 		fedAppID = apps[0].ID
+	} else if w.config.AllProfiles() {
+		// special case, we're going to run the table and get all profiles for all apps
+		errArr := []error{}
+		for _, app := range apps {
+			if err = w.establishTokenWithFedAppID(clientID, app.ID, at); err != nil {
+				errArr = append(errArr, err)
+			}
+		}
+
+		return errors.Join(errArr...)
 	} else {
 		// Here, we do want to prompt for selection of the Fed App.
 		// If the app is making use of "Role value pattern" on AWS settings we
@@ -367,15 +377,17 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		SessionToken:    *svcResp.Credentials.SessionToken,
 		Expiration:      svcResp.Credentials.Expiration,
 	}
-	if w.config.Profile() != "" {
+	if !w.config.AllProfiles() && w.config.Profile() != "" {
 		cc.Profile = w.config.Profile()
 		return cc, nil
 	}
 
-	var profileName string
-	var roleName string
+	var profileName, idpName, roleName string
+	if _, after, found := strings.Cut(iar.idp, "/"); found {
+		idpName = after
+	}
 	if _, after, found := strings.Cut(iar.role, "/"); found {
-		roleName = "-" + after
+		roleName = after
 	}
 	sessCopy := sess.Copy(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
@@ -385,12 +397,12 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 		),
 	})
 	if p, err := w.fetchAWSAccountAlias(sessCopy); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting profile name to %q\n", iar.idp)
-		profileName = iar.idp
+		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting alias name to %q\n", "org")
+		profileName = "org"
 	} else {
 		profileName = p
 	}
-	cc.Profile = fmt.Sprintf("%s%s", profileName, roleName)
+	cc.Profile = fmt.Sprintf("%s-%s-%s", profileName, idpName, roleName)
 
 	return cc, nil
 }
