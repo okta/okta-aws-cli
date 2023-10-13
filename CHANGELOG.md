@@ -53,10 +53,10 @@ $ okta-aws-cli web \
     --exec -- aws ec2 describe-instances
 ```
 
-### (completed) Collect all roles for an AWS Fed App (IdP) at once
+### (completed) Collect all roles for all AWS Fed Apps (IdP) at once
 
-`okta-aws-cli web` will collect all available AWS IAM Roles for a given Okta AWS
-Federation app (IdP) at once.  This is a feature specific to writing the
+`okta-aws-cli web` will collect all available AWS IAM Roles for all Okta AWS
+Federation apps (IdP) at once.  This is a feature specific to writing the
 `$HOME/.aws/credentials` file. Roles will be AWS account alias name (if STS list
 aliases is available on the given role) then `-` then abbreviated role name.
 
@@ -104,14 +104,51 @@ $ okta-aws-cli web \
     --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Profile\ 1\""
 ```
 
+### (completed) Friendly label matching with regular expressions
+
+Friendly label matching for IdPs and Roles with `$HOME/.okta/okta.yaml` file can
+be regular expressions.
+
+Example: your organization uses the same role naming convention across many
+different AWS accounts:
+
+```yaml
+---
+awscli:
+  idps:
+    "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
+    "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+    "arn:aws:iam::901234567890:saml-provider/company-okta-idp": "Marketing Production"
+    "arn:aws:iam::890123456789:saml-provider/company-okta-idp": "Marketing Development"
+  roles:
+    "arn:aws:iam::.*:role/admin": "Admin"
+    "arn:aws:iam::.*:role/operator": "Ops"
+```
+
+```
+? Choose an IdP:  
+> Data Production
+  Data Development
+  Marketing Production
+  Marketing Development
+
+? Choose a Role:  [Use arrows to move, type to filter]
+> Admin
+  Ops
+```
+
+## 2.0.0-beta.5 (October 13, 2023)
+
+Friendly label matching for IdPs and Roles with `$HOME/.okta/okta.yaml` file can be regular expressions.
+
 ## 2.0.0-beta.4 (October 12, 2023)
 
 `okta-aws-cli web` can have it's open browser command customized.
 
 ## 2.0.0-beta.3 (October 10, 2023)
 
-`okta-aws-cli web` can collect all roles to an AWS credentials file for a given
-AWS Federation App (IdP) in one invocation of the CLI.
+`okta-aws-cli web` can collect all roles for all AWS Federation Apps (IdP) to an
+AWS credentials file in one invocation of the CLI.
 
 ## 2.0.0-beta.2 (October 5, 2023)
 

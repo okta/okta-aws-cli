@@ -463,7 +463,8 @@ When the operator has many AWS Federation apps listing the AWS IAM IdP ARNs can
 make it hard to read the list. The same can be said if an IdP has many IAM Role
 ARNs associated with it. To make this easier to manage the operator can create
 an Okta config file in YAML format at `$HOME/.okta/okta.yaml` that allows them
-to set a map of alias labels for the ARN values.
+to set a map of alias labels for the ARN values. Then ARN values for both IdPs
+and Roles can also be evaluated are regular expressions (see example below).
 
 **NOTE**: The Okta language SDKs have standardized on using
 `$HOME/.okta/okta.yaml` as a configuration file and location. We will continue
@@ -479,8 +480,8 @@ that practice with read-only friendly okta-aws-cli application values.
   Fed App 4 Label
 
 ? Choose a Role:  [Use arrows to move, type to filter]
-> Admin (arn:aws:iam::123456789012:role/admin)
-  Ops
+> arn:aws:iam::123456789012:role/admin
+  arn:aws:iam::123456789012:role/ops
 ```
 
 #### Example `$HOME/.okta/okta.yaml`
@@ -494,10 +495,8 @@ awscli:
     "arn:aws:iam::901234567890:saml-provider/company-okta-idp": "Marketing Production"
     "arn:aws:iam::890123456789:saml-provider/company-okta-idp": "Marketing Development"
   roles:
-    "arn:aws:iam::123456789012:role/admin": "Prod Admin"
-    "arn:aws:iam::123456789012:role/operator": "Prod Ops"
-    "arn:aws:iam::012345678901:role/admin": "Dev Admin"
-    "arn:aws:iam::012345678901:role/operator": "Dev Ops"
+    "arn:aws:iam::.*:role/admin": "Admin"
+    "arn:aws:iam::.*:role/operator": "Ops"
 ```
 
 #### After
@@ -510,8 +509,8 @@ awscli:
   Marketing Development
 
 ? Choose a Role:  [Use arrows to move, type to filter]
-> Prod Admin
-  Prod Ops
+> Admin
+  Ops
 ```
 
 #### Debug okta.yaml
@@ -738,10 +737,10 @@ make_bucket failed: s3://no-access-example An error occurred (AccessDenied) when
 Error: exit status 1
 ```
 
-### Collect all roles for an AWS Fed App (IdP) at once
+### Collect all roles for all AWS Fed Apps (IdP)  at once
 
-`okta-aws-cli web` will collect all available AWS IAM Roles for a given Okta AWS
-Federation app (IdP) at once.  This is a feature specific to writing the
+`okta-aws-cli web` will collect all available AWS IAM Roles for all Okta AWS
+Federation apps (IdP) at once.  This is a feature specific to writing the
 `$HOME/.aws/credentials` file. Roles will be AWS account alias name (if STS list
 aliases is available on the given role) then `-` then abbreviated role name.
 

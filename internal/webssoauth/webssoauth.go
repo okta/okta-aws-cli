@@ -30,6 +30,7 @@ import (
 	osexec "os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -232,35 +233,47 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 // choiceFriendlyLabelIDP returns a friendly choice for pretty printing IDP
 // labels.  alternative value is the default value to return if a friendly
 // determination can not be made.
-func (w *WebSSOAuthentication) choiceFriendlyLabelIDP(alternative string, oktaConfig *config.OktaYamlConfig, arn string) string {
-	if oktaConfig == nil {
-		return alternative
+func (w *WebSSOAuthentication) choiceFriendlyLabelIDP(alt, arn string, idps map[string]string) string {
+	if idps == nil {
+		return alt
 	}
 
-	if label, ok := oktaConfig.AWSCLI.IDPS[arn]; ok {
+	if label, ok := idps[arn]; ok {
 		if w.config.Debug() {
 			w.consolePrint("  found IdP ARN %q having friendly label %q\n", arn, label)
 		}
 		return label
-	} else if w.config.Debug() {
+	}
+	// treat ARN values as regexps
+	for arnRegexp, label := range idps {
+		if ok, _ := regexp.MatchString(arnRegexp, arn); ok {
+			return label
+		}
+	}
+
+	if w.config.Debug() {
 		w.consolePrint("  did not find friendly label for IdP ARN\n")
 		w.consolePrint(arnPrintFmt, arn)
 		w.consolePrint("    in okta.yaml awscli.idps map:\n")
-		for arn, label := range oktaConfig.AWSCLI.IDPS {
+		for arn, label := range idps {
 			w.consolePrint(arnLabelPrintFmt, arn, label)
 		}
 	}
-	return alternative
+	return alt
 }
 
 func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, error) {
 	idps := make(map[string]*okta.Application)
 	choices := make([]string, len(apps))
 	var selected string
-	oktaConfig, _ := w.config.OktaConfig()
+	var configIDPs map[string]string
+	oktaConfig, err := w.config.OktaConfig()
+	if err == nil {
+		configIDPs = oktaConfig.AWSCLI.IDPS
+	}
 
 	for i, app := range apps {
-		choiceLabel := w.choiceFriendlyLabelIDP(app.Label, oktaConfig, app.Settings.App.IdentityProviderARN)
+		choiceLabel := w.choiceFriendlyLabelIDP(app.Label, app.Settings.App.IdentityProviderARN, configIDPs)
 
 		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
 		if w.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
@@ -286,7 +299,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 		Message: chooseIDP,
 		Options: choices,
 	}
-	err := survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	err = survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
 	if err != nil {
 		return "", fmt.Errorf(askIDPError, err)
 	}
@@ -413,21 +426,30 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion 
 // choiceFriendlyLabelRole returns a friendly choice for pretty printing Role
 // labels.  The ARN default value to return if a friendly determination can not
 // be made.
-func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, oktaConfig *config.OktaYamlConfig) string {
-	if oktaConfig == nil {
+func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[string]string) string {
+	if roles == nil {
 		return arn
 	}
 
-	if label, ok := oktaConfig.AWSCLI.ROLES[arn]; ok {
+	if label, ok := roles[arn]; ok {
 		if w.config.Debug() {
 			w.consolePrint("  found Role ARN %q having friendly label %q\n", arn, label)
 		}
 		return label
-	} else if w.config.Debug() {
+	}
+
+	// treat ARN values as regexps
+	for arnRegexp, label := range roles {
+		if ok, _ := regexp.MatchString(arnRegexp, arn); ok {
+			return label
+		}
+	}
+
+	if w.config.Debug() {
 		w.consolePrint("  did not find friendly label for Role ARN\n")
 		w.consolePrint(arnPrintFmt, arn)
 		w.consolePrint("    in okta.yaml awscli.roles map:\n")
-		for arn, label := range oktaConfig.AWSCLI.ROLES {
+		for arn, label := range roles {
 			w.consolePrint(arnLabelPrintFmt, arn, label)
 		}
 	}
@@ -436,14 +458,18 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, oktaConfig *c
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
 func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
-	oktaConfig, _ := w.config.OktaConfig()
+	oktaConfig, err := w.config.OktaConfig()
+	var configRoles map[string]string
+	if err == nil {
+		configRoles = oktaConfig.AWSCLI.ROLES
+	}
 
 	if len(roleARNs) == 1 || w.config.AWSIAMRole() != "" {
 		roleARN = w.config.AWSIAMRole()
 		if len(roleARNs) == 1 {
 			roleARN = roleARNs[0]
 		}
-		roleLabel := w.choiceFriendlyLabelRole(roleARN, oktaConfig)
+		roleLabel := w.choiceFriendlyLabelRole(roleARN, configRoles)
 		roleData := roleTemplateData{
 			Role: roleLabel,
 		}
@@ -460,7 +486,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 	promptRoles := []string{}
 	labelsARNs := map[string]string{}
 	for _, arn := range roleARNs {
-		roleLabel := w.choiceFriendlyLabelRole(arn, oktaConfig)
+		roleLabel := w.choiceFriendlyLabelRole(arn, configRoles)
 		promptRoles = append(promptRoles, roleLabel)
 		labelsARNs[roleLabel] = arn
 	}
@@ -488,6 +514,10 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 // to pretty print out the IdP name again.
 func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
 	oktaConfig, _ := w.config.OktaConfig()
+	var configIDPs map[string]string
+	if err == nil {
+		configIDPs = oktaConfig.AWSCLI.IDPS
+	}
 
 	if len(idpARNs) == 0 {
 		return idpARN, errors.New(noIDPsError)
@@ -502,7 +532,7 @@ func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, er
 			return idpARN, nil
 		}
 
-		idpLabel := w.choiceFriendlyLabelIDP(idpARN, oktaConfig, idpARN)
+		idpLabel := w.choiceFriendlyLabelIDP(idpARN, idpARN, configIDPs)
 		idpData := idpTemplateData{
 			IDP: idpLabel,
 		}
@@ -517,7 +547,7 @@ func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, er
 	idpChoices := make(map[string]string, len(idpARNs))
 	idpChoiceLabels := make([]string, len(idpARNs))
 	for i, arn := range idpARNs {
-		idpLabel := w.choiceFriendlyLabelIDP(arn, oktaConfig, arn)
+		idpLabel := w.choiceFriendlyLabelIDP(arn, arn, configIDPs)
 		idpChoices[idpLabel] = arn
 		idpChoiceLabels[i] = idpLabel
 	}
