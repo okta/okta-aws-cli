@@ -145,3 +145,123 @@ func TestOpenBrowserCommandSplitArgs(t *testing.T) {
 		})
 	}
 }
+
+// choiceFriendlyLabelIDP(alt, arn string, idps *map[string]string) string {
+func TestChoiceFriendlyLabelIDP(t *testing.T) {
+	config, teardownTest := setupTest(t)
+	defer teardownTest(t)
+
+	w, err := NewWebSSOAuthentication(config)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name     string
+		alt      string
+		arn      string
+		idps     map[string]string
+		expected string
+	}{
+		{
+			name:     "Okta app label",
+			alt:      "My AWS Fed App",
+			arn:      "arn:aws:iam::123:saml-provider/myidp",
+			idps:     map[string]string{},
+			expected: "My AWS Fed App",
+		},
+		{
+			name:     "nil map",
+			alt:      "alternate",
+			arn:      "arn",
+			idps:     nil,
+			expected: "alternate",
+		},
+		{
+			name: "friendly label",
+			alt:  "alternate",
+			arn:  "arn:aws:iam::123:saml-provider/myidp",
+			idps: map[string]string{
+				"arn:aws:iam::123:saml-provider/youridp": "Your IdP",
+				"arn:aws:iam::123:saml-provider/myidp":   "My IdP",
+				"arn:aws:iam::.*:saml-provider/aidp":     "A IdP",
+			},
+			expected: "My IdP",
+		},
+		{
+			name: "regexp friendly label",
+			alt:  "alternate",
+			arn:  "arn:aws:iam::789:saml-provider/aidp",
+			idps: map[string]string{
+				"arn:aws:iam::123:saml-provider/youridp": "YourIdP",
+				"arn:aws:iam::123:saml-provider/myidp":   "My IdP",
+				"arn:aws:iam::.*:saml-provider/aidp":     "A IdP",
+			},
+			expected: "A IdP",
+		},
+	}
+	t.Parallel()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := w.choiceFriendlyLabelIDP(tc.alt, tc.arn, tc.idps)
+			if result != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestChoiceFriendlyLabelRole(t *testing.T) {
+	config, teardownTest := setupTest(t)
+	defer teardownTest(t)
+
+	w, err := NewWebSSOAuthentication(config)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name     string
+		arn      string
+		roles    map[string]string
+		expected string
+	}{
+		{
+			name:     "arn",
+			arn:      "arn:aws:iam::123:role/rickrole",
+			roles:    map[string]string{},
+			expected: "arn:aws:iam::123:role/rickrole",
+		},
+		{
+			name:     "nil map",
+			arn:      "arn:aws:iam::123:role/rickrole",
+			roles:    nil,
+			expected: "arn:aws:iam::123:role/rickrole",
+		},
+		{
+			name: "friendly label",
+			arn:  "arn:aws:iam::123:role/rickrole",
+			roles: map[string]string{
+				"arn:aws:iam::123:role/rocknrole": "Rock N Role",
+				"arn:aws:iam::123:role/rickrole":  "Rick Role",
+				"arn:aws:iam::.*:role/never":      "Never Gonna Give You Up",
+			},
+			expected: "Rick Role",
+		},
+		{
+			name: "regexp friendly label",
+			arn:  "arn:aws:iam::789:role/never",
+			roles: map[string]string{
+				"arn:aws:iam::123:role/rocknrole": "Rock N Role",
+				"arn:aws:iam::123:role/rickrole":  "Rick Role",
+				"arn:aws:iam::.*:role/never":      "Never Gonna Give You Up",
+			},
+			expected: "Never Gonna Give You Up",
+		},
+	}
+	t.Parallel()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := w.choiceFriendlyLabelRole(tc.arn, tc.roles)
+			if result != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, result)
+			}
+		})
+	}
+}
