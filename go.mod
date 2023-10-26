@@ -15,7 +15,7 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tidwall/pretty v1.2.0
-	golang.org/x/net v0.7.0
+	golang.org/x/net v0.13.0
 	golang.org/x/sys v0.5.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
