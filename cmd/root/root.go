@@ -198,7 +198,7 @@ func Execute(defaultCommand string) {
 		cmdFound = true
 	}
 	if len(os.Args) >= 2 {
-		if arg := os.Args[1]; arg == "--help" || arg == "-h" || arg == "help" {
+		if arg := os.Args[1]; arg == "--help" || arg == "-h" || arg == "help" || arg == "--version" || arg == "-v" {
 			cmdFound = true
 		}
 	}
