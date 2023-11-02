@@ -82,6 +82,8 @@ const (
 	OrgDomainFlag = "org-domain"
 	// PrivateKeyFlag cli flag const
 	PrivateKeyFlag = "private-key"
+	// PrivateKeyFileFlag cli flag const
+	PrivateKeyFileFlag = "private-key-file"
 	// KeyIDFlag cli flag const
 	KeyIDFlag = "key-id"
 	// ProfileFlag cli flag const
@@ -145,6 +147,8 @@ const (
 	OpenBrowserCommandEnvVar = "OKTA_AWSCLI_OPEN_BROWSER_COMMAND"
 	// PrivateKeyEnvVar env var const
 	PrivateKeyEnvVar = "OKTA_AWSCLI_PRIVATE_KEY"
+	// PrivateKeyFileEnvVar env var const
+	PrivateKeyFileEnvVar = "OKTA_AWSCLI_PRIVATE_KEY_FILE"
 	// KeyIDEnvVar env var const
 	KeyIDEnvVar = "OKTA_AWSCLI_KEY_ID"
 	// ProfileEnvVar env var const
@@ -207,6 +211,7 @@ type Config struct {
 	openBrowserCommand  string
 	orgDomain           string
 	privateKey          string
+	privateKeyFile      string
 	profile             string
 	qrCode              bool
 	writeAWSCredentials bool
@@ -236,6 +241,7 @@ type Attributes struct {
 	OpenBrowserCommand  string
 	OrgDomain           string
 	PrivateKey          string
+	PrivateKeyFile      string
 	Profile             string
 	QRCode              bool
 	WriteAWSCredentials bool
@@ -274,6 +280,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 		openBrowser:         attrs.OpenBrowser,
 		openBrowserCommand:  attrs.OpenBrowserCommand,
 		privateKey:          attrs.PrivateKey,
+		privateKeyFile:      attrs.PrivateKeyFile,
 		keyID:               attrs.KeyID,
 		profile:             attrs.Profile,
 		qrCode:              attrs.QRCode,
@@ -325,6 +332,7 @@ func readConfig() (Attributes, error) {
 		OpenBrowserCommand:  viper.GetString(OpenBrowserCommandFlag),
 		OrgDomain:           viper.GetString(OrgDomainFlag),
 		PrivateKey:          viper.GetString(PrivateKeyFlag),
+		PrivateKeyFile:      viper.GetString(PrivateKeyFileFlag),
 		KeyID:               viper.GetString(KeyIDFlag),
 		Profile:             viper.GetString(ProfileFlag),
 		QRCode:              viper.GetBool(QRCodeFlag),
@@ -375,6 +383,9 @@ func readConfig() (Attributes, error) {
 	}
 	if attrs.PrivateKey == "" {
 		attrs.PrivateKey = viper.GetString(downCase(PrivateKeyEnvVar))
+	}
+	if attrs.PrivateKeyFile == "" {
+		attrs.PrivateKeyFile = viper.GetString(downCase(PrivateKeyFileEnvVar))
 	}
 	if attrs.KeyID == "" {
 		attrs.KeyID = viper.GetString(downCase(KeyIDEnvVar))
@@ -721,6 +732,17 @@ func (c *Config) PrivateKey() string {
 // SetPrivateKey --
 func (c *Config) SetPrivateKey(privateKey string) error {
 	c.privateKey = privateKey
+	return nil
+}
+
+// PrivateKeyFile --
+func (c *Config) PrivateKeyFile() string {
+	return c.privateKeyFile
+}
+
+// SetPrivateKeyFile --
+func (c *Config) SetPrivateKeyFile(privateKeyFile string) error {
+	c.privateKeyFile = privateKeyFile
 	return nil
 }
 

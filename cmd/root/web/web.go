@@ -69,7 +69,7 @@ var (
 			EnvVar: config.AllProfilesEnvVar,
 		},
 	}
-	requiredFlags = []string{"org-domain", "oidc-client-id"}
+	requiredFlags = []interface{}{"org-domain", "oidc-client-id"}
 )
 
 // NewWebCommand Sets up the web cobra sub command

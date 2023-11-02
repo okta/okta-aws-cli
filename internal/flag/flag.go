@@ -110,12 +110,28 @@ func MakeFlagBindings(cmd *cobra.Command, flags []Flag, persistent bool) {
 }
 
 // CheckRequiredFlags Checks if flags in the list are all set in Viper
-func CheckRequiredFlags(flags []string) error {
+func CheckRequiredFlags(flags []interface{}) error {
 	unsetFlags := []string{}
 	for _, f := range flags {
-		altName := altFlagName(f)
-		if !viper.GetViper().IsSet(f) && !viper.GetViper().IsSet(altName) {
-			unsetFlags = append(unsetFlags, fmt.Sprintf("  --%s", f))
+		if arr, ok := f.([]string); ok {
+			found := false
+			for _, flag := range arr {
+				altName := altFlagName(flag)
+				if viper.GetViper().IsSet(flag) || viper.GetViper().IsSet(altName) {
+					found = true
+				}
+			}
+
+			if !found {
+				unsetFlags = append(unsetFlags, fmt.Sprintf("  --(%s)", strings.Join(arr, " or ")))
+			}
+
+			continue
+		}
+		flag := f.(string)
+		altName := altFlagName(flag)
+		if !viper.GetViper().IsSet(flag) && !viper.GetViper().IsSet(altName) {
+			unsetFlags = append(unsetFlags, fmt.Sprintf("  --%s", flag))
 		}
 	}
 	if len(unsetFlags) > 0 {
