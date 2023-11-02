@@ -513,9 +513,8 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
 func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
-	oktaConfig, _ := w.config.OktaConfig()
 	var configIDPs map[string]string
-	if err == nil {
+	if oktaConfig, cErr := w.config.OktaConfig(); cErr == nil {
 		configIDPs = oktaConfig.AWSCLI.IDPS
 	}
 
