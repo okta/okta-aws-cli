@@ -137,6 +137,12 @@ awscli:
   Ops
 ```
 
+## 2.0.0-beta.6 (November 2, 2023)
+
+* New m2m flag `--private-key-file` read private key from file
+* Bug fix panic when okta.yaml is not established (it doesn't have to be established either)
+* Bug fix allowing `--version` w/o sub command [#150](https://github.com/okta/okta-aws-cli/pull/150), thanks [@malept](https://github.com/malept)!
+
 ## 2.0.0-beta.5 (October 13, 2023)
 
 Friendly label matching for IdPs and Roles with `$HOME/.okta/okta.yaml` file can be regular expressions.
