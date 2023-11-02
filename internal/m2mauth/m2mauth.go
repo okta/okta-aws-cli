@@ -27,6 +27,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -142,11 +143,23 @@ func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (
 
 func (m *M2MAuthentication) createKeySigner() (jose.Signer, error) {
 	signerOptions := (&jose.SignerOptions{}).WithHeader("kid", m.config.KeyID())
-	priv := []byte(strings.ReplaceAll(m.config.PrivateKey(), `\n`, "\n"))
+	var priv []byte
+	switch {
+	case m.config.PrivateKey() != "":
+		priv = []byte(strings.ReplaceAll(m.config.PrivateKey(), `\n`, "\n"))
+	case m.config.PrivateKeyFile() != "":
+		var err error
+		priv, err = os.ReadFile(m.config.PrivateKeyFile())
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("either private key or private key file is a required m2m argument")
+	}
 
 	privPem, _ := pem.Decode(priv)
 	if privPem == nil {
-		return nil, errors.New("invalid private key")
+		return nil, errors.New("invalid private key value")
 	}
 
 	if privPem.Type == "RSA PRIVATE KEY" {

@@ -37,8 +37,15 @@ var (
 			Name:   config.PrivateKeyFlag,
 			Short:  "k",
 			Value:  "",
-			Usage:  "Private Key",
+			Usage:  "Private Key (string value)",
 			EnvVar: config.PrivateKeyEnvVar,
+		},
+		{
+			Name:   config.PrivateKeyFileFlag,
+			Short:  "b",
+			Value:  "",
+			Usage:  "Private Key File",
+			EnvVar: config.PrivateKeyFileEnvVar,
 		},
 		{
 			Name:   config.CustomScopeFlag,
@@ -55,7 +62,7 @@ var (
 			EnvVar: config.AuthzIDEnvVar,
 		},
 	}
-	requiredFlags = []string{"org-domain", "oidc-client-id", "aws-iam-role", "key-id", "private-key"}
+	requiredFlags = []interface{}{"org-domain", "oidc-client-id", "aws-iam-role", "key-id", []string{"private-key", "private-key-file"}}
 )
 
 // NewM2MCommand Sets up the m2m cobra sub command
