@@ -139,10 +139,6 @@ group in step 2.
 The "Admin" button will be visible on the Okta dashboard of non-admin users but
 they will receive a 403 if they attempt to open the Admin UI.
 
-It is on our feature backlog to get support into the Okta API to allow the
-multiple AWS Fed apps feature into okta-aws-cli without needing this work
-around using a custom admin role.
-
 ## Recommendations
 
 We recommend that the AWS Federation Application and OIDC native application
