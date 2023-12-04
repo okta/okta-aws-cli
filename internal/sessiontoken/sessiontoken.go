@@ -170,6 +170,7 @@ func (s *SessionToken) EstablishToken() error {
 	var apps []*oktaApplication
 	var err error
 	at = s.cachedAccessToken()
+	oktaConfig, _ := s.config.OktaConfig()
 
 	// If there is a cached token, and it isn't expired, but the API 401s redo
 	// the authorize step.
@@ -199,6 +200,15 @@ func (s *SessionToken) EstablishToken() error {
 				continue
 			}
 			return err
+		}
+		if len(oktaConfig.AWSCLI.AWS_FED_APPS) > 0 {
+			// Alternate path when operator supplies AWS Fed app IDs in okta.yaml
+			for k, v := range oktaConfig.AWSCLI.AWS_FED_APPS {
+				oa := oktaApplication{ID: k, Label: v["label"]}
+				oa.Settings.App.IdentityProviderARN = v["arn"]
+				apps = append(apps, &oa)
+			}
+			break
 		}
 
 		apps, err = s.listFedApps(clientID, at)

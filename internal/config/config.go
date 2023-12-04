@@ -149,8 +149,9 @@ type Config struct {
 // OktaYamlConfig represents config settings from $HOME/.okta/okta.yaml
 type OktaYamlConfig struct {
 	AWSCLI struct {
-		IDPS  map[string]string `yaml:"idps"`
-		ROLES map[string]string `yaml:"roles"`
+		IDPS         map[string]string            `yaml:"idps"`
+		ROLES        map[string]string            `yaml:"roles"`
+		AWS_FED_APPS map[string]map[string]string `yaml:"aws_fed_apps"`
 	} `yaml:"awscli"`
 }
 
@@ -614,6 +615,13 @@ awscli:
     "arn:aws:iam::123456789012:role/operator": "Prod Ops"
     "arn:aws:iam::012345678901:role/admin": "Dev Admin"
     "arn:aws:iam::012345678901:role/operator": "Dev Ops"
+  aws_fed_apps:
+    "0oa6cj3ntmA987654321": 
+	  "label": "Data Production"
+	  "arn": "arn:aws:iam::123987654321:saml-provider/company-okta-idp"
+	"0oa9e1go0nY123456789":
+	  "label": "Data Development"
+	  "arn": "arn:aws:iam::012123456789:saml-provider/company-okta-idp"
 	`
 	fmt.Fprintf(os.Stderr, "Given this YAML as an example template of okta.yaml for reference:\n%s\n", exampleYaml)
 
@@ -722,6 +730,40 @@ awscli:
 	}
 
 	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" section is a map of %d ARN string keys to friendly string label values\n", len(_roles))
+
+	awsFedApps, ok := _awscli["aws_fed_apps"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "INFO: okta.yaml does not contain \"awscli.aws_fed_apps\" section\n")
+		fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
+		return
+	}
+	if awsFedApps == nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.aws_fed_apps\" section has no values\n")
+		return
+	}
+	fmt.Printf("%+v\n", awsFedApps)
+	_awsFedApps, ok := awsFedApps.(map[any]any)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.aws_fed_apps\" section is not a map of map of AWS Fed Id to label and AWS ARN values\n")
+		return
+	}
+	if len(_awsFedApps) == 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.aws_fed_apps\" section is an empty, map of map of AWS Fed Id to label and AWS ARN values\n")
+		return
+	}
+
+	for k, v := range _awsFedApps {
+		if _, ok := v.(map[interface{}]interface{})["label"]; !ok {
+			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.aws_fed_apps\" key %v does not contain a \"label\" value\n", k)
+			return
+		}
+		if _, ok := v.(map[interface{}]interface{})["arn"]; !ok {
+			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.aws_fed_apps\" key %v does not contain a \"arn\" value\n", k)
+			return
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.aws_fed_apps\" section is a  map of map of %d AWS Fed Id to label and AWS ARN values\n", len(_awsFedApps))
 
 	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
 	return nil
