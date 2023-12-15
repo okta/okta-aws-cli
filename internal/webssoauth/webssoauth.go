@@ -742,6 +742,7 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 
 	if w.config.OpenBrowserCommand() != "" {
 		bCmd := w.config.OpenBrowserCommand()
+		w.consolePrint("DEBUG: using open browser command: %q\n", bCmd)
 		if bCmd != "" {
 			bArgs, err := splitArgs(bCmd)
 			if err != nil {
@@ -751,6 +752,7 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 			bArgs = append(bArgs, da.VerificationURIComplete)
 			cmd := osexec.Command(bArgs[0], bArgs[1:]...)
 			out, err := cmd.Output()
+			w.consolePrint("DEBUG: open browser command error: %+v\n", err)
 			if _, ok := err.(*osexec.ExitError); ok {
 				w.consolePrint("Failed to open activation URL with given browser: %v\n", err)
 				w.consolePrint("  %s\n", strings.Join(bArgs, " "))
@@ -759,12 +761,14 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 				w.consolePrint("browser output:\n%s\n", string(out))
 			}
 		}
-
 	} else if w.config.OpenBrowser() {
+		w.consolePrint("DEBUG: open browser\n")
 		brwsr.Stdout = os.Stderr
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
 			w.consolePrint("Failed to open activation URL with system browser: %v\n", err)
 		}
+	} else {
+		w.consolePrint("DEBUG: no open browser\n")
 	}
 }
 
