@@ -118,12 +118,12 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars
 		return
 	}
 
-	return updateINI(config, profile, legacyVars, expiryVars)
+	return updateINI(config, profile, legacyVars, expiryVars, region)
 }
 
 // updateIni will comment out any keys that are not "aws_access_key_id",
 // "aws_secret_access_key", or "aws_session_token"
-func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool) (*ini.File, error) {
+func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool, region string) (*ini.File, error) {
 	ignore := []string{
 		"aws_access_key_id",
 		"aws_secret_access_key",
@@ -135,7 +135,7 @@ func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars boo
 	if expiryVars {
 		ignore = append(ignore, "x_security_token_expires")
 	}
-	if true {
+	if region != "" {
 		ignore = append(ignore, "region")
 	}
 	section := config.Section(profile)
