@@ -64,7 +64,7 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string, regionVar bool) error {
+func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string, regionVar string) error {
 	config, err := updateConfig(filename, profile, awsCreds, legacyVars, expiryVars, expiry)
 	if err != nil {
 		return err
@@ -89,8 +89,6 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars
 	if err != nil {
 		return
 	}
-
-	awsCreds.Region = "us-east-1"
 
 	builder := dynamicstruct.ExtendStruct(aws.Credential{})
 

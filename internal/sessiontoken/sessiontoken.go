@@ -239,7 +239,7 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		}
 	}
 
-	return s.establishTokenWithFedAppID(clientID, fedAppID, at, )
+	return s.establishTokenWithFedAppID(clientID, fedAppID, at, s.config.AWSRegion())
 }
 
 // choiceFriendlyLabelIDP returns a friendly choice for pretty printing IDP
