@@ -751,7 +751,7 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 			bArgs = append(bArgs, da.VerificationURIComplete)
 			cmd := osexec.Command(bArgs[0], bArgs[1:]...)
 			out, err := cmd.Output()
-			if _, ok := err.(*osexec.ExitError); ok {
+			if err != nil {
 				w.consolePrint("Failed to open activation URL with given browser: %v\n", err)
 				w.consolePrint("  %s\n", strings.Join(bArgs, " "))
 			}
@@ -759,7 +759,6 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 				w.consolePrint("browser output:\n%s\n", string(out))
 			}
 		}
-
 	} else if w.config.OpenBrowser() {
 		brwsr.Stdout = os.Stderr
 		if err := brwsr.OpenURL(da.VerificationURIComplete); err != nil {
