@@ -135,8 +135,9 @@ type apiError struct {
 
 // idpAndRole IdP and role pairs
 type idpAndRole struct {
-	idp  string
-	role string
+	idp    string
+	role   string
+	region string
 }
 
 var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
@@ -192,7 +193,7 @@ func (s *SessionToken) EstablishToken() error {
 		}
 		if s.config.FedAppID() != "" {
 			// Alternate path when operator knows their AWS Fed app ID
-			err = s.establishTokenWithFedAppID(clientID, s.config.FedAppID(), at)
+			err = s.establishTokenWithFedAppID(clientID, s.config.FedAppID(), at, s.config.AWSRegion())
 			if at != nil && err != nil {
 				// possible bad cached access token, retry
 				at = nil
@@ -238,7 +239,7 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		}
 	}
 
-	return s.establishTokenWithFedAppID(clientID, fedAppID, at)
+	return s.establishTokenWithFedAppID(clientID, fedAppID, at, )
 }
 
 // choiceFriendlyLabelIDP returns a friendly choice for pretty printing IDP
@@ -307,7 +308,7 @@ func (s *SessionToken) selectFedApp(apps []*oktaApplication) (string, error) {
 	return idps[selected].ID, nil
 }
 
-func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *accessToken) error {
+func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at *accessToken, region string) error {
 	at, err := s.fetchSSOWebToken(clientID, fedAppID, at)
 	if err != nil {
 		return err
@@ -327,6 +328,7 @@ func (s *SessionToken) establishTokenWithFedAppID(clientID, fedAppID string, at 
 	if err != nil {
 		return err
 	}
+	iar.region = region
 
 	ac, err := s.fetchAWSCredentialWithSAMLRole(iar, assertion)
 	if err != nil {

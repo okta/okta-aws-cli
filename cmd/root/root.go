@@ -88,6 +88,13 @@ func init() {
 			envVar: config.AWSIAMRoleEnvVar,
 		},
 		{
+			name:   config.AWSRegionFlag,
+			short:  "",
+			value:  "",
+			usage:  "Preset AWS Region",
+			envVar: config.AWSRegionEnvVar,
+		},
+		{
 			name:   config.SessionDurationFlag,
 			short:  "s",
 			value:  "",

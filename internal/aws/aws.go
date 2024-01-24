@@ -21,4 +21,5 @@ type Credential struct {
 	AccessKeyID     string `ini:"aws_access_key_id"`
 	SecretAccessKey string `ini:"aws_secret_access_key"`
 	SessionToken    string `ini:"aws_session_token"`
+	Region          string `ini:"region"`
 }

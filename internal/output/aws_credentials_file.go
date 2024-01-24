@@ -64,7 +64,7 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string) error {
+func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string, regionVar bool) error {
 	config, err := updateConfig(filename, profile, awsCreds, legacyVars, expiryVars, expiry)
 	if err != nil {
 		return err
@@ -90,6 +90,8 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars
 		return
 	}
 
+	awsCreds.Region = "us-east-1"
+
 	builder := dynamicstruct.ExtendStruct(aws.Credential{})
 
 	if expiryVars {
@@ -102,6 +104,7 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars
 	reflect.ValueOf(instance).Elem().FieldByName("AccessKeyID").SetString(awsCreds.AccessKeyID)
 	reflect.ValueOf(instance).Elem().FieldByName("SecretAccessKey").SetString(awsCreds.SecretAccessKey)
 	reflect.ValueOf(instance).Elem().FieldByName("SessionToken").SetString(awsCreds.SessionToken)
+	reflect.ValueOf(instance).Elem().FieldByName("Region").SetString(awsCreds.Region)
 
 	if expiryVars {
 		reflect.ValueOf(instance).Elem().FieldByName(ExpirationField).SetString(expiry)
@@ -131,6 +134,9 @@ func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars boo
 	}
 	if expiryVars {
 		ignore = append(ignore, "x_security_token_expires")
+	}
+	if true {
+		ignore = append(ignore, "region")
 	}
 	section := config.Section(profile)
 	comments := []string{}
@@ -171,6 +177,7 @@ type AWSCredentialsFile struct {
 	LegacyAWSVariables bool
 	ExpiryAWSVariables bool
 	Expiry             string
+	Region             string
 }
 
 // NewAWSCredentialsFile Creates a new
@@ -219,6 +226,12 @@ aws_session_token = %s
 		credArgs = append(credArgs, e.Expiry)
 	}
 
+	fmt.Println("hello")
+	if c.AWSRegion() != "" {
+		creds = fmt.Sprintf("%sregion = %%s\n", creds)
+		credArgs = append(credArgs, c.AWSRegion())
+	}
+
 	creds = fmt.Sprintf(creds, credArgs...)
 
 	_, err = f.WriteString(creds)
@@ -241,7 +254,7 @@ func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) e
 		return err
 	}
 
-	return saveProfile(filename, profile, ac, e.LegacyAWSVariables, e.ExpiryAWSVariables, e.Expiry)
+	return saveProfile(filename, profile, ac, e.LegacyAWSVariables, e.ExpiryAWSVariables, e.Expiry, e.Region)
 }
 
 func contains(ignore []string, name string) bool {
