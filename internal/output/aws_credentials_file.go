@@ -65,7 +65,7 @@ func ensureConfigExists(filename string, profile string) error {
 }
 
 func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string, regionVar string) error {
-	config, err := updateConfig(filename, profile, awsCreds, legacyVars, expiryVars, expiry)
+	config, err := updateConfig(filename, profile, awsCreds, legacyVars, expiryVars, expiry, regionVar)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func saveProfile(filename, profile string, awsCreds *aws.Credential, legacyVars,
 	return nil
 }
 
-func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string) (config *ini.File, err error) {
+func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars, expiryVars bool, expiry string, region string) (config *ini.File, err error) {
 	config, err = ini.Load(filename)
 	if err != nil {
 		return
@@ -102,7 +102,9 @@ func updateConfig(filename, profile string, awsCreds *aws.Credential, legacyVars
 	reflect.ValueOf(instance).Elem().FieldByName("AccessKeyID").SetString(awsCreds.AccessKeyID)
 	reflect.ValueOf(instance).Elem().FieldByName("SecretAccessKey").SetString(awsCreds.SecretAccessKey)
 	reflect.ValueOf(instance).Elem().FieldByName("SessionToken").SetString(awsCreds.SessionToken)
-	reflect.ValueOf(instance).Elem().FieldByName("Region").SetString(awsCreds.Region)
+	if region != "" {
+		reflect.ValueOf(instance).Elem().FieldByName("Region").SetString(region)
+	}
 
 	if expiryVars {
 		reflect.ValueOf(instance).Elem().FieldByName(ExpirationField).SetString(expiry)
@@ -224,7 +226,6 @@ aws_session_token = %s
 		credArgs = append(credArgs, e.Expiry)
 	}
 
-	fmt.Println("hello")
 	if c.AWSRegion() != "" {
 		creds = fmt.Sprintf("%sregion = %%s\n", creds)
 		credArgs = append(credArgs, c.AWSRegion())
@@ -252,7 +253,7 @@ func (e *AWSCredentialsFile) writeConfig(c *config.Config, ac *aws.Credential) e
 		return err
 	}
 
-	return saveProfile(filename, profile, ac, e.LegacyAWSVariables, e.ExpiryAWSVariables, e.Expiry, e.Region)
+	return saveProfile(filename, profile, ac, e.LegacyAWSVariables, e.ExpiryAWSVariables, e.Expiry, c.AWSRegion())
 }
 
 func contains(ignore []string, name string) bool {
