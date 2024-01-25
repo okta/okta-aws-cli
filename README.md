@@ -74,7 +74,7 @@ format.
 | Command | Description |
 |-----|-----|
 | `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
-| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
+| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. IMPORTANT! This a not a feature intended for a human use case. Be sure to use industry state of the art secrets management techniques with the private key. |
 | `debug` | Debug okta.yaml config file and exit. |
 
 ## Web Command
@@ -193,6 +193,10 @@ The "Admin" button will be visible on the Okta dashboard of non-admin users but
 they will receive a 403 if they attempt to open the Admin UI.
 
 ## M2M Command
+
+***IMPORTANT! This a not a feature intended for a human use case. Be sure to
+use industry state of the art secrets management techniques with the private
+key.***
 
 ```shell
 # This example presumes its arguments are set as environment variables such as
