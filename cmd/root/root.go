@@ -102,6 +102,13 @@ func init() {
 			envVar: config.ProfileEnvVar,
 		},
 		{
+			name:   config.OktaProfileFlag,
+			short:  "t",
+			value:  "",
+			usage:  "Okta Config Profile",
+			envVar: config.OktaProfileEnvVar,
+		},
+		{
 			name:   config.FormatFlag,
 			short:  "f",
 			value:  "",

@@ -62,6 +62,8 @@ const (
 	OrgDomainFlag = "org-domain"
 	// ProfileFlag cli flag const
 	ProfileFlag = "profile"
+	// OktaProfileFlag cli flag const
+	OktaProfileFlag = "okta-profile"
 	// QRCodeFlag cli flag const
 	QRCodeFlag = "qr-code"
 	// SessionDurationFlag cli flag const
@@ -95,6 +97,8 @@ const (
 	OpenBrowserEnvVar = "OKTA_AWSCLI_OPEN_BROWSER"
 	// ProfileEnvVar env var const
 	ProfileEnvVar = "OKTA_AWSCLI_PROFILE"
+	// OktaProfileEnvVar env var const
+	OktaProfileEnvVar = "OKTA_AWSCLI_OKTA_PROFILE"
 	// QRCodeEnvVar env var const
 	QRCodeEnvVar = "OKTA_AWSCLI_QR_CODE"
 	// WriteAWSCredentialsEnvVar env var const
@@ -234,26 +238,35 @@ func NewConfig(attrs Attributes) (*Config, error) {
 	return cfg, nil
 }
 
+func getFlagNameFromProfile(oktaProfile string, flag string) string {
+	if oktaProfile == "" {
+		return flag
+	}
+	return fmt.Sprintf("%s.%s", oktaProfile, flag)
+}
+
 func readConfig() (Attributes, error) {
+	oktaProfile := viper.GetString(OktaProfileFlag)
+
 	attrs := Attributes{
-		AWSCredentials:      viper.GetString(AWSCredentialsFlag),
-		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
-		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
-		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
-		Debug:               viper.GetBool(DebugFlag),
-		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
-		DebugConfig:         viper.GetBool(DebugConfigFlag),
-		FedAppID:            viper.GetString(AWSAcctFedAppIDFlag),
-		Format:              viper.GetString(FormatFlag),
-		LegacyAWSVariables:  viper.GetBool(LegacyAWSVariablesFlag),
-		ExpiryAWSVariables:  viper.GetBool(ExpiryAWSVariablesFlag),
-		CacheAccessToken:    viper.GetBool(CacheAccessTokenFlag),
-		OIDCAppID:           viper.GetString(OIDCClientIDFlag),
-		OpenBrowser:         viper.GetBool(OpenBrowserFlag),
-		OrgDomain:           viper.GetString(OrgDomainFlag),
-		Profile:             viper.GetString(ProfileFlag),
-		QRCode:              viper.GetBool(QRCodeFlag),
-		WriteAWSCredentials: viper.GetBool(WriteAWSCredentialsFlag),
+		AWSCredentials:      viper.GetString(getFlagNameFromProfile(oktaProfile, AWSCredentialsFlag)),
+		AWSIAMIdP:           viper.GetString(getFlagNameFromProfile(oktaProfile, AWSIAMIdPFlag)),
+		AWSIAMRole:          viper.GetString(getFlagNameFromProfile(oktaProfile, AWSIAMRoleFlag)),
+		AWSSessionDuration:  viper.GetInt64(getFlagNameFromProfile(oktaProfile, SessionDurationFlag)),
+		Debug:               viper.GetBool(getFlagNameFromProfile(oktaProfile, DebugFlag)),
+		DebugAPICalls:       viper.GetBool(getFlagNameFromProfile(oktaProfile, DebugAPICallsFlag)),
+		DebugConfig:         viper.GetBool(getFlagNameFromProfile(oktaProfile, DebugConfigFlag)),
+		FedAppID:            viper.GetString(getFlagNameFromProfile(oktaProfile, AWSAcctFedAppIDFlag)),
+		Format:              viper.GetString(getFlagNameFromProfile(oktaProfile, FormatFlag)),
+		LegacyAWSVariables:  viper.GetBool(getFlagNameFromProfile(oktaProfile, LegacyAWSVariablesFlag)),
+		ExpiryAWSVariables:  viper.GetBool(getFlagNameFromProfile(oktaProfile, ExpiryAWSVariablesFlag)),
+		CacheAccessToken:    viper.GetBool(getFlagNameFromProfile(oktaProfile, CacheAccessTokenFlag)),
+		OIDCAppID:           viper.GetString(getFlagNameFromProfile(oktaProfile, OIDCClientIDFlag)),
+		OpenBrowser:         viper.GetBool(getFlagNameFromProfile(oktaProfile, OpenBrowserFlag)),
+		OrgDomain:           viper.GetString(getFlagNameFromProfile(oktaProfile, OrgDomainFlag)),
+		Profile:             viper.GetString(getFlagNameFromProfile(oktaProfile, ProfileFlag)),
+		QRCode:              viper.GetBool(getFlagNameFromProfile(oktaProfile, QRCodeFlag)),
+		WriteAWSCredentials: viper.GetBool(getFlagNameFromProfile(oktaProfile, WriteAWSCredentialsFlag)),
 	}
 	if attrs.Format == "" {
 		attrs.Format = EnvVarFormat
