@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package sessiontoken
+package okta
 
-import (
-	"net/http"
-	"testing"
-
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/stretchr/testify/require"
-)
-
-func TestEstablishToken(t *testing.T) {
-	config := &config.Config{}
-	_ = config.SetOrgDomain("example.okta.com")
-	_ = config.SetHTTPClient(http.DefaultClient)
-	_, err := NewSessionToken(config)
-	// config is not set so this should error
-	require.Error(t, err)
+// Application Okta API application object
+// See: https://developer.okta.com/docs/reference/api/apps/#application-object
+type Application struct {
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Settings struct {
+		App struct {
+			IdentityProviderARN string `json:"identityProviderArn"`
+			WebSSOClientID      string `json:"webSSOAllowedClient"`
+		} `json:"app"`
+	} `json:"settings"`
 }

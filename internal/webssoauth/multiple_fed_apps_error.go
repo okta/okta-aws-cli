@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package main
+package webssoauth
 
-import (
-	"github.com/okta/okta-aws-cli/cmd/root"
-)
+import "fmt"
 
-func main() {
-	defaultCommand := "web"
-	root.Execute(defaultCommand)
+//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
+func newMultipleFedAppsError(err error) multipleFedAppsError {
+	return multipleFedAppsError{err: err}
+}
+
+type multipleFedAppsError struct {
+	err error
+}
+
+func (n multipleFedAppsError) Error() string {
+	return fmt.Sprintf("Multiple AWS Federation Apps error: %+v", n.err)
 }

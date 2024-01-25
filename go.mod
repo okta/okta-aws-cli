@@ -1,11 +1,12 @@
 module github.com/okta/okta-aws-cli
 
-go 1.19
+go 1.21
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/aws/aws-sdk-go v1.44.94
 	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mdp/qrterminal v1.0.1
@@ -15,11 +16,15 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tidwall/pretty v1.2.0
-	golang.org/x/net v0.17.0
+	golang.org/x/net v0.7.0
 	golang.org/x/sys v0.13.0
+	gopkg.in/dnaeon/go-vcr.v3 v3.1.2
 	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+require golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

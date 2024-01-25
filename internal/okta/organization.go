@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package main
+package okta
 
-import (
-	"github.com/okta/okta-aws-cli/cmd/root"
-)
-
-func main() {
-	defaultCommand := "web"
-	root.Execute(defaultCommand)
+// Organization The well known Okta organization at GET /.well-known/okta-organization
+type Organization struct {
+	ID       string      `json:"id"`
+	Pipeline string      `json:"pipeline"`
+	Links    interface{} `json:"_links,omitempty"`
+	Settings interface{} `json:"settings,omitempty"`
 }

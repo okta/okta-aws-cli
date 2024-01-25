@@ -1,5 +1,198 @@
 # Changelog
 
+## 2.0.0 (January 25, 2024)
+
+V2 GA Release 🎉🎉
+
+### New commands
+
+`okta-aws-cli`'s functions are encapsulated as (sub)commands e.g. `$ okta-aws-cli [sub-command]`
+
+| Command | Description |
+|-----|-----|
+| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
+| `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
+| `debug` | Debug okta.yaml config file and exit. |
+
+### Environment variable name changes
+
+A small number of environment variable names have been renamed to be consistent
+in the naming convention for `okta-aws-cli` specific names.
+
+| old name | new name |
+|----------|----------|
+| `OKTA_ORG_DOMAIN` | `OKTA_AWSCLI_ORG_DOMAIN` |
+| `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
+| `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
+
+### Process credential provider output as JSON
+
+Emits IAM temporary credentials as JSON in [process
+credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
+format.
+
+```
+# In $/.aws/config
+[default]
+  # presumes OKTA_AWSCLI_* env vars are set
+  credential_process = okta-aws-cli m2m --format process-credentials
+```
+
+### Execute follow-on command
+
+Instead of scripting and/or eval'ing `okta-aws-cli` into a shell and then
+running another command have `okta-aws-cli` run the command directly passing
+along the IAM credentials as environment variables.
+
+```
+# CLI exec's anything after the double dash "--" arguments terminator as another command.
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --exec -- aws ec2 describe-instances
+```
+
+### Collect all roles for all AWS Fed Apps (IdP) at once
+
+`okta-aws-cli web` will collect all available AWS IAM Roles for all Okta AWS
+Federation apps (IdP) at once.  This is a feature specific to writing the
+`$HOME/.aws/credentials` file. Roles will be AWS account alias name (if STS list
+aliases is available on the given role) then `-` then abbreviated role name.
+
+
+```
+# AWS account alias "myorg", given IdP associated with "AWS Account Federation"
+# and an app associated with two roles.
+
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --write-aws-credentials \
+    --all-profiles
+
+Web browser will open the following URL to begin Okta device authorization for the AWS CLI
+
+https://test.okta.com/activate?user_code=QHDMVQTZ
+
+Updated profile "devorg-idp1-role1" in credentials file "/Users/me/.aws/credentials".
+Updated profile "devorg-idp1-role2" in credentials file "/Users/me/.aws/credentials".
+Updated profile "devorg-idp2-role1" in credentials file "/Users/me/.aws/credentials".
+Updated profile "prodorg-idp1-role1" in credentials file "/Users/me/.aws/credentials".
+```
+
+### Alternate web browser open command
+
+The `web` command will open the system's default web browser when the
+`--open-browser` flag is present. It is convenient to have the browser open on a
+separate profile. If the command to open the browser is known for the host
+system an alternate open command can be specified.
+
+```
+# Use macOS open to open browser in Chrome incognito mode
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --open-browser-command "open -na \"Google\ Chrome\" --args --incognito"
+```
+
+```
+# Open browser in Chrome "Profile 1" on macOS calling the Chrome executable directly
+$ okta-aws-cli web \
+    --org-domain test.okta.com \
+    --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
+    --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Profile\ 1\""
+```
+
+Windows examples
+```
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start msedge"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome --incognito"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome --profile-directory=\"Profile\ 1\""
+```
+
+### Friendly label matching with regular expressions
+
+Friendly label matching for IdPs and Roles with `$HOME/.okta/okta.yaml` file can
+be regular expressions.
+
+Example: your organization uses the same role naming convention across many
+different AWS accounts:
+
+```yaml
+---
+awscli:
+  idps:
+    "arn:aws:iam::123456789012:saml-provider/company-okta-idp": "Data Production"
+    "arn:aws:iam::012345678901:saml-provider/company-okta-idp": "Data Development"
+    "arn:aws:iam::901234567890:saml-provider/company-okta-idp": "Marketing Production"
+    "arn:aws:iam::890123456789:saml-provider/company-okta-idp": "Marketing Development"
+  roles:
+    "arn:aws:iam::.*:role/admin": "Admin"
+    "arn:aws:iam::.*:role/operator": "Ops"
+```
+
+```
+? Choose an IdP:  
+> Data Production
+  Data Development
+  Marketing Production
+  Marketing Development
+
+? Choose a Role:  [Use arrows to move, type to filter]
+> Admin
+  Ops
+```
+
+## 2.0.0-beta.6 (November 2, 2023)
+
+* New m2m flag `--private-key-file` read private key from file
+* Bug fix panic when okta.yaml is not established (it doesn't have to be established either)
+* Bug fix allowing `--version` w/o sub command [#150](https://github.com/okta/okta-aws-cli/pull/150), thanks [@malept](https://github.com/malept)!
+
+## 2.0.0-beta.5 (October 13, 2023)
+
+Friendly label matching for IdPs and Roles with `$HOME/.okta/okta.yaml` file can be regular expressions.
+
+## 2.0.0-beta.4 (October 12, 2023)
+
+`okta-aws-cli web` can have it's open browser command customized.
+
+## 2.0.0-beta.3 (October 10, 2023)
+
+`okta-aws-cli web` can collect all roles for all AWS Federation Apps (IdP) to an
+AWS credentials file in one invocation of the CLI.
+
+## 2.0.0-beta.2 (October 5, 2023)
+
+Execute a subcommand directly from `okta-aws-cli`
+
+## 2.0.0-beta.1 (October 2, 2023)
+
+Support for AWS CLI [process credential provider](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
+
+## 2.0.0-beta.0 (September 29, 2023)
+
+`okta-aws-cli`'s functions are encapsulated as (sub)commands `web`, `m2m`, `debug`
+
+A small number of environment variable names have been renamed to be consistent
+in the naming convention for `okta-aws-cli` specific names.
+
 ## 1.2.2 (August 30, 2023)
 
 * Ensure evaluation of CLI flag for profile is in the same order as the other flags [#124](https://github.com/okta/okta-aws-cli/pull/124)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package sessiontoken
+package aws
 
-import "fmt"
+import (
+	"encoding/json"
+	"testing"
+	"time"
 
-//lint:ignore U1000 Leaving for possible multiple AWS Fed app feature
-func newMultipleFedAppsError(err error) multipleFedAppsError {
-	return multipleFedAppsError{err: err}
-}
+	"github.com/stretchr/testify/require"
+)
 
-type multipleFedAppsError struct {
-	err error
-}
-
-func (n multipleFedAppsError) Error() string {
-	return fmt.Sprintf("Multiple AWS Federation Apps error: %+v", n.err)
+func TestCredentialJSON(t *testing.T) {
+	hbtGo := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	c := ProcessCredential{
+		Expiration: &hbtGo,
+	}
+	credStr, err := json.Marshal(c)
+	require.NoError(t, err)
+	require.Equal(t, `{"Expiration":"2009-11-10T23:00:00Z"}`, string(credStr))
 }
