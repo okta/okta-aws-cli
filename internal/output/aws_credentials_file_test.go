@@ -53,12 +53,12 @@ func TestINIFormatCredentialsContent(t *testing.T) {
 	err = f.Close()
 	assert.NoError(t, err)
 
-	awsCreds := &aws.Credential{
+	cfc := &aws.CredsFileCredential{
 		AccessKeyID:     "d",
 		SecretAccessKey: "e",
 		SessionToken:    "f",
 	}
-	config, err := updateConfig(filename, "test", awsCreds, false, false, "")
+	config, err := updateConfig(filename, "test", cfc, false, false, "")
 	assert.NoError(t, err)
 
 	err = config.SaveTo(filename)

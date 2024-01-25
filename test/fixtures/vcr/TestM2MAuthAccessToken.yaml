@@ -1,0 +1,42 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: test.dne-okta.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - application/json
+            Content-Type:
+                - application/x-www-form-urlencoded
+        url: https://test.dne-okta.com/oauth2/aus8w23r13NvyUwln1d7/v1/token?client_assertion=abc123&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&grant_type=client_credentials&scope=okta-m2m-access
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"token_type":"Bearer","expires_in":3600,"access_token":"eyJraWQiOiJjRnZ0bHRBbzF1cVhMT0ZLOGxFTVA2a3czd25pVVRHMVFSckhvQXBNTkF3IiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULktJNVd6YzBQYUFZZC14YjB5UXJXX0NHZUhoZnNNdUtrZGxUVkZlbXhQblEiLCJpc3MiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20vb2F1dGgyL2F1czh3MjNyMTNOdnlVd2xuMWQ3IiwiYXVkIjoiaHR0cHM6Ly9va3RhLWF3cy1jbGktYXV0aG9yaXplciIsImlhdCI6MTY5NTk1MDE5MywiZXhwIjoxNjk1OTUzNzkzLCJjaWQiOiIwb2FhNGh0ZzcyVE5ya1REcjFkNyIsInNjcCI6WyJva3RhLW0ybS1hY2Nlc3MiXSwic3ViIjoiMG9hYTRodGc3MlROcmtURHIxZDcifQ.OAs2_oZtpDnZdy4jTcjXA8D9VTFibiJeXZ3YfrntaTr6CRNQdKtWCoJHR4yPQvTEU8IjHW2uZA635ozdubhRfYd0Hv688bQHHyR8xZOC-BfyXA1xmVph1ei4HNwAZQpG-4VL1L99KvuvEh0FjtwZpcZx5_B_0Ag7LoQTVhj2nfPrjLYctIzVYRzIE29dVmDefqgJ5gG6FcK4GthMJBMK2H_mMiJQHDtlBGX7GXb7Hkt9FfA5J0HcMxq9x7yKJM6S_fTePXJwFMOBwQJX4zZa1jstDT0squxgPMh14asko8_dFXe9lC8NVrixbhs6TkiOEKGvma1u0V8yAS0qC5jvbg","scope":"okta-m2m-access"}'
+        headers:
+            Content-Type:
+                - application/json
+            Date:
+                - Fri, 29 Sep 2023 01:16:34 GMT
+            Report-To:
+                - '{"group":"csp","max_age":31536000,"endpoints":[{"url":"https://oktacsp.report-uri.com/a/t/g"}],"include_subdomains":true}'
+        status: 200 OK
+        code: 200
+        duration: 504.687465ms

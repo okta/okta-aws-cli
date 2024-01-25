@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package main
+package okta
 
-import (
-	"github.com/okta/okta-aws-cli/cmd/root"
+const (
+	// OAuthV1TokenEndpointFormat sprintf format string for base oauth server token endpoint
+	OAuthV1TokenEndpointFormat = "https://%s/oauth2/v1/token"
+
+	// CustomAuthzV1TokenEndpointFormat sprintf format string for custom oauth server token endpoint
+	CustomAuthzV1TokenEndpointFormat = "https://%s/oauth2/%s/v1/token"
 )
-
-func main() {
-	defaultCommand := "web"
-	root.Execute(defaultCommand)
-}

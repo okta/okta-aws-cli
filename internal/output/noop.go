@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+	* Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,15 +12,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
-package main
+package output
 
 import (
-	"github.com/okta/okta-aws-cli/cmd/root"
+	oaws "github.com/okta/okta-aws-cli/internal/aws"
+	"github.com/okta/okta-aws-cli/internal/config"
 )
 
-func main() {
-	defaultCommand := "web"
-	root.Execute(defaultCommand)
+// NoopCredentials Don't output credentials
+type NoopCredentials struct{}
+
+// NewNoopCredentials Creates a new NoopCredentials
+func NewNoopCredentials() *NoopCredentials {
+	return &NoopCredentials{}
+}
+
+// Output Satisfies the Outputter interface and outputs nothing
+func (n *NoopCredentials) Output(c *config.Config, cc *oaws.CredentialContainer) error {
+	// no-op
+	return nil
 }
