@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -239,6 +240,28 @@ to collect a proper IAM role for the AWS CLI operator.`,
 		vipAwsRegion := viper.GetString(strings.ToLower(awsRegionEnvVar))
 		if vipAwsRegion != "" && os.Getenv(awsRegionEnvVar) == "" {
 			_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
+		}
+	}
+
+	// Check if .okta-aws-cli/conifg.yml exists
+	usr, err := user.Current()
+	if err == nil {
+		oktaConfig := filepath.Join(usr.HomeDir, ".okta-aws-cli", "config.yml")
+		if _, err := os.Stat(oktaConfig); err == nil || !errors.Is(err, os.ErrNotExist) {
+			viper.AddConfigPath(filepath.Join(usr.HomeDir, ".okta-aws-cli"))
+			viper.SetConfigName("config.yml")
+			viper.SetConfigType("yml")
+
+			_ = viper.ReadInConfig()
+
+			// After viper reads in the dotenv file check if AWS_REGION is set
+			// there. The value will be keyed by lower case name. If it is, set
+			// AWS_REGION as an ENV VAR if it hasn't already been.
+			awsRegionEnvVar := "AWS_REGION"
+			vipAwsRegion := viper.GetString(strings.ToLower(awsRegionEnvVar))
+			if vipAwsRegion != "" && os.Getenv(awsRegionEnvVar) == "" {
+				_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
+			}
 		}
 	}
 	viper.AutomaticEnv()
