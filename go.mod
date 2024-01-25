@@ -6,6 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/aws/aws-sdk-go v1.44.94
 	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mdp/qrterminal v1.0.1
@@ -23,10 +24,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require (
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
-)
+require golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
