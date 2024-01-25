@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/tidwall/pretty v1.2.0
 	golang.org/x/net v0.7.0
-	golang.org/x/sys v0.5.0
+	golang.org/x/sys v0.13.0
 	gopkg.in/dnaeon/go-vcr.v3 v3.1.2
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/square/go-jose.v2 v2.6.0
