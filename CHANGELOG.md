@@ -1,11 +1,10 @@
 # Changelog
 
-## 2.0.0 (TBD)
+## 2.0.0 (January 25, 2024)
 
-NOTE: These are the expected 2.0.0 release items; see 2.0.0-beta.X notes for
-incremental changes during beta development
+V2 GA Release 🎉🎉
 
-### (completed) New commands
+### New commands
 
 `okta-aws-cli`'s functions are encapsulated as (sub)commands e.g. `$ okta-aws-cli [sub-command]`
 
@@ -15,7 +14,7 @@ incremental changes during beta development
 | `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. |
 | `debug` | Debug okta.yaml config file and exit. |
 
-### (completed) Environment variable name changes
+### Environment variable name changes
 
 A small number of environment variable names have been renamed to be consistent
 in the naming convention for `okta-aws-cli` specific names.
@@ -26,7 +25,7 @@ in the naming convention for `okta-aws-cli` specific names.
 | `OKTA_OIDC_CLIENT_ID` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | `OKTA_AWS_ACCOUNT_FEDERATION_APP_ID` | `OKTA_AWSCLI_AWS_ACCOUNT_FEDERATION_APP_ID` |
 
-### (completed) Process credential provider output as JSON
+### Process credential provider output as JSON
 
 Emits IAM temporary credentials as JSON in [process
 credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
@@ -39,7 +38,7 @@ format.
   credential_process = okta-aws-cli m2m --format process-credentials
 ```
 
-### (completed) Execute follow-on command
+### Execute follow-on command
 
 Instead of scripting and/or eval'ing `okta-aws-cli` into a shell and then
 running another command have `okta-aws-cli` run the command directly passing
@@ -53,7 +52,7 @@ $ okta-aws-cli web \
     --exec -- aws ec2 describe-instances
 ```
 
-### (completed) Collect all roles for all AWS Fed Apps (IdP) at once
+### Collect all roles for all AWS Fed Apps (IdP) at once
 
 `okta-aws-cli web` will collect all available AWS IAM Roles for all Okta AWS
 Federation apps (IdP) at once.  This is a feature specific to writing the
@@ -81,7 +80,7 @@ Updated profile "devorg-idp2-role1" in credentials file "/Users/me/.aws/credenti
 Updated profile "prodorg-idp1-role1" in credentials file "/Users/me/.aws/credentials".
 ```
 
-### (completed) Alternate web browser open command
+### Alternate web browser open command
 
 The `web` command will open the system's default web browser when the
 `--open-browser` flag is present. It is convenient to have the browser open on a
@@ -104,7 +103,30 @@ $ okta-aws-cli web \
     --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Profile\ 1\""
 ```
 
-### (completed) Friendly label matching with regular expressions
+Windows examples
+```
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start msedge"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome --incognito"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome --profile-directory=\"Profile\ 1\""
+```
+
+### Friendly label matching with regular expressions
 
 Friendly label matching for IdPs and Roles with `$HOME/.okta/okta.yaml` file can
 be regular expressions.

@@ -763,6 +763,7 @@ Updated profile "prod-org-containerops-eks-full" in credentials file "/Users/me/
 
 `okta-aws-cli web` can have it's open browser command customized.
 
+#### OSX / MacBook
 ```
 # OSX examples, the device authorization URL is appended to the browser args.
 
@@ -775,6 +776,35 @@ $ okta-aws-cli web \
   --oidc-client-id abc \
   --org-domain test.okta.com \
   --open-browser-command "open -na \"Google\ Chrome\" --args --incognito"
+```
+
+#### Windows
+
+```
+REM Windows examples, the device authorization URL is appended to the browser
+REM args using cmd.exe with the run command flag /C used to spawn the browser
+REM that is installed on the host OS e.g. medge, chrome, firefox . Additional
+REM arguments can be passed on to the browser command that are valid for it.
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start msedge"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome --incognito"
+
+> okta-aws-cli web \
+  --oidc-client-id abc \
+  --org-domain test.okta.com \
+  --open-browser-command "cmd.exe /C start chrome --profile-directory=\"Profile\ 1\""
 ```
 
 ### Help
