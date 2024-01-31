@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.1 (January 31, 2024)
+
+### ENHANCEMENTS
+
+ * Packaged binary's don't have postfix version value on file name [#154](https://github.com/okta/okta-aws-cli/pull/154)
+
+### BUG FIXES
+
+ * Binaries produced by golang for Windows amd64 runtimes are triggering AVs so we will not publish this for the OS/Arch [#166](https://github.com/okta/okta-aws-cli/pull/166)
+ * CLI version incorrectly rev'd on previous release [#164](https://github.com/okta/okta-aws-cli/pull/164)
+
 ## 2.0.0 (January 25, 2024)
 
 V2 GA Release 🎉🎉
