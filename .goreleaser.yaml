@@ -15,7 +15,10 @@ builds:
       - darwin
       - freebsd
     main: ./cmd/okta-aws-cli/
-    binary: '{{ .ProjectName }}_v{{ .Version }}'
+    binary: '{{ .ProjectName }}'
+    ignore:
+      - goos: windows
+        goarch: amd64
 archives:
   - id: zip
     format: zip
