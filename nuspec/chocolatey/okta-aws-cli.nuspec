@@ -7,7 +7,7 @@
     <owners>Okta, Inc.</owners>
     <title>Okta AWS CLI (Install)</title>
     <authors>Okta</authors>
-    <packageSourceUrl>https://github.com/okta/okta-aws-cli/tree/master/nuspec/chocolatey</packageSourceUrl>
+    <packageSourceUrl>https://github.com/okta/okta-aws-cli/blob/master/nuspec/chocolatey</packageSourceUrl>
     <projectUrl>https://github.com/okta/okta-aws-cli</projectUrl>
     <iconUrl>https://cdn.brandfolder.io/R30ALRIS/at/mtg52xxxcr939z2ns8jrg3mz/Okta_Aura_CMYK_Black.png</iconUrl>
     <copyright>2024-Present Okta, Inc.</copyright>
