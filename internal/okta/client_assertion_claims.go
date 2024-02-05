@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package main
+package okta
 
 import (
-	"github.com/okta/okta-aws-cli/cmd/root"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func main() {
-	defaultCommand := "web"
-	root.Execute(defaultCommand)
+// ClientAssertionClaims Okta Client Assertion Claims model
+type ClientAssertionClaims struct {
+	Issuer   string           `json:"iss,omitempty"`
+	Subject  string           `json:"sub,omitempty"`
+	Audience string           `json:"aud,omitempty"`
+	Expiry   *jwt.NumericDate `json:"exp,omitempty"`
+	IssuedAt *jwt.NumericDate `json:"iat,omitempty"`
+	ID       string           `json:"jti,omitempty"`
 }

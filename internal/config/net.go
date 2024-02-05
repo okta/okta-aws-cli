@@ -27,13 +27,16 @@ import (
 	"time"
 )
 
+// PrependDebug debug logline label
+const PrependDebug = "[DEBUG] "
+
 func debugRequest(req *http.Request) {
 	if req == nil {
 		return
 	}
 	reqData, err := httputil.DumpRequest(req, true)
 	if err == nil {
-		log.Printf("[DEBUG] "+logReqMsg, req.RequestURI, prettyPrintJSONLines(reqData))
+		log.Printf(PrependDebug+logReqMsg, req.RequestURI, prettyPrintJSONLines(reqData))
 	} else {
 		log.Printf("[ERROR] %s API Request error: %#v", req.RequestURI, err)
 	}
@@ -45,7 +48,7 @@ func debugResponse(resp *http.Response) {
 	}
 	respData, err := httputil.DumpResponse(resp, true)
 	if err == nil {
-		log.Printf("[DEBUG] "+logRespMsg, resp.Request.RequestURI, prettyPrintJSONLines(respData))
+		log.Printf(PrependDebug+logRespMsg, resp.Request.RequestURI, prettyPrintJSONLines(respData))
 	} else {
 		log.Printf("[ERROR] %s API Response error: %#v", resp.Request.RequestURI, err)
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-Present, Okta, Inc.
+ * Copyright (c) 2023-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package main
+package okta
 
-import (
-	"github.com/okta/okta-aws-cli/cmd/root"
-)
-
-func main() {
-	defaultCommand := "web"
-	root.Execute(defaultCommand)
+// APIError Wrapper for Okta API error
+type APIError struct {
+	Error            string `json:"error,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
 }
