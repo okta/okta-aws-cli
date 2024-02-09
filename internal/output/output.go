@@ -30,13 +30,28 @@ type Outputter interface {
 
 // RenderAWSCredential Renders the credentials in the prescribed format.
 func RenderAWSCredential(cfg *config.Config, cc *oaws.CredentialContainer) error {
+	expiry := time.Now().Add(time.Duration(cfg.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
 	var o Outputter
 	switch cfg.Format() {
 	case config.AWSCredentialsFormat:
-		expiry := time.Now().Add(time.Duration(cfg.AWSSessionDuration()) * time.Second).Format(time.RFC3339)
 		o = NewAWSCredentialsFile(cfg.LegacyAWSVariables(), cfg.ExpiryAWSVariables(), expiry)
 	case config.ProcessCredentialsFormat:
 		o = NewProcessCredentials()
+
+		// check special case where we are running in process credentials
+		// format but we also need to write to the credentials file e.g. in
+		// ~/.aws/credentials:
+		//
+		// [default]
+		// credential_process = okta-aws-cli web --format process-credentials --oidc-client-id abc123 --org-domain test.okta.com --aws-iam-idp arn:aws:iam::123:saml-provider/ForOkta --aws-iam-role arn:aws:iam::123:role/S3_Read --open-browser --write-aws-credentials
+		//
+		if cfg.WriteAWSCredentials() {
+			// attempt to write the creds first
+			credsOut := NewAWSCredentialsFile(cfg.LegacyAWSVariables(), cfg.ExpiryAWSVariables(), expiry)
+			if err := credsOut.Output(cfg, cc); err != nil {
+				return err
+			}
+		}
 	case config.NoopFormat:
 		o = NewNoopCredentials()
 	default:

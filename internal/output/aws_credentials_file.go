@@ -124,12 +124,13 @@ func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legac
 }
 
 // updateIni will comment out any keys that are not "aws_access_key_id",
-// "aws_secret_access_key", or "aws_session_token"
+// "aws_secret_access_key", "aws_session_token", "credential_process"
 func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool) (*ini.File, error) {
 	ignore := []string{
 		"aws_access_key_id",
 		"aws_secret_access_key",
 		"aws_session_token",
+		"credential_process",
 	}
 	if legacyVars {
 		ignore = append(ignore, "aws_security_token")
