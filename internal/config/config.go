@@ -441,12 +441,12 @@ func readConfig() (Attributes, error) {
 	if !attrs.WriteAWSCredentials {
 		attrs.WriteAWSCredentials = viper.GetBool(downCase(WriteAWSCredentialsEnvVar))
 	}
-	if attrs.WriteAWSCredentials {
-		// writing aws creds option implies "aws-credentials" format
+	if attrs.WriteAWSCredentials && attrs.Format != ProcessCredentialsFormat {
+		// writing aws creds option implies "aws-credentials" format unless format has already been set as process credentials
 		attrs.Format = AWSCredentialsFormat
 	}
-	if attrs.AllProfiles {
-		// writing all aws profiles option implies "aws-credentials" format
+	if attrs.AllProfiles && attrs.Format != ProcessCredentialsFormat {
+		// writing all aws profiles option implies "aws-credentials" format unless format has already been set as process credentials
 		attrs.Format = AWSCredentialsFormat
 	}
 	if !attrs.OpenBrowser {
