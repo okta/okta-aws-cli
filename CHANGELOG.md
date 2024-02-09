@@ -1,5 +1,13 @@
 # Changelog
 
+## Major.Minor.Revision (Month Day, Year)
+
+TBD
+
+### BUG FIXES
+
+* Open browser and open browser command behavior was fouled in v2 release [#NNN](https://github.com/okta/okta-aws-cli/pull/NNN), thanks [@monde](https://github.com/monde)!
+
 ## 2.0.1 (January 31, 2024)
 
 ### ENHANCEMENTS

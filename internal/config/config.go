@@ -453,9 +453,11 @@ func readConfig() (Attributes, error) {
 		attrs.OpenBrowser = viper.GetBool(downCase(OpenBrowserEnvVar))
 	}
 	if attrs.OpenBrowserCommand == "" {
+		attrs.OpenBrowserCommand = viper.GetString(downCase(OpenBrowserCommandEnvVar))
+	}
+	if attrs.OpenBrowserCommand != "" {
 		// open browser command implies open browser
 		attrs.OpenBrowser = true
-		attrs.OpenBrowserCommand = viper.GetString(downCase(OpenBrowserCommandEnvVar))
 	}
 	if !attrs.Debug {
 		attrs.Debug = viper.GetBool(downCase(DebugEnvVar))
