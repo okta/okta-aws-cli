@@ -86,6 +86,13 @@ func init() {
 			EnvVar: config.FormatEnvVar,
 		},
 		{
+			Name:   config.AWSRegionFlag,
+			Short:  "n",
+			Value:  "",
+			Usage:  "Preset AWS Region",
+			EnvVar: config.AWSRegionEnvVar,
+		},
+		{
 			Name:   config.AWSCredentialsFlag,
 			Short:  "w",
 			Value:  awsCredentialsFilename,

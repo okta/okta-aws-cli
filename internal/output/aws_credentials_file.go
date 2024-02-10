@@ -65,8 +65,8 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string) error {
-	config, err := updateConfig(filename, profile, cfc, legacyVars, expiryVars, expiry)
+func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string, regionVar string) error {
+	config, err := updateConfig(filename, profile, cfc, legacyVars, expiryVars, expiry, regionVar)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacy
 	return nil
 }
 
-func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string) (config *ini.File, err error) {
+func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string, region string) (config *ini.File, err error) {
 	config, err = ini.Load(filename)
 	if err != nil {
 		return
@@ -102,11 +102,17 @@ func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legac
 	if legacyVars {
 		builder.AddField(SecurityTokenField, "", `ini:"aws_security_token"`)
 	}
+	if region != "" {
+		builder.AddField(utils.Region, "", `ini:"region"`)
+	}
 
 	instance := builder.Build().New()
 	reflect.ValueOf(instance).Elem().FieldByName(utils.AccessKeyID).SetString(cfc.AccessKeyID)
 	reflect.ValueOf(instance).Elem().FieldByName(utils.SecretAccessKey).SetString(cfc.SecretAccessKey)
 	reflect.ValueOf(instance).Elem().FieldByName(utils.SessionToken).SetString(cfc.SessionToken)
+	if region != "" {
+		reflect.ValueOf(instance).Elem().FieldByName(utils.Region).SetString(region)
+	}
 
 	if expiryVars {
 		reflect.ValueOf(instance).Elem().FieldByName(ExpirationField).SetString(expiry)
@@ -120,12 +126,12 @@ func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legac
 		return
 	}
 
-	return updateINI(config, profile, legacyVars, expiryVars)
+	return updateINI(config, profile, legacyVars, expiryVars, region)
 }
 
 // updateIni will comment out any keys that are not "aws_access_key_id",
 // "aws_secret_access_key", "aws_session_token", "credential_process"
-func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool) (*ini.File, error) {
+func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool, region string) (*ini.File, error) {
 	ignore := []string{
 		"aws_access_key_id",
 		"aws_secret_access_key",
@@ -137,6 +143,9 @@ func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars boo
 	}
 	if expiryVars {
 		ignore = append(ignore, "x_security_token_expires")
+	}
+	if region != "" {
+		ignore = append(ignore, "region")
 	}
 	section := config.Section(profile)
 	comments := []string{}
@@ -171,6 +180,7 @@ type AWSCredentialsFile struct {
 	LegacyAWSVariables bool
 	ExpiryAWSVariables bool
 	Expiry             string
+	Region             string
 }
 
 // NewAWSCredentialsFile Creates a new
@@ -230,6 +240,11 @@ aws_session_token = %s
 		credArgs = append(credArgs, a.Expiry)
 	}
 
+	if c.AWSRegion() != "" {
+		creds = fmt.Sprintf("%sregion = %%s\n", creds)
+		credArgs = append(credArgs, c.AWSRegion())
+	}
+
 	creds = fmt.Sprintf(creds, credArgs...)
 
 	_, err = f.WriteString(creds)
@@ -255,7 +270,7 @@ func (a *AWSCredentialsFile) writeConfig(c *config.Config, cfc *oaws.CredsFileCr
 		return err
 	}
 
-	return saveProfile(filename, profile, cfc, a.LegacyAWSVariables, a.ExpiryAWSVariables, a.Expiry)
+	return saveProfile(filename, profile, cfc, a.LegacyAWSVariables, a.ExpiryAWSVariables, a.Expiry, c.AWSRegion())
 }
 
 func contains(ignore []string, name string) bool {

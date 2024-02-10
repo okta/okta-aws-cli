@@ -114,6 +114,10 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 
 func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (cc *oaws.CredentialContainer, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(m.config.HTTPClient())
+	region := m.config.AWSRegion()
+	if region != "" {
+		awsCfg = awsCfg.WithRegion(region)
+	}
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
 		return

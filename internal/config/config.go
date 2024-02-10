@@ -62,6 +62,8 @@ const (
 	AWSIAMIdPFlag = "aws-iam-idp"
 	// AWSIAMRoleFlag cli flag const
 	AWSIAMRoleFlag = "aws-iam-role"
+	// AWSRegion cli flag const
+	AWSRegionFlag = "aws-region"
 	// CustomScopeFlag cli flag const
 	CustomScopeFlag = "custom-scope"
 	// DebugFlag cli flag const
@@ -113,6 +115,8 @@ const (
 	AWSIAMRoleEnvVar = "OKTA_AWSCLI_IAM_ROLE"
 	// AWSSessionDurationEnvVar env var const
 	AWSSessionDurationEnvVar = "OKTA_AWSCLI_SESSION_DURATION"
+	// AWSRegionEnvVar env var const
+	AWSRegionEnvVar = "OKTA_AWSCLI_AWS_REGION"
 	// CacheAccessTokenEnvVar env var const
 	CacheAccessTokenEnvVar = "OKTA_AWSCLI_CACHE_ACCESS_TOKEN"
 	// CustomScopeEnvVar env var const
@@ -194,6 +198,7 @@ type Config struct {
 	awsCredentials      string
 	awsIAMIdP           string
 	awsIAMRole          string
+	awsRegion           string
 	awsSessionDuration  int64
 	cacheAccessToken    bool
 	customScope         string
@@ -225,6 +230,7 @@ type Attributes struct {
 	AWSCredentials      string
 	AWSIAMIdP           string
 	AWSIAMRole          string
+	AWSRegion           string
 	AWSSessionDuration  int64
 	CacheAccessToken    bool
 	CustomScope         string
@@ -268,8 +274,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 		awsCredentials:      attrs.AWSCredentials,
 		awsIAMIdP:           attrs.AWSIAMIdP,
 		awsIAMRole:          attrs.AWSIAMRole,
-		cacheAccessToken:    attrs.CacheAccessToken,
-		customScope:         attrs.CustomScope,
+		awsRegion:           attrs.AWSRegion,
 		debug:               attrs.Debug,
 		debugAPICalls:       attrs.DebugAPICalls,
 		expiryAWSVariables:  attrs.ExpiryAWSVariables,
@@ -318,6 +323,7 @@ func readConfig() (Attributes, error) {
 		AWSIAMIdP:           viper.GetString(AWSIAMIdPFlag),
 		AWSIAMRole:          viper.GetString(AWSIAMRoleFlag),
 		AWSSessionDuration:  viper.GetInt64(SessionDurationFlag),
+		AWSRegion:           viper.GetString(AWSRegionFlag),
 		CustomScope:         viper.GetString(CustomScopeFlag),
 		Debug:               viper.GetBool(DebugFlag),
 		DebugAPICalls:       viper.GetBool(DebugAPICallsFlag),
@@ -549,6 +555,15 @@ func (c *Config) AWSIAMRole() string {
 func (c *Config) SetAWSIAMRole(role string) error {
 	c.awsIAMRole = role
 	return nil
+}
+
+func (c *Config) SetAWSRegion(region string) error {
+	c.awsRegion = region
+	return nil
+}
+
+func (c *Config) AWSRegion() string {
+	return c.awsRegion
 }
 
 // AWSSessionDuration --
