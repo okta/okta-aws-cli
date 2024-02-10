@@ -62,7 +62,7 @@ const (
 	AWSIAMIdPFlag = "aws-iam-idp"
 	// AWSIAMRoleFlag cli flag const
 	AWSIAMRoleFlag = "aws-iam-role"
-	// AWSRegion cli flag const
+	// AWSRegionFlag cli flag const
 	AWSRegionFlag = "aws-region"
 	// CustomScopeFlag cli flag const
 	CustomScopeFlag = "custom-scope"
@@ -557,13 +557,15 @@ func (c *Config) SetAWSIAMRole(role string) error {
 	return nil
 }
 
+// AWSRegion --
+func (c *Config) AWSRegion() string {
+	return c.awsRegion
+}
+
+// SetAWSRegion --
 func (c *Config) SetAWSRegion(region string) error {
 	c.awsRegion = region
 	return nil
-}
-
-func (c *Config) AWSRegion() string {
-	return c.awsRegion
 }
 
 // AWSSessionDuration --
