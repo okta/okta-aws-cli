@@ -25,6 +25,7 @@ import (
 // the different credentials formats
 type CredentialContainer struct {
 	AccessKeyID     string
+	Region          string
 	SecretAccessKey string
 	SessionToken    string
 	Expiration      *time.Time
@@ -44,6 +45,7 @@ type EnvVarCredential struct {
 // credentials file
 type CredsFileCredential struct {
 	AccessKeyID     string `ini:"aws_access_key_id"`
+	Region          string `ini:"region"`
 	SecretAccessKey string `ini:"aws_secret_access_key"`
 	SessionToken    string `ini:"aws_session_token"`
 

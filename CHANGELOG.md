@@ -4,9 +4,13 @@
 
 TBD
 
+### ENHANCEMENTS
+
+* Explicitly set AWS Region with CLI flag `--aws-region` [#174](https://github.com/okta/okta-aws-cli/pull/174), thanks [@euchen-circle](https://github.com/euchen-circle), [@igaskin](https://github.com/igaskin)!
+
 ### BUG FIXES
 
-* Process credentials format was not emitting JSON correctly when `--write-aws-credentials` flag is present [#NNN](https://github.com/okta/okta-aws-cli/pull/NNN), thanks [@monde](https://github.com/monde)!
+* Process credentials format was not emitting JSON correctly when `--write-aws-credentials` flag is present [#177](https://github.com/okta/okta-aws-cli/pull/177), thanks [@monde](https://github.com/monde)!
 * Open browser and open browser command behavior was fouled in v2 release [#172](https://github.com/okta/okta-aws-cli/pull/172), thanks [@monde](https://github.com/monde)!
 
 ## 2.0.1 (January 31, 2024)

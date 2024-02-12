@@ -36,8 +36,10 @@ const (
 
 	// AccessKeyID AWS creds access key ID
 	AccessKeyID = "AccessKeyID"
+	// Region region
+	Region = "Region"
 	// SecretAccessKey AWS creds secret access key
 	SecretAccessKey = "SecretAccessKey"
-	// SessionToken AWS creds session tokne
+	// SessionToken AWS creds session token
 	SessionToken = "SessionToken"
 )

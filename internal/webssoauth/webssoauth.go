@@ -105,8 +105,9 @@ type WebSSOAuthentication struct {
 
 // idpAndRole IdP and role pairs
 type idpAndRole struct {
-	idp  string
-	role string
+	idp    string
+	role   string
+	region string
 }
 
 var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
@@ -171,7 +172,7 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 		}
 		if w.config.FedAppID() != "" {
 			// Alternate path when operator knows their AWS Fed app ID
-			err = w.establishTokenWithFedAppID(clientID, w.config.FedAppID(), at)
+			err = w.establishTokenWithFedAppID(clientID, w.config.FedAppID(), at, w.config.AWSRegion())
 			if at != nil && err != nil {
 				// possible bad cached access token, retry
 				at = nil
@@ -210,7 +211,7 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		// special case, we're going to run the table and get all profiles for all apps
 		errArr := []error{}
 		for _, app := range apps {
-			if err = w.establishTokenWithFedAppID(clientID, app.ID, at); err != nil {
+			if err = w.establishTokenWithFedAppID(clientID, app.ID, at, w.config.AWSRegion()); err != nil {
 				errArr = append(errArr, err)
 			}
 		}
@@ -227,7 +228,7 @@ AWS Federation App with --aws-acct-fed-app-id FED_APP_ID
 		}
 	}
 
-	return w.establishTokenWithFedAppID(clientID, fedAppID, at)
+	return w.establishTokenWithFedAppID(clientID, fedAppID, at, w.config.AWSRegion())
 }
 
 // choiceFriendlyLabelIDP returns a friendly choice for pretty printing IDP
@@ -310,7 +311,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 	return idps[selected].ID, nil
 }
 
-func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID string, at *okta.AccessToken) error {
+func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID string, at *okta.AccessToken, region string) error {
 	at, err := w.fetchSSOWebToken(clientID, fedAppID, at)
 	if err != nil {
 		return err
@@ -331,8 +332,9 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		if err != nil {
 			return err
 		}
+		iar.region = region
 
-		cc, err := w.awsAssumeRoleWithSAML(iar, assertion)
+		cc, err := w.awsAssumeRoleWithSAML(iar, assertion, region)
 		if err != nil {
 			return err
 		}
@@ -349,7 +351,7 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 			}
 		}
 	} else {
-		ccch := w.fetchAllAWSCredentialsWithSAMLRole(idpRolesMap, assertion)
+		ccch := w.fetchAllAWSCredentialsWithSAMLRole(idpRolesMap, assertion, region)
 		if err != nil {
 			return err
 		}
@@ -368,8 +370,11 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 
 // awsAssumeRoleWithSAML Get AWS Credentials with an STS Assume Role With SAML AWS
 // API call.
-func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion string) (cc *oaws.CredentialContainer, err error) {
+func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion, region string) (cc *oaws.CredentialContainer, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(w.config.HTTPClient())
+	if region != "" {
+		awsCfg = awsCfg.WithRegion(region)
+	}
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
 		return
@@ -1104,17 +1109,17 @@ func (w *WebSSOAuthentication) consolePrint(format string, a ...any) {
 }
 
 // fetchAllAWSCredentialsWithSAMLRole Gets all AWS Credentials with an STS Assume Role with SAML AWS API call.
-func (w *WebSSOAuthentication) fetchAllAWSCredentialsWithSAMLRole(idpRolesMap map[string][]string, assertion string) <-chan *oaws.CredentialContainer {
+func (w *WebSSOAuthentication) fetchAllAWSCredentialsWithSAMLRole(idpRolesMap map[string][]string, assertion, region string) <-chan *oaws.CredentialContainer {
 	ccch := make(chan *oaws.CredentialContainer)
 	var wg sync.WaitGroup
 
 	for idp, roles := range idpRolesMap {
 		for _, role := range roles {
-			iar := &idpAndRole{idp, role}
+			iar := &idpAndRole{idp, role, region}
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				cc, err := w.awsAssumeRoleWithSAML(iar, assertion)
+				cc, err := w.awsAssumeRoleWithSAML(iar, assertion, region)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "failed to fetch AWS creds IdP %q, and Role %q, error:\n%+v\n", iar.idp, iar.role, err)
 					return
