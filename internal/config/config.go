@@ -88,8 +88,6 @@ const (
 	KeyIDFlag = "key-id"
 	// ProfileFlag cli flag const
 	ProfileFlag = "profile"
-	// awsProfileFlag cli flag const
-	awsProfileFlag = "okta-profile"
 	// QRCodeFlag cli flag const
 	QRCodeFlag = "qr-code"
 	// SessionDurationFlag cli flag const
@@ -155,8 +153,6 @@ const (
 	KeyIDEnvVar = "OKTA_AWSCLI_KEY_ID"
 	// ProfileEnvVar env var const
 	ProfileEnvVar = "OKTA_AWSCLI_PROFILE"
-	// awsProfileEnvVar env var const
-	awsProfileEnvVar = "OKTA_AWSCLI_OKTA_PROFILE"
 	// QRCodeEnvVar env var const
 	QRCodeEnvVar = "OKTA_AWSCLI_QR_CODE"
 	// WriteAWSCredentialsEnvVar env var const
