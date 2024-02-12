@@ -320,7 +320,6 @@ func getFlagNameFromProfile(awsProfile string, flag string) string {
 
 func readConfig() (Attributes, error) {
 	awsProfile := viper.GetString(ProfileFlag)
-	fmt.Printf("AWS PRofile: %v\n", awsProfile)
 
 	attrs := Attributes{
 		AllProfiles:         viper.GetBool(getFlagNameFromProfile(awsProfile, AllProfilesFlag)),
