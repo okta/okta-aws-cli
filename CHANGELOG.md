@@ -6,6 +6,9 @@ TBD
 
 ### ENHANCEMENTS
 
+* Multiple okta-aws-cli configurations in `okta.yaml` by AWS profile name.
+ [#162](https://github.com/okta/okta-aws-cli/pull/162), thanks [@MatthewJohn](https://github.com/MatthewJohn)!
+
 * Explicitly set AWS Region with CLI flag `--aws-region` [#174](https://github.com/okta/okta-aws-cli/pull/174), thanks [@euchen-circle](https://github.com/euchen-circle), [@igaskin](https://github.com/igaskin)!
 
 ### BUG FIXES

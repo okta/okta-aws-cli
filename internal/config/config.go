@@ -17,6 +17,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -41,6 +42,10 @@ const (
 	// Version app version
 	Version = "2.0.1"
 
+	////////////////////////////////////////////////////////////
+	// FORMATS
+	////////////////////////////////////////////////////////////
+
 	// AWSCredentialsFormat format const
 	AWSCredentialsFormat = "aws-credentials"
 	// EnvVarFormat format const
@@ -49,6 +54,12 @@ const (
 	ProcessCredentialsFormat = "process-credentials"
 	// NoopFormat format const
 	NoopFormat = "noop"
+
+	////////////////////////////////////////////////////////////
+	// FLAGS
+	// NOTE: if a new Flag value is added be sure to update the
+	// OktaYamlConfigProfile struct with that new value.
+	////////////////////////////////////////////////////////////
 
 	// AllProfilesFlag cli flag const
 	AllProfilesFlag = "all-profiles"
@@ -102,6 +113,10 @@ const (
 	ExpiryAWSVariablesFlag = "expiry-aws-variables"
 	// CacheAccessTokenFlag cli flag const
 	CacheAccessTokenFlag = "cache-access-token"
+
+	////////////////////////////////////////////////////////////
+	// ENV VARS
+	////////////////////////////////////////////////////////////
 
 	// AllProfilesEnvVar env var const
 	AllProfilesEnvVar = "OKTA_AWSCLI_ALL_PROFILES"
@@ -162,6 +177,10 @@ const (
 	// WriteAWSCredentialsEnvVar env var const
 	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
 
+	////////////////////////////////////////////////////////////
+	// Other
+	////////////////////////////////////////////////////////////
+
 	// CannotBeBlankErrMsg error message const
 	CannotBeBlankErrMsg = "cannot be blank"
 	// OrgDomainMsg error message const
@@ -176,9 +195,40 @@ const (
 // OktaYamlConfig represents config settings from $HOME/.okta/okta.yaml
 type OktaYamlConfig struct {
 	AWSCLI struct {
-		IDPS  map[string]string `yaml:"idps"`
-		ROLES map[string]string `yaml:"roles"`
+		IDPS     map[string]string                `yaml:"idps"`
+		ROLES    map[string]string                `yaml:"roles"`
+		PROFILES map[string]OktaYamlConfigProfile `yaml:"profiles"`
 	} `yaml:"awscli"`
+}
+
+// OktaYamlConfigProfile represents config settings that are indexed by profile name
+type OktaYamlConfigProfile struct {
+	AllProfiles         string `yaml:"all-profiles"`
+	AuthzID             string `yaml:"authz-id"`
+	AWSAcctFedAppID     string `yaml:"aws-acct-fed-app-id"`
+	AWSCredentials      string `yaml:"aws-credentials"`
+	AWSIAMIdP           string `yaml:"aws-iam-idp"`
+	AWSIAMRole          string `yaml:"aws-iam-role"`
+	AWSRegion           string `yaml:"aws-region"`
+	CustomScope         string `yaml:"custom-scope"`
+	Debug               string `yaml:"debug"`
+	DebugAPICalls       string `yaml:"debug-api-calls"`
+	Exec                string `yaml:"exec"`
+	Format              string `yaml:"format"`
+	OIDCClientID        string `yaml:"oidc-client-id"`
+	OpenBrowser         string `yaml:"open-browser"`
+	OpenBrowserCommand  string `yaml:"open-browser-command"`
+	OrgDomain           string `yaml:"org-domain"`
+	PrivateKey          string `yaml:"private-key"`
+	PrivateKeyFile      string `yaml:"private-key-file"`
+	KeyID               string `yaml:"key-id"`
+	Profile             string `yaml:"profile"`
+	QRCode              string `yaml:"qr-code"`
+	SessionDuration     string `yaml:"session-duration"`
+	WriteAWSCredentials string `yaml:"write-aws-credentials"`
+	LegacyAWSVariables  string `yaml:"legacy-aws-variables"`
+	ExpiryAWSVariables  string `yaml:"expiry-aws-variables"`
+	CacheAccessToken    string `yaml:"cache-access-token"`
 }
 
 // Clock interface to abstract time operations
@@ -318,12 +368,36 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 func getFlagNameFromProfile(awsProfile string, flag string) string {
 	profileKey := fmt.Sprintf("%s.%s", awsProfile, flag)
 	if awsProfile != "" && viper.IsSet(profileKey) == true {
+		// NOTE: If the flag was from a multiple profiles keyed by aws profile
+		// name i.e. `staging.oidc-client-id`, set the base value to that as
+		// well, `oidc-client-id`, such that input validation is satisfied.
+		v := viper.Get(profileKey)
+		viper.Set(flag, v)
+
 		return profileKey
 	}
 	return flag
 }
 
 func readConfig() (Attributes, error) {
+	// Side loading multiple profiles from okta.yaml file if it exists
+	if oktaConfig, err := OktaConfig(); err == nil {
+		profiles := oktaConfig.AWSCLI.PROFILES
+		viper.SetConfigType("yaml")
+		yamlData, err := yaml.Marshal(&profiles)
+		if err != nil {
+			path, _ := OktaConfigPath()
+			fmt.Fprintf(os.Stderr, "WARNING: error reading from %q: %+v.\n\n", path, err)
+		}
+		if err == nil {
+			r := bytes.NewReader(yamlData)
+			err = viper.MergeConfig(r)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: error with okta.yaml %+v.\n\n", err)
+			}
+		}
+	}
+
 	awsProfile := viper.GetString(ProfileFlag)
 
 	attrs := Attributes{
@@ -808,14 +882,25 @@ func (c *Config) SetQRCode(qrCode bool) error {
 	return nil
 }
 
-// OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
-func (c *Config) OktaConfig() (config *OktaYamlConfig, err error) {
-	homeDir, err := os.UserHomeDir()
+// OktaConfigPath returns OS specific path to the okta config file, for example
+// $HOME/.okta/okta.yaml
+func OktaConfigPath() (path string, err error) {
+	var homeDir string
+	homeDir, err = os.UserHomeDir()
 	if err != nil {
 		return
 	}
 
-	configPath := filepath.Join(homeDir, DotOkta, OktaYaml)
+	path = filepath.Join(homeDir, DotOkta, OktaYaml)
+	return
+}
+
+// OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
+func OktaConfig() (config *OktaYamlConfig, err error) {
+	configPath, err := OktaConfigPath()
+	if err != nil {
+		return
+	}
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
 		return
@@ -952,6 +1037,28 @@ awscli:
 	}
 
 	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" section is a map of %d ARN string keys to friendly string label values\n", len(_roles))
+
+	profiles, ok := _awscli["profiles"]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli.profiles\" section\n")
+		return
+	}
+	if profiles == nil {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.profiles\" section has no values\n")
+		return
+	}
+
+	_profiles, ok := profiles.(map[any]any)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.profiles\" section is not a map of separate config settings keyed by profile name\n")
+		return
+	}
+	if len(_profiles) == 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.profiles\" section is an empty map of separate config settings keyed by profile name\n")
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.profiles\" section is a map of %d separate config settings keyed by profile name\n", len(_profiles))
 
 	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
 	return nil
