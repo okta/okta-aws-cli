@@ -61,6 +61,8 @@ format.
    - [Web command settings](#web-command-settings)
    - [M2M command settings](#m2m-command-settings)
    - [Friendly IdP and Role menu labels](#friendly-idp-and-role-menu-labels)
+   - [Configuration by profile name](#configuration-by-profile-name)
+ - [Debug okta.yaml](#debug-oktayaml)
  - [Installation](#installation)
  - [Recommendations](#recommendations)
  - [Operation](#operation)
@@ -515,7 +517,39 @@ awscli:
   Ops
 ```
 
-#### Debug okta.yaml
+### Configuration by profile name
+
+Multiple `okta-aws-cli` configurations can be saved in the `$HOME/.okta/okta.yaml`
+file and are keyed by AWS profile name in the `awscli.profiles` section. This
+allows the operator to save many `okta-aws-cli` configurations in the okta.yaml.
+
+```
+$ okta-aws-cli web --profile staging
+```
+
+#### Example `$HOME/.okta/okta.yaml`
+
+```yaml
+---
+awscli:
+  profiles:
+    staging:
+      oidc-client-id: "0osabc"
+      org-domain: "org-stg.okata.com"
+      aws-iam-idp: "arn:aws:iam::123:saml-provider/MyIdP"
+      aws-iam-role: "arn:aws:iam::123:role/S3_Read"
+      write-aws-credentials: true
+      open-browser: true
+    production:
+      oidc-client-id: "0opabc"
+      org-domain: "org-prd.okata.com"
+      aws-iam-idp: "arn:aws:iam::456:saml-provider/MyIdP"
+      aws-iam-role: "arn:aws:iam::456:role/S3_Read"
+      write-aws-credentials: true
+      open-browser: true
+```
+
+## Debug okta.yaml
 
 okta-aws-cli has a debug option to check if the okta.yaml file is readable and
 in valid format.

@@ -268,7 +268,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 	choices := make([]string, len(apps))
 	var selected string
 	var configIDPs map[string]string
-	oktaConfig, err := w.config.OktaConfig()
+	oktaConfig, err := config.OktaConfig()
 	if err == nil {
 		configIDPs = oktaConfig.AWSCLI.IDPS
 	}
@@ -463,7 +463,7 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[str
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
 func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
-	oktaConfig, err := w.config.OktaConfig()
+	oktaConfig, err := config.OktaConfig()
 	var configRoles map[string]string
 	if err == nil {
 		configRoles = oktaConfig.AWSCLI.ROLES
@@ -519,7 +519,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 // to pretty print out the IdP name again.
 func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
 	var configIDPs map[string]string
-	if oktaConfig, cErr := w.config.OktaConfig(); cErr == nil {
+	if oktaConfig, cErr := config.OktaConfig(); cErr == nil {
 		configIDPs = oktaConfig.AWSCLI.IDPS
 	}
 

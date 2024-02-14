@@ -82,6 +82,7 @@ func MakeFlagBindings(cmd *cobra.Command, flags []Flag, persistent bool) {
 			_ = os.Setenv(awsRegionEnvVar, vipAwsRegion)
 		}
 	}
+
 	viper.AutomaticEnv()
 
 	// bind cli flags
