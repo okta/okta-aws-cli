@@ -82,7 +82,7 @@ func init() {
 			Name:   config.FormatFlag,
 			Short:  "f",
 			Value:  "",
-			Usage:  "Output format. [env-var|aws-credentials|process-credentials]",
+			Usage:  "Output format. [aws-credentials|env-var|noop|process-credentials]",
 			EnvVar: config.FormatEnvVar,
 		},
 		{
