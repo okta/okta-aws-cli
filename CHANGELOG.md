@@ -13,7 +13,8 @@ TBD
 
 ### BUG FIXES
 
-* Process credentials format was not emitting JSON correctly when `--write-aws-credentials` flag is present [#177](https://github.com/okta/okta-aws-cli/pull/177), thanks [@monde](https://github.com/monde)!
+* Fix bug where all flags were not being set on the config object.  [#177](https://github.com/okta/okta-aws-cli/pull/177), thanks [@monde](https://github.com/monde)!
+* Process credentials format was not emitting JSON correctly when `--write-aws-credentials` flag is present [#173](https://github.com/okta/okta-aws-cli/pull/173), thanks [@monde](https://github.com/monde)!
 * Open browser and open browser command behavior was fouled in v2 release [#172](https://github.com/okta/okta-aws-cli/pull/172), thanks [@monde](https://github.com/monde)!
 
 ## 2.0.1 (January 31, 2024)
