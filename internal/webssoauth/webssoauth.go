@@ -276,8 +276,15 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 	for i, app := range apps {
 		choiceLabel := w.choiceFriendlyLabelIDP(app.Label, app.Settings.App.IdentityProviderARN, configIDPs)
 
-		// when OKTA_AWSCLI_IAM_IDP / --aws-iam-idp is set
-		if w.config.AWSIAMIdP() == app.Settings.App.IdentityProviderARN {
+		// reverse case when
+		// when choiceLabel == w.configAWSIAMIfP()
+		// --aws-iam-idp "S3 IdP"
+		idpARN := w.config.AWSIAMIdP()
+		if choiceLabel == w.config.AWSIAMIdP() {
+			idpARN = app.Settings.App.IdentityProviderARN
+		}
+
+		if idpARN == app.Settings.App.IdentityProviderARN {
 			if !w.config.IsProcessCredentialsFormat() {
 				idpData := idpTemplateData{
 					IDP: choiceLabel,
@@ -377,6 +384,7 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion,
 	}
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
+		err = fmt.Errorf("AWS API session error: %w", err)
 		return
 	}
 	svc := sts.New(sess)
@@ -388,6 +396,7 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion,
 	}
 	svcResp, err := svc.AssumeRoleWithSAML(input)
 	if err != nil {
+		err = fmt.Errorf("STS Assume Role With SAML API error; given idp: %q, role: %q, error: %w", iar.idp, iar.role, err)
 		return
 	}
 
@@ -443,6 +452,14 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[str
 		return label
 	}
 
+	// reverse case when friendly role name is given
+	// --aws-iam-role "OK S3 Read"
+	for _, roleLabel := range roles {
+		if arn == roleLabel {
+			return roleLabel
+		}
+	}
+
 	// treat ARN values as regexps
 	for arnRegexp, label := range roles {
 		if ok, _ := regexp.MatchString(arnRegexp, arn); ok {
@@ -478,6 +495,18 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 		roleData := roleTemplateData{
 			Role: roleLabel,
 		}
+
+		// reverse case when friendly role name alias is given as the input value
+		// --aws-iam-role "OK S3 Read"
+		if roleLabel == roleARN {
+			for rARN, rLbl := range configRoles {
+				if roleARN == rLbl {
+					roleARN = rARN
+					break
+				}
+			}
+		}
+
 		if !w.config.IsProcessCredentialsFormat() {
 			rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
 			if err != nil {
