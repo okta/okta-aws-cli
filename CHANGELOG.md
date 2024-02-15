@@ -1,8 +1,6 @@
 # Changelog
 
-## Major.Minor.Revision (Month Day, Year)
-
-TBD
+## 2.1.0 (February 15, 2024)
 
 ### ENHANCEMENTS
 
@@ -11,9 +9,11 @@ TBD
 
 * Explicitly set AWS Region with CLI flag `--aws-region` [#174](https://github.com/okta/okta-aws-cli/pull/174), thanks [@euchen-circle](https://github.com/euchen-circle), [@igaskin](https://github.com/igaskin)!
 
+* `--aws-iam-idp` and `--aws-iam-role` arguments can be ARN or friendly label [#178](https://github.com/okta/okta-aws-cli/pull/178), thanks [@monde](https://github.com/monde)!
+
 ### BUG FIXES
 
-* Fix bug where all flags were not being set on the config object.  [#177](https://github.com/okta/okta-aws-cli/pull/177), thanks [@monde](https://github.com/monde)!
+* Fix bug where all flags were not being set on the config object. [#177](https://github.com/okta/okta-aws-cli/pull/177), thanks [@monde](https://github.com/monde)!
 * Process credentials format was not emitting JSON correctly when `--write-aws-credentials` flag is present [#173](https://github.com/okta/okta-aws-cli/pull/173), thanks [@monde](https://github.com/monde)!
 * Open browser and open browser command behavior was fouled in v2 release [#172](https://github.com/okta/okta-aws-cli/pull/172), thanks [@monde](https://github.com/monde)!
 
