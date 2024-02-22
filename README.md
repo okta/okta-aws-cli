@@ -13,23 +13,20 @@ its authentication and device authorization flows. `okta-aws-cli web` is not
 compatible with Okta Classic orgs. `okta-aws-cli m2m` makes use of private key
 (OAuth2) authorization and OIDC. 
 
-Example `okta-aws-cli` `web` command with environment variables (when command is
-missing *defaults* to `web`) output:
-
 ```shell
  # *nix, export statements
-$ okta-aws-cli
+$ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com
 export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
 
  # *nix, eval export ENV vars into current shell
-$ eval `okta-aws-cli` && aws s3 ls
+$ eval `okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com` && aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
 
 rem Windows setx statements
-C:\> okta-aws-cli
+C:\> okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com
 SETX AWS_ACCESS_KEY_ID ASIAUJHVCS6UQC52NOL7
 SETX AWS_SECRET_ACCESS_KEY wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 SETX AWS_SESSION_TOKEN AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
@@ -75,14 +72,15 @@ format.
 
 | Command | Description |
 |-----|-----|
-| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a command it defaults to this original `web` command. |
+| (empty) | When `okta-aws-cli` is executed without a subcommand and without arguments it will print the online help and exit. |
+| `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a subcommand it defaults to this original `web` command when other arguments are present. |
 | `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. IMPORTANT! This a not a feature intended for a human use case. Be sure to use industry state of the art secrets management techniques with the private key. |
 | `debug` | Debug okta.yaml config file and exit. |
 
 ## Web Command
 
 ```shell
-$ okta-aws-cli web
+$ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com
 export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
@@ -204,7 +202,7 @@ key.***
 # This example presumes its arguments are set as environment variables such as
 # one may find in a headless CI environment.
 # e.g.
-# export OKTA_AWSCLI_ORG_DOMAIN="test.oka.com"
+# export OKTA_AWSCLI_ORG_DOMAIN="my-org.oka.com"
 # export OKTA_AWSCLI_OIDC_CLIENT_ID="0oaa4htg72TNrkTDr1d7"
 # export OKTA_AWSCLI_IAM_ROLE="arn:aws:iam::1234:role/Circle-CI-ops"
 # export OKTA_AWSCLI_CUSTOM_SCOPE="okta-m2m-access"
@@ -361,7 +359,7 @@ These global settings are optional unless marked otherwise:
 | Name | Description | Command line flag | ENV var and .env file value |
 |-----|-----|-----|-----|
 | AWS Region (**optional**) | AWS region (will override ENV VAR `AWS_REGION` and `AWS_DEFAULT_REGION`) e.g. `us-east-2` | `--aws-region [value]` | `OKTA_AWSCLI_AWS_REGION` |
-| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `test.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_AWSCLI_ORG_DOMAIN` |
+| Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `my-org.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_AWSCLI_ORG_DOMAIN` |
 | OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | AWS IAM Role ARN (**optional** for `web`, **required** for `m2m`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
 | AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
@@ -419,14 +417,14 @@ Example: `0oa9x1rifa2H6Q5d8325`
 #### Environment variables example
 
 ```shell
-export OKTA_AWSCLI_ORG_DOMAIN=test.okta.com
+export OKTA_AWSCLI_ORG_DOMAIN=my-org.okta.com
 export OKTA_AWSCLI_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 ```
 
 #### `.env` file variables example
 
 ```
-OKTA_AWSCLI_ORG_DOMAIN=test.okta.com
+OKTA_AWSCLI_ORG_DOMAIN=my-org.okta.com
 OKTA_AWSCLI_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 ```
 
@@ -436,7 +434,7 @@ OKTA_AWSCLI_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 
 ```shell
 
-$ okta-aws-cli web --org-domain test.okta.com \
+$ okta-aws-cli web --org-domain my-org.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7
 ```
 
@@ -444,7 +442,7 @@ $ okta-aws-cli web --org-domain test.okta.com \
 
 ```shell
 
-$ okta-aws-cli web --org-domain test.okta.com \
+$ okta-aws-cli web --org-domain my-org.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
     --aws-acct-fed-app-id 0oa9x1rifa2H6Q5d8325
 ```
@@ -524,7 +522,7 @@ file and are keyed by AWS profile name in the `awscli.profiles` section. This
 allows the operator to save many `okta-aws-cli` configurations in the okta.yaml.
 
 ```
-$ okta-aws-cli web --profile staging
+$ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com --profile staging
 ```
 
 #### Example `$HOME/.okta/okta.yaml`
@@ -555,7 +553,7 @@ okta-aws-cli has a debug option to check if the okta.yaml file is readable and
 in valid format.
 
 ```
-$ okta-aws-cli --debug-config
+$ okta-aws-cli debug
 
 Given this YAML as an example template of okta.yaml for reference:
 
@@ -674,7 +672,7 @@ $ aws s3 ls
 set by ENV variables or `.env` file.
 
 ```shell
-$ eval `okta-aws-cli web` && aws s3 ls
+$ eval `okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com` && aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
 
@@ -691,7 +689,7 @@ $ aws s3 ls
 set by ENV variables or `.env` file.
 
 ```shell
-$ okta-aws-cli web --profile test --format aws-credentials && \
+$ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com --profile test --format aws-credentials && \
   aws --profile test s3 ls
 
 Open the following URL to begin Okta device authorization for the AWS CLI.
@@ -728,11 +726,11 @@ credential process values.
 
 M2M example:
 
-`credential_process = okta-aws-cli m2m --format process-credentials`
+`credential_process = okta-aws-cli m2m --format process-credentials --oidc-client-id 0oabc --org-domain my-org.okta.com`
 
 Web example:
 
-`credential_process = okta-aws-cli web --format process-credentials --oidc-client-id abc --org-domain test.okat.com --aws-iam-idp arn:aws:iam::123:saml-provider/my-idp --aws-iam-role arn:aws:iam::294719231913:role/s3 --open-browser`
+`credential_process = okta-aws-cli web --format process-credentials --oidc-client-id 0oabc --org-domain my-org.okta.com --aws-iam-idp arn:aws:iam::123:saml-provider/my-idp --aws-iam-role arn:aws:iam::294719231913:role/s3 --open-browser`
 
 ### Execute follow-on process
 
@@ -747,7 +745,7 @@ STDOUT, and also STDERR if the process also writes to STDERR.
 Example 1
 
 ```
-$ okta-aws-cli m2m --format noop --exec -- printenv
+$ okta-aws-cli m2m --format noop --oidc-client-id 0oabc --org-domain my-org.okta.com --exec -- printenv
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=ASIAUJHVCS6UYRTRTSQE
 AWS_SECRET_ACCESS_KEY=TmvLOM/doSWfmIMK...
@@ -757,7 +755,7 @@ AWS_SESSION_TOKEN=FwoGZXIvYXdzEF8aDKrf...
 Example 2
 
 ```
-$ okta-aws-cli m2m --format noop --exec -- aws s3 ls s3://example
+$ okta-aws-cli m2m --format noop --oidc-client-id 0oabc --org-domain my-org.okta.com --exec -- aws s3 ls s3://example
                            PRE aaa/
 2023-03-08 16:01:01          4 a.log
 ```
@@ -765,7 +763,7 @@ $ okta-aws-cli m2m --format noop --exec -- aws s3 ls s3://example
 Example 3 (process had error and also writes to STDERR)
 
 ```
-$ okta-aws-cli m2m --format noop --exec -- aws s3 mb s3://no-access-example
+$ okta-aws-cli m2m --format noop --oidc-client-id 0oabc --org-domain my-org.okta.com --exec -- aws s3 mb s3://no-access-example
 error running process
 aws s3 mb s3://yz-nomad-og
 make_bucket failed: s3://no-access-example An error occurred (AccessDenied) when calling the CreateBucket operation: Access Denied
@@ -786,7 +784,7 @@ aliases is available on the given role) then `-` then abbreviated role name.
 # on the Fed App.
 
 $ okta-aws-cli web \
-    --org-domain test.okta.com \
+    --org-domain my-org.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
     --write-aws-credentials \
     --all-profiles
@@ -807,13 +805,13 @@ Updated profile "prod-org-containerops-eks-full" in credentials file "/Users/me/
 # OSX examples, the device authorization URL is appended to the browser args.
 
 $ okta-aws-cli web \
-  --oidc-client-id abc \
-  --org-domain test.okta.com \
+  --oidc-client-id 0oabc \
+  --org-domain my-org.okta.com \
   --open-browser-command "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --profile-directory=\"Profile\ 1\""
 
 $ okta-aws-cli web \
-  --oidc-client-id abc \
-  --org-domain test.okta.com \
+  --oidc-client-id 0oabc \
+  --org-domain my-org.okta.com \
   --open-browser-command "open -na \"Google\ Chrome\" --args --incognito"
 ```
 
@@ -822,27 +820,27 @@ $ okta-aws-cli web \
 ```
 REM Windows examples, the device authorization URL is appended to the browser
 REM args using cmd.exe with the run command flag /C used to spawn the browser
-REM that is installed on the host OS e.g. medge, chrome, firefox . Additional
+REM that is installed on the host OS e.g. msedge, chrome, firefox . Additional
 REM arguments can be passed on to the browser command that are valid for it.
 
 > okta-aws-cli web \
-  --oidc-client-id abc \
-  --org-domain test.okta.com \
+  --oidc-client-id 0oabc \
+  --org-domain my-org.okta.com \
   --open-browser-command "cmd.exe /C start msedge"
 
 > okta-aws-cli web \
-  --oidc-client-id abc \
-  --org-domain test.okta.com \
+  --oidc-client-id 0oabc \
+  --org-domain my-org.okta.com \
   --open-browser-command "cmd.exe /C start chrome"
 
 > okta-aws-cli web \
-  --oidc-client-id abc \
-  --org-domain test.okta.com \
+  --oidc-client-id 0oabc \
+  --org-domain my-org.okta.com \
   --open-browser-command "cmd.exe /C start chrome --incognito"
 
 > okta-aws-cli web \
-  --oidc-client-id abc \
-  --org-domain test.okta.com \
+  --oidc-client-id 0oabc \
+  --org-domain my-org.okta.com \
   --open-browser-command "cmd.exe /C start chrome --profile-directory=\"Profile\ 1\""
 ```
 
