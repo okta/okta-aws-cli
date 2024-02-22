@@ -555,7 +555,7 @@ okta-aws-cli has a debug option to check if the okta.yaml file is readable and
 in valid format.
 
 ```
-$ okta-aws-cli --debug-config
+$ okta-aws-cli debug
 
 Given this YAML as an example template of okta.yaml for reference:
 
