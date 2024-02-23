@@ -1,6 +1,6 @@
 # Changelog
 
-## Major.Minor.Revision (Month Day, Year)
+## 2.1.1 (February 23, 2024)
 
 ### BUG FIXES
 
