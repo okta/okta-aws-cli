@@ -429,7 +429,7 @@ func readConfig() (Attributes, error) {
 		PrivateKey:          viper.GetString(getFlagNameFromProfile(awsProfile, PrivateKeyFlag)),
 		PrivateKeyFile:      viper.GetString(getFlagNameFromProfile(awsProfile, PrivateKeyFileFlag)),
 		KeyID:               viper.GetString(getFlagNameFromProfile(awsProfile, KeyIDFlag)),
-		Profile:             viper.GetString(getFlagNameFromProfile(awsProfile, ProfileFlag)),
+		Profile:             awsProfile,
 		QRCode:              viper.GetBool(getFlagNameFromProfile(awsProfile, QRCodeFlag)),
 		WriteAWSCredentials: viper.GetBool(getFlagNameFromProfile(awsProfile, WriteAWSCredentialsFlag)),
 	}
