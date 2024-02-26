@@ -372,7 +372,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 
 func getFlagNameFromProfile(awsProfile string, flag string) string {
 	profileKey := fmt.Sprintf("%s.%s", awsProfile, flag)
-	if awsProfile != "" && viper.Get(profileKey) != "" {
+	if awsProfile != "" && viper.IsSet(profileKey) {
 		// NOTE: If the flag was from a multiple profiles keyed by aws profile
 		// name i.e. `staging.oidc-client-id`, set the base value to that as
 		// well, `oidc-client-id`, such that input validation is satisfied.
@@ -429,7 +429,7 @@ func readConfig() (Attributes, error) {
 		PrivateKey:          viper.GetString(getFlagNameFromProfile(awsProfile, PrivateKeyFlag)),
 		PrivateKeyFile:      viper.GetString(getFlagNameFromProfile(awsProfile, PrivateKeyFileFlag)),
 		KeyID:               viper.GetString(getFlagNameFromProfile(awsProfile, KeyIDFlag)),
-		Profile:             awsProfile,
+		Profile:             viper.GetString(getFlagNameFromProfile(awsProfile, ProfileFlag)),
 		QRCode:              viper.GetBool(getFlagNameFromProfile(awsProfile, QRCodeFlag)),
 		WriteAWSCredentials: viper.GetBool(getFlagNameFromProfile(awsProfile, WriteAWSCredentialsFlag)),
 	}
