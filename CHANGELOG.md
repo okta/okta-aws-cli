@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.2 (February 27, 2024)
+
+### BUG FIXES
+
+* Additional fix for bug dealing with multiple profiles in okta.yaml [#196](https://github.com/okta/okta-aws-cli/pull/196), thanks [@MatthewJohn](https://github.com/MatthewJohn)!
+
 ## 2.1.1 (February 23, 2024)
 
 ### BUG FIXES
