@@ -74,7 +74,7 @@ func init() {
 		{
 			Name:   config.ProfileFlag,
 			Short:  "p",
-			Value:  "",
+			Value:  "default",
 			Usage:  "AWS Profile",
 			EnvVar: config.ProfileEnvVar,
 		},
