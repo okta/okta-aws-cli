@@ -480,56 +480,52 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[str
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
 func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string, configRoles map[string]string) (roleARN string, err error) {
-	if len(roleARNs) == 1 || w.config.AWSIAMRole() != "" {
-		roleARN = w.config.AWSIAMRole()
-		if len(roleARNs) == 1 {
-			roleARN = roleARNs[0]
-		}
-		roleLabel := w.choiceFriendlyLabelRole(roleARN, configRoles)
-		roleData := roleTemplateData{
-			Role: roleLabel,
-		}
-
-		// reverse case when friendly role name alias is given as the input value
-		// --aws-iam-role "OK S3 Read"
-		if roleLabel == roleARN {
-			for rARN, rLbl := range configRoles {
-				if roleARN == rLbl {
-					roleARN = rARN
-					break
-				}
-			}
-		}
-
-		if !w.config.IsProcessCredentialsFormat() {
-			rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
-			if err != nil {
-				return "", err
-			}
-			fmt.Fprintln(os.Stderr, rich)
-		}
-		return roleARN, nil
-	}
-
-	promptRoles := []string{}
-	labelsARNs := map[string]string{}
+	// roleLabels are the friendly names if configured or the ARNs themselves
+	roleLabels := make([]string, len(roleARNs))
+	roleArnByLabel := map[string]string{}
 	for _, arn := range roleARNs {
 		roleLabel := w.choiceFriendlyLabelRole(arn, configRoles)
-		promptRoles = append(promptRoles, roleLabel)
-		labelsARNs[roleLabel] = arn
+		roleLabels = append(roleLabels, roleLabel)
+		roleArnByLabel[roleLabel] = arn
 	}
 
-	prompt := &survey.Select{
-		Message: chooseRole,
-		Options: promptRoles,
-	}
-	var selected string
-	err = survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-	if err != nil {
-		return "", fmt.Errorf(askRoleError, err)
+	var roleLabelChoice string
+
+	// There is only a single choice so go ahead and use its label
+	if len(roleARNs) == 1 {
+		rArn := roleARNs[0]
+		roleLabelChoice = w.choiceFriendlyLabelRole(rArn, configRoles)
 	}
 
-	roleARN = labelsARNs[selected]
+	// The user already provided their choice via config
+	if roleLabelChoice == "" && w.config.AWSIAMRole() != "" {
+		rArg := w.config.AWSIAMRole()
+		roleLabelChoice = w.choiceFriendlyLabelRole(rArg, configRoles)
+	}
+
+	// Prompt the user to choose
+	if roleLabelChoice == "" {
+		prompt := &survey.Select{
+			Message: chooseRole,
+			Options: roleLabels,
+		}
+		err = survey.AskOne(prompt, &roleLabelChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return "", fmt.Errorf(askRoleError, err)
+		}
+	} else if !w.config.IsProcessCredentialsFormat() {
+		// The choice was determined without prompting the user so pretty print the role
+		// todo: explain why we check IsProcessCredentialsFormat?
+		rich, _, err := core.RunTemplate(roleSelectedTemplate, roleTemplateData{
+			Role: roleLabelChoice,
+		})
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintln(os.Stderr, rich)
+	}
+
+	roleARN = roleArnByLabel[roleLabelChoice]
 	if roleARN == "" {
 		return "", fmt.Errorf(noRolesError, idp)
 	}
