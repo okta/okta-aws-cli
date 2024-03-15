@@ -479,13 +479,7 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[str
 }
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
-func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
-	oktaConfig, err := config.OktaConfig()
-	var configRoles map[string]string
-	if err == nil {
-		configRoles = oktaConfig.AWSCLI.ROLES
-	}
-
+func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string, configRoles map[string]string) (roleARN string, err error) {
 	if len(roleARNs) == 1 || w.config.AWSIAMRole() != "" {
 		roleARN = w.config.AWSIAMRole()
 		if len(roleARNs) == 1 {
@@ -546,12 +540,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 // promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
-func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
-	var configIDPs map[string]string
-	if oktaConfig, cErr := config.OktaConfig(); cErr == nil {
-		configIDPs = oktaConfig.AWSCLI.IDPS
-	}
-
+func (w *WebSSOAuthentication) promptForIDP(idpARNs []string, configIDPs map[string]string) (idpARN string, err error) {
 	if len(idpARNs) == 0 {
 		return idpARN, errors.New(noIDPsError)
 	}
@@ -609,13 +598,22 @@ func (w *WebSSOAuthentication) promptForIdpAndRole(idpRoles map[string][]string)
 	for idp := range idpRoles {
 		idps = append(idps, idp)
 	}
-	idp, err := w.promptForIDP(idps)
+
+	var configRoles map[string]string
+	var configIDPs map[string]string
+
+	if oktaConfig, cErr := config.OktaConfig(); cErr == nil {
+		configRoles = oktaConfig.AWSCLI.ROLES
+		configIDPs = oktaConfig.AWSCLI.IDPS
+	}
+
+	idp, err := w.promptForIDP(idps, configIDPs)
 	if err != nil {
 		return nil, err
 	}
 
 	roles := idpRoles[idp]
-	role, err := w.promptForRole(idp, roles)
+	role, err := w.promptForRole(idp, roles, configRoles)
 	if err != nil {
 		return nil, err
 	}
