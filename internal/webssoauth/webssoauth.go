@@ -540,55 +540,61 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string, conf
 // promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
-func (w *WebSSOAuthentication) promptForIDP(idpARNs []string, configIDPs map[string]string) (idpARN string, err error) {
+func (w *WebSSOAuthentication) promptForIDP(idpARNs []string, configIDPs map[string]string) (idpArnChoice string, err error) {
 	if len(idpARNs) == 0 {
-		return idpARN, errors.New(noIDPsError)
+		return "", errors.New(noIDPsError)
 	}
 
-	if len(idpARNs) == 1 || w.config.AWSIAMIdP() != "" {
-		idpARN = w.config.AWSIAMIdP()
-		if len(idpARNs) == 1 {
-			idpARN = idpARNs[0]
-		}
-		if w.fedAppAlreadySelected {
-			return idpARN, nil
-		}
+	// idpLabels are the friendly names if configured or the ARNs itself
+	idpLabels := make([]string, len(idpARNs))
+	idpArnByLabel := make(map[string]string, len(idpARNs))
+	for i, arn := range idpARNs {
+		idpLabel := w.choiceFriendlyLabelIDP(arn, arn, configIDPs)
+		idpArnByLabel[idpLabel] = arn
+		idpLabels[i] = idpLabel
+	}
 
-		idpLabel := w.choiceFriendlyLabelIDP(idpARN, idpARN, configIDPs)
-		idpData := idpTemplateData{
-			IDP: idpLabel,
+	var idpLabelChoice string
+
+	// There is only a single choice so go ahead and use its label
+	if len(idpARNs) == 1 {
+		idpArn := idpARNs[0]
+		idpLabelChoice = w.choiceFriendlyLabelIDP(idpArn, idpArn, configIDPs)
+	}
+
+	// The user already provided their choice via config
+	if idpLabelChoice == "" && w.config.AWSIAMIdP() != "" {
+		iArg := w.config.AWSIAMIdP()
+		idpLabelChoice = w.choiceFriendlyLabelIDP(iArg, iArg, configIDPs)
+	}
+
+	// Prompt the user to choose
+	if idpLabelChoice == "" {
+		prompt := &survey.Select{
+			Message: chooseIDP,
+			Options: idpLabels,
 		}
-		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
+		err = survey.AskOne(prompt, &idpLabelChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return "", fmt.Errorf(askIDPError, err)
+		}
+	} else if !w.fedAppAlreadySelected {
+		// The choice was determined without prompting the user and the fedApp has not already been selected so pretty print the idp
+		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpTemplateData{
+			IDP: idpLabelChoice,
+		})
 		if err != nil {
 			return "", err
 		}
 		fmt.Fprintln(os.Stderr, rich)
-		return idpARN, nil
 	}
 
-	idpChoices := make(map[string]string, len(idpARNs))
-	idpChoiceLabels := make([]string, len(idpARNs))
-	for i, arn := range idpARNs {
-		idpLabel := w.choiceFriendlyLabelIDP(arn, arn, configIDPs)
-		idpChoices[idpLabel] = arn
-		idpChoiceLabels[i] = idpLabel
+	idpArnChoice = idpArnByLabel[idpLabelChoice]
+	if idpArnChoice == "" {
+		return idpArnChoice, errors.New(idpValueNotSelectedError)
 	}
 
-	var idpChoice string
-	prompt := &survey.Select{
-		Message: chooseIDP,
-		Options: idpChoiceLabels,
-	}
-	err = survey.AskOne(prompt, &idpChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-	if err != nil {
-		return idpARN, fmt.Errorf(askIDPError, err)
-	}
-	idpARN = idpChoices[idpChoice]
-	if idpARN == "" {
-		return idpARN, errors.New(idpValueNotSelectedError)
-	}
-
-	return idpARN, nil
+	return idpArnChoice, nil
 }
 
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
