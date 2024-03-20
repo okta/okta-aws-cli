@@ -621,6 +621,7 @@ have equivalent policies if not share the same policy. If the AWS Federation
 app has more stringent assurance requirements than the OIDC app a `400 Bad
 Request` API error is likely to occur.
 
+Note: In authentication policy rule of AWS Federation app, **Device State** must be set to **Any** for using Okta AWS CLI. Other options are not supported at this time.
 
 ## Operation
 
