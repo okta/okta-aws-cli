@@ -7,7 +7,7 @@ documentation](#configuration).*
 `okta-aws-cli` is a CLI program allowing Okta to act as an identity provider
 and retrieve AWS IAM temporary credentials for use in AWS CLI, AWS SDKs, and
 other tools accessing the AWS API. There are two primary commands of operation:
-`web` -> combined human and device authorization; and `m3m` -> headless
+`web` -> combined human and device authorization; and `m2m` -> headless
 authorization.  `okta-aws-cli web` is native to the Okta Identity Engine and
 its authentication and device authorization flows. `okta-aws-cli web` is not
 compatible with Okta Classic orgs. `okta-aws-cli m2m` makes use of private key
