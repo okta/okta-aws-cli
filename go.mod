@@ -24,7 +24,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+require (
+	github.com/BurntSushi/toml v1.4.0 // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
