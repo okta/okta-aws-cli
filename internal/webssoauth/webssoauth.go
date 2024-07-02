@@ -55,6 +55,7 @@ import (
 	"github.com/okta/okta-aws-cli/internal/exec"
 	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/output"
+	"github.com/okta/okta-aws-cli/internal/paginator"
 	"github.com/okta/okta-aws-cli/internal/utils"
 )
 
@@ -805,122 +806,58 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 // after getting anything other than a 403 on /api/v1/apps will be wrapped as as
 // an error that is related having multiple fed apps available.  Requires
 // assoicated OIDC app has been granted okta.apps.read to its scope.
-func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken) (apps []*okta.Application, err error) {
+func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken) ([]*okta.Application, error) {
+	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", w.config.OrgDomain()))
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		accept:                           utils.ApplicationJSON,
+		utils.ContentType:                utils.ApplicationJSON,
+		utils.UserAgentHeader:            config.UserAgentValue,
+		utils.XOktaAWSCLIOperationHeader: utils.XOktaAWSCLIWebOperation,
+		"Authorization":                  fmt.Sprintf("%s %s", at.TokenType, at.AccessToken),
+	}
+	params := map[string]string{
+		"limit":  "200",
+		"q":      amazonAWS,
+		"filter": `status eq "ACTIVE"`,
+	}
+	pgntr := paginator.NewPaginator(w.config.HTTPClient(), apiURL, &headers, &params)
 
-	apps = make([]*okta.Application, 0)
-
-	var afterValue string = ""
-	var req *http.Request = nil
-	var resp *http.Response = nil
-	var apiURL *url.URL = nil
-	var oktaApps []okta.Application = nil
-
-	for {
-
-		apiURL, err = url.Parse(fmt.Sprintf("https://%s/api/v1/apps", w.config.OrgDomain()))
-
+	allApps := make([]*okta.Application, 0)
+	resp, err := pgntr.GetItems(&allApps)
+	// TODO fall back to /api/v1/users/{userId}/appLinks if 403 / http.StatusForbidden
+	if err != nil {
+		return nil, err
+	}
+	for resp.HasNextPage() {
+		var nextApps []*okta.Application
+		resp, err = resp.Next(&nextApps)
 		if err != nil {
 			return nil, err
 		}
-
-		params := url.Values{}
-		params.Add("limit", "200")
-		params.Add("q", amazonAWS)
-		params.Add("filter", `status eq "ACTIVE"`)
-
-		if len(afterValue) > 0 {
-			params.Add("after", afterValue)
-		}
-
-		apiURL.RawQuery = params.Encode()
-
-		req, err = http.NewRequest(http.MethodGet, apiURL.String(), nil)
-
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Add(accept, utils.ApplicationJSON)
-		req.Header.Add(utils.ContentType, utils.ApplicationJSON)
-		req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
-		req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
-		req.Header.Add("Authorization", fmt.Sprintf("%s %s", at.TokenType, at.AccessToken))
-
-		resp, err = w.config.HTTPClient().Do(req)
-
-		if resp.StatusCode == http.StatusForbidden {
-			return nil, err
-		}
-
-		// Any errors after this point should be considered related to when the OIDC
-		// app can read multiple fed apps
-		if err != nil || resp.StatusCode != http.StatusOK {
-			return nil, newMultipleFedAppsError(err)
-		}
-
-		err = json.NewDecoder(resp.Body).Decode(&oktaApps)
-		if err != nil {
-			return nil, newMultipleFedAppsError(err)
-		}
-
-		for i, app := range oktaApps {
-			if app.Name != amazonAWS {
-				continue
-			}
-			if app.Status != "ACTIVE" {
-				continue
-			}
-			if app.Settings.App.WebSSOClientID != clientID {
-				continue
-			}
-			oa := oktaApps[i]
-			apps = append(apps, &oa)
-		}
-
-		// Extract the next URL from the Link header
-		afterValue = w.extractAfter(resp)
-
-		if len(afterValue) == 0 {
-			if w.config.Debug() {
-				w.consolePrint("  no more pages to read\n")
-			}
-			break
-		}
-
+		allApps = append(allApps, nextApps...)
 	}
 
-	return
-}
-
-// Extract the after token from page of results
-func (w *WebSSOAuthentication) extractAfter(resp *http.Response) (href string) {
-
-	linkHeaders := resp.Header["Link"]
-	for _, value := range linkHeaders {
-		if strings.Contains(value, `rel="next"`) {
-
-			parts := strings.Split(strings.TrimSpace(value), ";")
-			if len(parts) < 2 {
-				continue
-			}
-
-			urlPart := strings.Trim(parts[0], "<>")
-			relPart := strings.TrimSpace(parts[1])
-
-			if relPart == `rel="next"` {
-				urlPart := strings.Trim(urlPart, `"`)
-
-				nextURL, err := url.Parse(urlPart)
-				if err != nil {
-					return ""
-				} else {
-					return nextURL.Query().Get("after")
-				}
-			}
+	apps := make([]*okta.Application, 0)
+	for _, app := range allApps {
+		// even though the query was for AWS fed apps check just in case
+		if app.Name != amazonAWS {
+			continue
 		}
+		// even though the query filted on active status check just in case
+		if app.Status != "ACTIVE" {
+			continue
+		}
+		// only apps that that have client the web sso client
+		if app.Settings.App.WebSSOClientID != clientID {
+			continue
+		}
+		apps = append(apps, app)
 	}
 
-	return ""
+	return apps, nil
 }
 
 // accessToken see:
