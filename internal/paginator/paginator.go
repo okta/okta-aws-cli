@@ -63,8 +63,10 @@ func (pgntr *Paginator) Do(req *http.Request, v interface{}) (*PaginateResponse,
 
 func (pgntr *Paginator) GetItems(v interface{}) (resp *PaginateResponse, err error) {
 	params := url.Values{}
-	for k, v := range *pgntr.params {
-		params.Add(k, v)
+	if pgntr.params != nil {
+		for k, v := range *pgntr.params {
+			params.Add(k, v)
+		}
 	}
 	pgntr.url.RawQuery = params.Encode()
 

@@ -16,8 +16,8 @@
 
 package okta
 
-// Application Okta API application object
-// See: https://developer.okta.com/docs/reference/api/apps/#application-object
+// Application Okta API application object.
+// See: https://developer.okta.com/docs/api/openapi/okta-management/management/tag/Application/#tag/Application/operation/listApplications
 type Application struct {
 	ID       string `json:"id"`
 	Label    string `json:"label"`
@@ -29,4 +29,12 @@ type Application struct {
 			WebSSOClientID      string `json:"webSSOAllowedClient"`
 		} `json:"app"`
 	} `json:"settings"`
+}
+
+// ApplicationLink Okta API application link object.
+// See: https://developer.okta.com/docs/api/openapi/okta-management/management/tag/User/#tag/User/operation/listAppLinks
+type ApplicationLink struct {
+	ID    string `json:"appInstanceId"`
+	Label string `json:"label"`
+	Name  string `json:"appName"`
 }
