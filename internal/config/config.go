@@ -494,6 +494,9 @@ func readConfig() (Attributes, error) {
 	if !attrs.AllProfiles {
 		attrs.AllProfiles = viper.GetBool(downCase(AllProfilesEnvVar))
 	}
+	if attrs.AWSRegion == "" {
+		attrs.AWSRegion = viper.GetString(downCase(AWSRegionEnvVar))
+	}
 
 	// if session duration is 0, inspect the ENV VAR for a value, else set
 	// a default of 3600
