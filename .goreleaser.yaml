@@ -1,5 +1,6 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
+version: 2
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -33,9 +34,4 @@ snapshot:
 release:
   draft: true
 changelog:
-  skip: true
-  #sort: asc
-  #filters:
-  #  exclude:
-  #    - '^docs:'
-  #    - '^test:'
+  disable: true
