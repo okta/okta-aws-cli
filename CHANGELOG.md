@@ -1,10 +1,10 @@
 # Changelog
 
-## 2.X.X (MM d, 2024)
+## 2.2.0 (July 3, 2024)
 
 ### ENHANCEMENTS
 
-* Seamless support for non-Admin users if OIDC app has `okta.users.read.self` grant [#TDB](https://github.com/okta/okta-aws-cli/pull/TBD), thanks [@monde](https://github.com/monde)!
+* Seamless support for non-Admin users if OIDC app has `okta.users.read.self` grant [#213](https://github.com/okta/okta-aws-cli/pull/213), thanks [@monde](https://github.com/monde)!
 * Improve README with note about device state in policy [#205](https://github.com/okta/okta-aws-cli/pull/205), thanks [@ramgandhi-okta](https://github.com/ramgandhi-okta)!
 * Correct m2m typo in README [#201](https://github.com/okta/okta-aws-cli/pull/201), thanks [@stefan-lsx](https://github.com/stefan-lsx)!
 
