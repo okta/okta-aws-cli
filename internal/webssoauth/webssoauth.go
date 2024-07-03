@@ -361,9 +361,6 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		}
 	} else {
 		ccch := w.fetchAllAWSCredentialsWithSAMLRole(idpRolesMap, assertion, region)
-		if err != nil {
-			return err
-		}
 		for cc := range ccch {
 			err = output.RenderAWSCredential(w.config, cc)
 			if err != nil {
@@ -728,9 +725,6 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 
 	if resp.StatusCode != http.StatusOK {
 		baseErrStr := "fetching SSO web token received API response %q"
-		if err != nil {
-			return nil, fmt.Errorf(baseErrStr, resp.Status)
-		}
 
 		var apiErr okta.APIError
 		err = json.NewDecoder(resp.Body).Decode(&apiErr)
@@ -829,7 +823,14 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 	allApps := make([]*okta.Application, 0)
 	resp, err := pgntr.GetItems(&allApps)
 	if resp.StatusCode == http.StatusForbidden {
-		return w.listFedAppsFromAppLinks(clientID, &headers)
+		// fall back to using app links
+		return w.listFedAppsFromAppLinks(&headers)
+
+		// TODO: might be worth spending some time DRY-ing up with an an
+		// okta.App interface that okta.ApplicationLink and okta.Application
+		// implement so we can get rid of the extra listFedAppsFromAppLinks
+		// method. If the first call to GetItems fails make a new paginator that
+		// uses the /api/v1/users/me/appLinks endpoint.
 	}
 	if err != nil {
 		return nil, err
@@ -866,7 +867,7 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 // listFedAppsFromAppLinks Lists Okta AWS Fed Apps assign to the current user
 // via appLinks Requires assoicated OIDC app has been granted
 // okta.users.read.self to its scope.
-func (w *WebSSOAuthentication) listFedAppsFromAppLinks(clientID string, headers *map[string]string) ([]*okta.Application, error) {
+func (w *WebSSOAuthentication) listFedAppsFromAppLinks(headers *map[string]string) ([]*okta.Application, error) {
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/users/me/appLinks", w.config.OrgDomain()))
 	if err != nil {
 		return nil, err
