@@ -14,6 +14,18 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+const (
+	// HTTPHeaderWwwAuthenticate Www-Authenticate header
+	HTTPHeaderWwwAuthenticate = "Www-Authenticate"
+	// APIErrorMessageBase base API error message
+	APIErrorMessageBase = "the API returned an unknown error"
+	// APIErrorMessageWithErrorDescription API error message with description
+	APIErrorMessageWithErrorDescription = "the API returned an error: %s"
+	// APIErrorMessageWithErrorSummary API error message with summary
+	APIErrorMessageWithErrorSummary = "the API returned an error: %s"
+)
+
+// PaginateResponse HTTP Response wrapper for behavior the the Paginator
 type PaginateResponse struct {
 	*http.Response
 	pgntr    *Paginator
@@ -21,10 +33,12 @@ type PaginateResponse struct {
 	NextPage string
 }
 
+// HasNextPage Paginate response has a next page
 func (r *PaginateResponse) HasNextPage() bool {
 	return r.NextPage != ""
 }
 
+// Next Paginate response to call for next page
 func (r *PaginateResponse) Next(v interface{}) (*PaginateResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, r.NextPage, nil)
 	for k, v := range *r.pgntr.headers {
@@ -36,6 +50,7 @@ func (r *PaginateResponse) Next(v interface{}) (*PaginateResponse, error) {
 	return r.pgntr.Do(req, v)
 }
 
+// Paginator Paginates Okta's API response Link(s)
 type Paginator struct {
 	httpClient *http.Client
 	url        *url.URL
@@ -43,6 +58,7 @@ type Paginator struct {
 	params     *map[string]string
 }
 
+// NewPaginator Paginator constructor
 func NewPaginator(httpClient *http.Client, url *url.URL, headers *map[string]string, params *map[string]string) *Paginator {
 	pgntr := Paginator{
 		httpClient: httpClient,
@@ -53,6 +69,7 @@ func NewPaginator(httpClient *http.Client, url *url.URL, headers *map[string]str
 	return &pgntr
 }
 
+// Do Paginator does an HTTP request
 func (pgntr *Paginator) Do(req *http.Request, v interface{}) (*PaginateResponse, error) {
 	resp, err := pgntr.httpClient.Do(req)
 	if err != nil {
@@ -61,6 +78,7 @@ func (pgntr *Paginator) Do(req *http.Request, v interface{}) (*PaginateResponse,
 	return buildPaginateResponse(resp, pgntr, &v)
 }
 
+// GetItems Paginator gets an array of items of type v
 func (pgntr *Paginator) GetItems(v interface{}) (resp *PaginateResponse, err error) {
 	params := url.Values{}
 	if pgntr.params != nil {
@@ -88,7 +106,6 @@ func newPaginateResponse(r *http.Response, pgntr *Paginator) *PaginateResponse {
 
 	if len(links) == 0 {
 		return response
-
 	}
 	for _, link := range links {
 		splitLinkHeader := strings.Split(link, ";")
@@ -158,8 +175,8 @@ func checkResponseForError(resp *http.Response) error {
 	}
 	e := Error{}
 	if (statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden) &&
-		strings.Contains(resp.Header.Get("Www-Authenticate"), "Bearer") {
-		for _, v := range strings.Split(resp.Header.Get("Www-Authenticate"), ", ") {
+		strings.Contains(resp.Header.Get(HTTPHeaderWwwAuthenticate), "Bearer") {
+		for _, v := range strings.Split(resp.Header.Get(HTTPHeaderWwwAuthenticate), ", ") {
 			if strings.Contains(v, "error_description") {
 				_, err := toml.Decode(v, &e)
 				if err != nil {
@@ -181,22 +198,24 @@ func checkResponseForError(resp *http.Response) error {
 	return &e
 }
 
+// Error A struct for marshalling Okta's API error response bodies
 type Error struct {
 	ErrorMessage     string                   `json:"error"`
 	ErrorDescription string                   `json:"error_description"`
 	ErrorCode        string                   `json:"errorCode,omitempty"`
 	ErrorSummary     string                   `json:"errorSummary,omitempty" toml:"error_description"`
 	ErrorLink        string                   `json:"errorLink,omitempty"`
-	ErrorId          string                   `json:"errorId,omitempty"`
+	ErrorID          string                   `json:"errorId,omitempty"`
 	ErrorCauses      []map[string]interface{} `json:"errorCauses,omitempty"`
 }
 
+// Error String-ify the Error
 func (e *Error) Error() string {
-	formattedErr := "the API returned an unknown error"
+	formattedErr := APIErrorMessageBase
 	if e.ErrorDescription != "" {
-		formattedErr = fmt.Sprintf("the API returned an error: %s", e.ErrorDescription)
+		formattedErr = fmt.Sprintf(APIErrorMessageWithErrorDescription, e.ErrorDescription)
 	} else if e.ErrorSummary != "" {
-		formattedErr = fmt.Sprintf("the API returned an error: %s", e.ErrorSummary)
+		formattedErr = fmt.Sprintf(APIErrorMessageWithErrorSummary, e.ErrorSummary)
 	}
 	if len(e.ErrorCauses) > 0 {
 		var causes []string
