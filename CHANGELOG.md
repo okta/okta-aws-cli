@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.0 (July 3, 2024)
+
+### ENHANCEMENTS
+
+* Seamless support for non-Admin users if OIDC app has `okta.users.read.self` grant [#213](https://github.com/okta/okta-aws-cli/pull/213), thanks [@monde](https://github.com/monde)!
+* Improve README with note about device state in policy [#205](https://github.com/okta/okta-aws-cli/pull/205), thanks [@ramgandhi-okta](https://github.com/ramgandhi-okta)!
+* Correct m2m typo in README [#201](https://github.com/okta/okta-aws-cli/pull/201), thanks [@stefan-lsx](https://github.com/stefan-lsx)!
+
+### BUG FIXES
+
+* Paginating more than 200 apps on `GET /api/v1/apps` not implemented [#212](https://github.com/okta/okta-aws-cli/pull/212), thanks [@pmgalea](https://github.com/pmgalea)!
+* Respect `OKTA_AWSCLI_AWS_REGION` env var value when saving to the profile [#203](https://github.com/okta/okta-aws-cli/pull/203), thanks [@sudolibre](https://github.com/sudolibre)!
+* Default profile value not correctly set to `default` [#200](https://github.com/okta/okta-aws-cli/pull/200), thanks [@mantoine96](https://github.com/mantoine96)!
+
 ## 2.1.2 (February 27, 2024)
 
 ### BUG FIXES

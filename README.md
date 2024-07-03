@@ -11,7 +11,7 @@ other tools accessing the AWS API. There are two primary commands of operation:
 authorization.  `okta-aws-cli web` is native to the Okta Identity Engine and
 its authentication and device authorization flows. `okta-aws-cli web` is not
 compatible with Okta Classic orgs. `okta-aws-cli m2m` makes use of private key
-(OAuth2) authorization and OIDC. 
+(OAuth2) authorization and OIDC.
 
 ```shell
  # *nix, export statements
@@ -19,11 +19,6 @@ $ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com
 export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_SESSION_TOKEN=AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
-
- # *nix, eval export ENV vars into current shell
-$ eval `okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com` && aws s3 ls
-2018-04-04 11:56:00 test-bucket
-2021-06-10 12:47:11 mah-bucket
 
 rem Windows setx statements
 C:\> okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com
@@ -92,13 +87,13 @@ authorization at the Okta web site. After that the human returns to the CLI they
 select an identity provider and a role from that IdP.
 
 Web command is an integration that pairs an Okta [OIDC Native
-Application](https://developer.okta.com/blog/2021/11/12/native-sso) with an 
+Application](https://developer.okta.com/blog/2021/11/12/native-sso) with an
 [Okta AWS Federation integration
 application](https://www.okta.com/integrations/aws-account-federation/). In turn
 the Okta AWS Fed app is itself paired with an [AWS IAM identity
 provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create.html).
 The Okta AWS Fed app is SAML based and the Okta AWS CLI interacts with AWS IAM
-using 
+using
 [AssumeRoleWithSAML](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithSAML.html).
 
 `okta-aws-cli web` handles authentication through Okta and presents a SAML
@@ -131,10 +126,9 @@ at `Applications > [the OIDC app] > General Settings > Grant type`.
 
  If [Multiple AWS environments](#multiple-aws-environments) (see below) are to
  be supported by a single OIDC application, the OIDC app must have the
- `okta.apps.read` grant. Apps read and other application grants are configured
- at `Applications > [the OIDC app] > Okta API Scopes` in the Okta Admin UI.
- *NOTE*: the Okta Management API only supports the `okta.apps.read` grant for
- admin users at this time (see ["Non-Admin Users"](#non-admin-users)).
+ `okta.apps.read` grant for admin users and `okta.users.read.self` for non-admin
+ users. Application grants are configured at `Applications > [the OIDC app] >
+ Okta API Scopes` in the Okta Admin UI.
  
 The pairing with the AWS Federation Application is achieved in the Fed app's
 Sign On Settings. These settings are in the Okta Admin UI at `Applications > [the
@@ -156,14 +150,11 @@ URL below. Then follow the directions in that wizard.
 
 #### Multiple AWS environments
 
-**NOTE**: Multiple AWS environments works correctly without extra configuration
-for admin users. See ["Non-Admin Users"](#non-admin-users) for extra
-configuration needed for non-admin users.
-
 To support multiple AWS environments, associate additional AWS Federation
-applications with the OIDC app The OIDC app **must** have the `okta.apps.read`
-grant. The following is an illustration of the association of objects that make
-up this kind of configuration.
+applications with an OIDC app. The OIDC app **must** have the `okta.apps.read`
+grant to support admin users. To support non-admin users the OIDC app **must**
+have the `okta.users.read.self` grant. The following is an illustration of the
+association of objects that make up this kind of configuration.
 
 ![okta-aws-cli supporting multiple AWS environments](./doc/multi-aws-environments.jpg)
 
@@ -173,6 +164,18 @@ up this kind of configuration.
 * Fed App #3 is oriented for an administrator is comprised of an IdP and Role with many different permissions
 
 #### Non-Admin Users
+
+The CLI will work for non-admin users if the OIDC Native app is granted the
+`okta.users.read.self` scope. The API endpoint `GET /api/v1/users/me/appLinks`
+is referenced to discover which applications are assigned to the non-admin user.
+
+**IMPORTANT!!!**
+
+Below is a deprecated recommendation for non-admin users. We are leaving it in
+the README for legacy purposes. We are no longer recommending this workaround so
+long as the OIDC app is granted the `okta.users.read.self` scope.
+
+**OLD work around for non-admin users**
 
 Multiple AWS environments requires extra configuration for non-admin users.
 Follow these steps to support non-admin users.
@@ -621,7 +624,9 @@ have equivalent policies if not share the same policy. If the AWS Federation
 app has more stringent assurance requirements than the OIDC app a `400 Bad
 Request` API error is likely to occur.
 
-Note: In authentication policy rule of AWS Federation app, **Device State** must be set to **Any** for using Okta AWS CLI. Other options are not supported at this time.
+**NOTE**: In authentication policy rule of AWS Federation app, **Device State**
+must be set to **Any** for using Okta AWS CLI. Other options are not supported
+at this time.
 
 ## Operation
 
@@ -682,12 +687,16 @@ $ eval `okta-aws-cli`
 $ aws s3 ls
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
+
+$ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com --exec -- aws s3 ls s3://example
+                           PRE aaa/
+2023-03-08 16:01:01          4 a.log
 ```
 
 ### AWS credentials file orientated usage
 
-**NOTE**: example assumes other Okta AWS CLI configuration values have already been
-set by ENV variables or `.env` file.
+**NOTE**: example assumes other Okta AWS CLI configuration values have already
+been set by ENV variables or `.env` file.
 
 ```shell
 $ okta-aws-cli web --oidc-client-id 0oabc --org-domain my-org.okta.com --profile test --format aws-credentials && \
@@ -704,7 +713,10 @@ Wrote profile "test" to /Users/mikemondragon/.aws/credentials
 2018-04-04 11:56:00 test-bucket
 2021-06-10 12:47:11 mah-bucket
 ```
-**NOTE**: Writing to the AWS credentials file will include the `x_security_token_expires` value in RFC3339 format. This allows tools dependent on valid AWS credentials to validate if they are expired or not, and potentially trigger a refresh if needed.
+**NOTE**: Writing to the AWS credentials file will include the
+*`x_security_token_expires` value in RFC3339 format. This allows tools dependent
+*on valid AWS credentials to validate if they are expired or not, and
+*potentially trigger a refresh if needed.
 
 **NOTE**: the Okta AWS CLI will only append to the AWS credentials file. Be sure to
 comment out or remove previous named profiles from the credentials file.
