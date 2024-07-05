@@ -21,10 +21,8 @@ build: fmtcheck
 	go build -o $(GOBIN)/okta-aws-cli cmd/okta-aws-cli/main.go
 
 clean:
-	go clean -cache -testcache ./...
-
-clean-all:
-	go clean -cache -testcache -modcache ./...
+	rm -fr dist/
+	go clean -testcache
 
 fmt: tools # Format the code
 	@$(GOFMT) -l -w .
