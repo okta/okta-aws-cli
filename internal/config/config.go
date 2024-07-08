@@ -40,7 +40,7 @@ func init() {
 
 const (
 	// Version app version
-	Version = "2.2.0"
+	Version = "2.3.0"
 
 	////////////////////////////////////////////////////////////
 	// FORMATS
