@@ -79,9 +79,15 @@ func NewWebCommand() *cobra.Command {
 		Use:   "web",
 		Short: "Human oriented authentication and device authorization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.EvaluateSettings()
+			cfg, err := config.EvaluateSettings()
 			if err != nil {
 				return err
+			}
+
+			// Warn if there is an issue with okta.yaml
+			_, err = config.OktaConfig()
+			if err != nil {
+				webssoauth.ConsolePrint(cfg, "WARNING: issue with %s file. Run `okta-aws-cli debug` command for additional diagnosis.\nError: %+v\n", config.OktaYaml, err)
 			}
 
 			err = cliFlag.CheckRequiredFlags(requiredFlags)
@@ -90,7 +96,7 @@ func NewWebCommand() *cobra.Command {
 			}
 
 			for attempt := 1; attempt <= 2; attempt++ {
-				wsa, err := webssoauth.NewWebSSOAuthentication(config)
+				wsa, err := webssoauth.NewWebSSOAuthentication(cfg)
 				if err != nil {
 					break
 				}
@@ -102,7 +108,7 @@ func NewWebCommand() *cobra.Command {
 
 				if apiErr, ok := err.(*okta.APIError); ok {
 					if apiErr.ErrorType == "invalid_grant" && webssoauth.RemoveCachedAccessToken() {
-						webssoauth.ConsolePrint(config, "\nCached access token appears to be stale, removing token and retrying device authorization ...\n\n")
+						webssoauth.ConsolePrint(cfg, "\nCached access token appears to be stale, removing token and retrying device authorization ...\n\n")
 						continue
 					}
 					break
