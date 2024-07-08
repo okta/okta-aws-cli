@@ -21,6 +21,7 @@ import (
 
 	"github.com/okta/okta-aws-cli/internal/config"
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
+	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/webssoauth"
 )
 
@@ -82,16 +83,33 @@ func NewWebCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			err = cliFlag.CheckRequiredFlags(requiredFlags)
 			if err != nil {
 				return err
 			}
 
-			wsa, err := webssoauth.NewWebSSOAuthentication(config)
-			if err != nil {
-				return err
+			for attempt := 1; attempt <= 2; attempt++ {
+				wsa, err := webssoauth.NewWebSSOAuthentication(config)
+				if err != nil {
+					break
+				}
+
+				err = wsa.EstablishIAMCredentials()
+				if err == nil {
+					break
+				}
+
+				if apiErr, ok := err.(*okta.APIError); ok {
+					if apiErr.ErrorType == "invalid_grant" && webssoauth.RemoveCachedAccessToken() {
+						webssoauth.ConsolePrint(config, "\nCached access token appears to be stale, removing token and retrying device authorization ...\n\n")
+						continue
+					}
+					break
+				}
 			}
-			return wsa.EstablishIAMCredentials()
+
+			return err
 		},
 	}
 
