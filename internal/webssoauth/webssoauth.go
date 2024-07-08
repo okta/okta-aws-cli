@@ -948,7 +948,7 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 			if err != nil {
 				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API error body %q", string(bodyBytes)))
 			}
-			if apiErr.ErrorType != "authorization_pending" {
+			if apiErr.ErrorType != "authorization_pending" && apiErr.ErrorType != "slow_down" {
 				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API polling error %q - %q", apiErr.ErrorType, apiErr.ErrorDescription))
 			}
 
