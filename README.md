@@ -48,6 +48,7 @@ format.
      - [Non-Admin Users](#non-admin-users)
  - [M2M Command](#m2m-command)
    - [M2M Command Requirements](#m2m-command-requirements)
+ - [List-Profiles Command](#list-profiles-command)
  - [Configuration](#configuration)
    - [Global settings](#global-settings)
    - [Web command settings](#web-command-settings)
@@ -70,6 +71,7 @@ format.
 | (empty) | When `okta-aws-cli` is executed without a subcommand and without arguments it will print the online help and exit. |
 | `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. Note: if `okta-aws-cli` is not given a subcommand it defaults to this original `web` command when other arguments are present. |
 | `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. IMPORTANT! This a not a feature intended for a human use case. Be sure to use industry state of the art secrets management techniques with the private key. |
+| `list-profiles` | Lists profile names in ~/.okta/okta.yaml. |
 | `debug` | Debug okta.yaml config file and exit. |
 
 ## Web Command
@@ -318,6 +320,20 @@ associated with the IdP need to have a trust relationship established on the
 role of the `sts:AssumeRoleWithWebIdentity` action type. This setting is on the
 trust relationship tab when viewing a specific role in the AWS Console. Also
 note the ARNs of these roles for later use.
+
+## List-Profiles Command
+
+```shell
+$ okta-aws-cli list-profiles
+Profiles:
+
+ sample-account X(Non-Prod)
+ sample-account X (Prod)
+ another-sample-account Y (Non-Prod)
+```
+
+List-profiles command is a human oriented command to show the list of profile names stored in the ~/.okta/okta.yaml file.  The user
+executes `okta-aws-cli list-profiles` where a list of profile name shall be listed for convenience.  The names will be indented.
 
 ## Configuration
 ### Global settings
