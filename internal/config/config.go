@@ -384,7 +384,7 @@ func getFlagNameFromProfile(awsProfile string, flag string) string {
 	return flag
 }
 
-// Returns the config profile names
+// ReadConfigProfileKeys returns the config profile names
 func (c *Config) ReadConfigProfileKeys() ([]string, error) {
 	// Side loading multiple profiles from okta.yaml file if it exists
 	if oktaConfig, err := OktaConfig(); err == nil {

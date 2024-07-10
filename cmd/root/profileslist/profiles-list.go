@@ -23,7 +23,7 @@ import (
 	"github.com/okta/okta-aws-cli/internal/config"
 )
 
-// NewProfileListCommand Sets up the debug cobra sub command
+// NewProfilesListCommand Sets up the debug cobra sub command
 func NewProfilesListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-profiles",
