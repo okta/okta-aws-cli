@@ -63,13 +63,15 @@ $ git checkout -b feature_x
    (make your changes)
 $ git status
 $ git add <files>
-$ git commit -m "descriptive commit message for your changes"
+$ git commit -S -m "descriptive commit message for your changes"
 ```
 
 > The `-b` specifies that you want to create a new branch called `feature_x`.
 > You only specify `-b` the first time you checkout because you are creating a
 > new branch.  Once the `feature_x` branch exists, you can later switch to it
 > with only `git checkout feature_x`.
+> The `-S` on the commit signs the commit. Please ensure you follow the instructions on  
+> [https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
 
 
 Rebase `feature_x` to include updates from `upstream/master`

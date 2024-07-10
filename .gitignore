@@ -2,3 +2,5 @@ dist/
 .vscode
 .env*
 !.env.example
+bin/
+.idea
