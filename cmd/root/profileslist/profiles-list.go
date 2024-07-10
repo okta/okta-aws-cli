@@ -34,7 +34,7 @@ func NewProfilesListCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Profiles:\n")
+			fmt.Println("Profiles:")
 
 			keys, err := config.ReadConfigProfileKeys()
 
