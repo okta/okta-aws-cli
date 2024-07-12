@@ -59,7 +59,7 @@ type Paginator struct {
 }
 
 // NewPaginator Paginator constructor
-func NewPaginator(httpClient *http.Client, url *url.URL, headers *map[string]string, params *map[string]string) *Paginator {
+func NewPaginator(httpClient *http.Client, url *url.URL, headers, params *map[string]string) *Paginator {
 	pgntr := Paginator{
 		httpClient: httpClient,
 		url:        url,

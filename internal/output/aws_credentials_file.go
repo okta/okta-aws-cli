@@ -41,7 +41,7 @@ const (
 )
 
 // ensureConfigExists verify that the config file exists
-func ensureConfigExists(filename string, profile string) error {
+func ensureConfigExists(filename, profile string) error {
 	if _, err := os.Stat(filename); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			dir := filepath.Dir(filename)
@@ -65,7 +65,7 @@ func ensureConfigExists(filename string, profile string) error {
 	return nil
 }
 
-func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string, regionVar string) error {
+func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry, regionVar string) error {
 	config, err := updateConfig(filename, profile, cfc, legacyVars, expiryVars, expiry, regionVar)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func saveProfile(filename, profile string, cfc *oaws.CredsFileCredential, legacy
 	return nil
 }
 
-func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry string, region string) (config *ini.File, err error) {
+func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legacyVars, expiryVars bool, expiry, region string) (config *ini.File, err error) {
 	config, err = ini.Load(filename)
 	if err != nil {
 		return
@@ -131,7 +131,7 @@ func updateConfig(filename, profile string, cfc *oaws.CredsFileCredential, legac
 
 // updateIni will comment out any keys that are not "aws_access_key_id",
 // "aws_secret_access_key", "aws_session_token", "credential_process"
-func updateINI(config *ini.File, profile string, legacyVars bool, expiryVars bool, region string) (*ini.File, error) {
+func updateINI(config *ini.File, profile string, legacyVars, expiryVars bool, region string) (*ini.File, error) {
 	ignore := []string{
 		"aws_access_key_id",
 		"aws_secret_access_key",
@@ -184,7 +184,7 @@ type AWSCredentialsFile struct {
 }
 
 // NewAWSCredentialsFile Creates a new
-func NewAWSCredentialsFile(legacyVars bool, expiryVars bool, expiry string) *AWSCredentialsFile {
+func NewAWSCredentialsFile(legacyVars, expiryVars bool, expiry string) *AWSCredentialsFile {
 	return &AWSCredentialsFile{
 		LegacyAWSVariables: legacyVars,
 		ExpiryAWSVariables: expiryVars,
