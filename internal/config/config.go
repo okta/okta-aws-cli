@@ -370,7 +370,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 	return cfg, nil
 }
 
-func getFlagNameFromProfile(awsProfile string, flag string) string {
+func getFlagNameFromProfile(awsProfile, flag string) string {
 	profileKey := fmt.Sprintf("%s.%s", awsProfile, flag)
 	if awsProfile != "" && viper.IsSet(profileKey) && viper.Get(profileKey) != "" {
 		// NOTE: If the flag was from a multiple profiles keyed by aws profile

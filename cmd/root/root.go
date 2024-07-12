@@ -18,9 +18,10 @@ package root
 
 import (
 	"fmt"
-	"github.com/okta/okta-aws-cli/cmd/root/profileslist"
 	"os"
 	"path/filepath"
+
+	"github.com/okta/okta-aws-cli/cmd/root/profileslist"
 
 	"github.com/spf13/cobra"
 
