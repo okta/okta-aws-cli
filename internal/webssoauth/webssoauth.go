@@ -28,7 +28,6 @@ import (
 	"net/url"
 	"os"
 	osexec "os/exec"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -723,16 +722,9 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		baseErrStr := "fetching SSO web token received API response %q"
-
-		var apiErr okta.APIError
-		err = json.NewDecoder(resp.Body).Decode(&apiErr)
-		if err != nil {
-			return nil, fmt.Errorf(baseErrStr, resp.Status)
-		}
-
-		return nil, fmt.Errorf(baseErrStr+okta.AccessTokenErrorFormat, resp.Status, apiErr.Error, apiErr.ErrorDescription)
+	err = okta.NewAPIError(resp)
+	if err != nil {
+		return nil, err
 	}
 
 	token = &okta.AccessToken{}
@@ -956,8 +948,8 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 			if err != nil {
 				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API error body %q", string(bodyBytes)))
 			}
-			if apiErr.Error != "authorization_pending" {
-				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API polling error %q - %q", apiErr.Error, apiErr.ErrorDescription))
+			if apiErr.ErrorType != "authorization_pending" && apiErr.ErrorType != "slow_down" {
+				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API polling error %q - %q", apiErr.ErrorType, apiErr.ErrorDescription))
 			}
 
 			return errors.New("continue polling")
@@ -1120,15 +1112,37 @@ func (w *WebSSOAuthentication) isClassicOrg() bool {
 	return false
 }
 
+// cachedAccessTokenPath Path to the cached access token in $HOME/.okta/awscli-access-token.json
+func cachedAccessTokenPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, dotOktaDir, tokenFileName), nil
+}
+
+// RemoveCachedAccessToken Remove cached access token if it exists. Returns true
+// if the file exists was reremoved, swallows errors otherwise.
+func RemoveCachedAccessToken() bool {
+	accessTokenPath, err := cachedAccessTokenPath()
+	if err != nil {
+		return false
+	}
+	if os.Remove(accessTokenPath) != nil {
+		return false
+	}
+
+	return true
+}
+
 // cachedAccessToken will returned the cached access token if it exists and is
 // not expired.
 func (w *WebSSOAuthentication) cachedAccessToken() (at *okta.AccessToken) {
-	homeDir, err := os.UserHomeDir()
+	accessTokenPath, err := cachedAccessTokenPath()
 	if err != nil {
 		return
 	}
-	configPath := filepath.Join(homeDir, dotOktaDir, tokenFileName)
-	atJSON, err := os.ReadFile(configPath)
+	atJSON, err := os.ReadFile(accessTokenPath)
 	if err != nil {
 		return
 	}
@@ -1158,15 +1172,12 @@ func (w *WebSSOAuthentication) cacheAccessToken(at *okta.AccessToken) {
 		return
 	}
 
-	cUser, err := user.Current()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	if cUser.HomeDir == "" {
-		return
-	}
 
-	oktaDir := filepath.Join(cUser.HomeDir, dotOktaDir)
+	oktaDir := filepath.Join(homeDir, dotOktaDir)
 	// noop if dir exists
 	err = os.MkdirAll(oktaDir, 0o700)
 	if err != nil {
@@ -1178,16 +1189,21 @@ func (w *WebSSOAuthentication) cacheAccessToken(at *okta.AccessToken) {
 		return
 	}
 
-	configPath := filepath.Join(cUser.HomeDir, dotOktaDir, tokenFileName)
+	configPath := filepath.Join(homeDir, dotOktaDir, tokenFileName)
 	_ = os.WriteFile(configPath, atJSON, 0o600)
 }
 
-func (w *WebSSOAuthentication) consolePrint(format string, a ...any) {
-	if w.config.IsProcessCredentialsFormat() {
+// ConsolePrint printf formatted warning messages.
+func ConsolePrint(config *config.Config, format string, a ...any) {
+	if config.IsProcessCredentialsFormat() {
 		return
 	}
 
 	fmt.Fprintf(os.Stderr, format, a...)
+}
+
+func (w *WebSSOAuthentication) consolePrint(format string, a ...any) {
+	ConsolePrint(w.config, format, a...)
 }
 
 // fetchAllAWSCredentialsWithSAMLRole Gets all AWS Credentials with an STS Assume Role with SAML AWS API call.

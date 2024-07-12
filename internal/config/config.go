@@ -40,7 +40,7 @@ func init() {
 
 const (
 	// Version app version
-	Version = "2.2.0"
+	Version = "2.3.0"
 
 	////////////////////////////////////////////////////////////
 	// FORMATS
@@ -420,7 +420,17 @@ func readConfig() (Attributes, error) {
 		}
 	}
 
+	// config loading order
+	// 1) command line flags 2) environment variables, 3) .env file
 	awsProfile := viper.GetString(ProfileFlag)
+	// mimic AWS CLI behavior, if profile value is not set by flag check
+	// the ENV VAR, else set to "default"
+	if awsProfile == "" {
+		awsProfile = viper.GetString(downCase(ProfileEnvVar))
+	}
+	if awsProfile == "" {
+		awsProfile = "default"
+	}
 
 	attrs := Attributes{
 		AllProfiles:         viper.GetBool(getFlagNameFromProfile(awsProfile, AllProfilesFlag)),
@@ -452,15 +462,6 @@ func readConfig() (Attributes, error) {
 	}
 	if attrs.Format == "" {
 		attrs.Format = EnvVarFormat
-	}
-
-	// mimic AWS CLI behavior, if profile value is not set by flag check
-	// the ENV VAR, else set to "default"
-	if attrs.Profile == "" {
-		attrs.Profile = viper.GetString(downCase(ProfileEnvVar))
-	}
-	if attrs.Profile == "" {
-		attrs.Profile = "default"
 	}
 
 	// Viper binds ENV VARs to a lower snake version, set the configs with them

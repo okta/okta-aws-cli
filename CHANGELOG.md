@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.0 (July 12, 2024)
+
+### ENHANCEMENTS
+
+* New command `okta-aws-cli list-profiles` helper to inspect profiles in okta.yaml [#222](https://github.com/okta/okta-aws-cli/pull/222), thanks [@pmgalea](https://github.com/pmgalea)!
+* GH releases publish Windows artifact to Chocolatey [#215](https://github.com/okta/okta-aws-cli/pull/215), thanks [@monde](https://github.com/monde)!
+* Better retry for when the cached access token has been invalidated outside of okta-aws-cli's control. [#220](https://github.com/okta/okta-aws-cli/pull/220), thanks [@monde](https://github.com/monde)!
+* Print a warning at first run if otka.yaml is malformed. [#220](https://github.com/okta/okta-aws-cli/pull/220), thanks [@monde](https://github.com/monde)!
+
+### BUG FIXES
+
+*  Correct "default" profile flaw introduced in 2.2.0 release [#220](https://github.com/okta/okta-aws-cli/pull/220), thanks [@monde](https://github.com/monde)!
+*  Continue polling instead of exit on a 400 "slow_down" API error [#220](https://github.com/okta/okta-aws-cli/pull/220), thanks [@monde](https://github.com/monde)!
+
 ## 2.2.0 (July 3, 2024)
 
 ### ENHANCEMENTS

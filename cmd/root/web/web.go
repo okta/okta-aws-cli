@@ -21,6 +21,7 @@ import (
 
 	"github.com/okta/okta-aws-cli/internal/config"
 	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
+	"github.com/okta/okta-aws-cli/internal/okta"
 	"github.com/okta/okta-aws-cli/internal/webssoauth"
 )
 
@@ -78,20 +79,43 @@ func NewWebCommand() *cobra.Command {
 		Use:   "web",
 		Short: "Human oriented authentication and device authorization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.EvaluateSettings()
+			cfg, err := config.EvaluateSettings()
 			if err != nil {
 				return err
 			}
+
+			// Warn if there is an issue with okta.yaml
+			_, err = config.OktaConfig()
+			if err != nil {
+				webssoauth.ConsolePrint(cfg, "WARNING: issue with %s file. Run `okta-aws-cli debug` command for additional diagnosis.\nError: %+v\n", config.OktaYaml, err)
+			}
+
 			err = cliFlag.CheckRequiredFlags(requiredFlags)
 			if err != nil {
 				return err
 			}
 
-			wsa, err := webssoauth.NewWebSSOAuthentication(config)
-			if err != nil {
-				return err
+			for attempt := 1; attempt <= 2; attempt++ {
+				wsa, err := webssoauth.NewWebSSOAuthentication(cfg)
+				if err != nil {
+					break
+				}
+
+				err = wsa.EstablishIAMCredentials()
+				if err == nil {
+					break
+				}
+
+				if apiErr, ok := err.(*okta.APIError); ok {
+					if apiErr.ErrorType == "invalid_grant" && webssoauth.RemoveCachedAccessToken() {
+						webssoauth.ConsolePrint(cfg, "\nCached access token appears to be stale, removing token and retrying device authorization ...\n\n")
+						continue
+					}
+					break
+				}
 			}
-			return wsa.EstablishIAMCredentials()
+
+			return err
 		},
 	}
 
