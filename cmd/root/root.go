@@ -21,6 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/okta/okta-aws-cli/cmd/root/profileslist"
+
 	"github.com/spf13/cobra"
 
 	debugCmd "github.com/okta/okta-aws-cli/cmd/root/debug"
@@ -157,6 +159,8 @@ func init() {
 	rootCmd.AddCommand(m2mCmd)
 	debugCfgCmd := debugCmd.NewDebugCommand()
 	rootCmd.AddCommand(debugCfgCmd)
+	listProfilesCmd := profileslist.NewProfilesListCommand()
+	rootCmd.AddCommand(listProfilesCmd)
 }
 
 // NewRootCommand Sets up the root cobra command
