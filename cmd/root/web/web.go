@@ -17,6 +17,8 @@
 package web
 
 import (
+	"io/fs"
+
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -87,7 +89,10 @@ func NewWebCommand() *cobra.Command {
 			// Warn if there is an issue with okta.yaml
 			_, err = config.OktaConfig()
 			if err != nil {
-				webssoauth.ConsolePrint(cfg, "WARNING: issue with %s file. Run `okta-aws-cli debug` command for additional diagnosis.\nError: %+v\n", config.OktaYaml, err)
+				if _, pathError := err.(*fs.PathError); !pathError {
+					webssoauth.ConsolePrint(cfg, "WARNING: issue with %s file. Run `okta-aws-cli debug` command for additional diagnosis.\nError: %+v\n", config.OktaYaml, err)
+
+				}
 			}
 
 			err = cliFlag.CheckRequiredFlags(requiredFlags)
