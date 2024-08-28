@@ -172,13 +172,13 @@ The example diagram reflects the following:
 * Fed App #2 is linked to an IdP and Role dedicated to ec2 operations
 * Fed App #3 is oriented for an administrator is comprised of an IdP and Role with many different permissions
 
-#### Non-Admin Users
+##### Multiple AWS environments for Non-Admin Users
 
-The CLI will work for non-admin users if the OIDC Native app is granted the
-`okta.users.read.self` scope and the user is assigned to the OIDC Native app and
-assigned to each Okta AWS Federation app. The API endpoint `GET
-/api/v1/users/me/appLinks` is referenced to discover which applications are
-assigned to the non-admin user.
+The multiple AWS environments featute will work for non-admin users if the
+OIDC Native app is granted the`okta.users.read.self` scope and the user is
+assigned to the OIDC Native app and assigned to each Okta AWS Federation app.
+The API endpoint `GET /api/v1/users/me/appLinks` is referenced to discover
+which applications are assigned to the non-admin user.
 
 **IMPORTANT!!!**
 
