@@ -97,6 +97,9 @@ func NewWebCommand() *cobra.Command {
 
 			for attempt := 1; attempt <= 2; attempt++ {
 				wsa, err := webssoauth.NewWebSSOAuthentication(cfg)
+				if _, ok := err.(*webssoauth.ClassicOrgError); ok {
+					return err
+				}
 				if err != nil {
 					break
 				}

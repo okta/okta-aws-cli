@@ -125,7 +125,7 @@ func NewWebSSOAuthentication(cfg *config.Config) (token *WebSSOAuthentication, e
 		config: cfg,
 	}
 	if token.isClassicOrg() {
-		return nil, fmt.Errorf("%q is a Classic org, okta-aws-cli is an-OIE only tool", cfg.OrgDomain())
+		return nil, NewClassicOrgError(cfg.OrgDomain())
 	}
 	if cfg.IsProcessCredentialsFormat() {
 		if cfg.AWSIAMIdP() == "" || cfg.AWSIAMRole() == "" || !cfg.OpenBrowser() {
@@ -1077,6 +1077,21 @@ func apiErr(bodyBytes []byte) (ae *okta.APIError, err error) {
 	ae = &okta.APIError{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
 	return
+}
+
+// ClassicOrgError Convenience error class.
+type ClassicOrgError struct {
+	orgDomain string
+}
+
+// NewClassicOrgError ClassicOrgError constructor
+func NewClassicOrgError(orgDomain string) *ClassicOrgError {
+	return &ClassicOrgError{orgDomain: orgDomain}
+}
+
+// Error Error interface error message
+func (e *ClassicOrgError) Error() string {
+	return fmt.Sprintf("%q is a Classic org, okta-aws-cli is an-OIE only tool", e.orgDomain)
 }
 
 // isClassicOrg Conduct simple check of well known endpoint to determine if the
