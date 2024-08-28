@@ -174,7 +174,7 @@ The example diagram reflects the following:
 
 ##### Multiple AWS environments for Non-Admin Users
 
-The multiple AWS environments featute will work for non-admin users if the
+The multiple AWS environments feature will work for non-admin users if the
 OIDC Native app is granted the`okta.users.read.self` scope and the user is
 assigned to the OIDC Native app and assigned to each Okta AWS Federation app.
 The API endpoint `GET /api/v1/users/me/appLinks` is referenced to discover
