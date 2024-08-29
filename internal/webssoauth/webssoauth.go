@@ -183,7 +183,11 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 
 		apps, err = w.listFedApps(clientID, at)
 		if at != nil && err != nil {
-			w.consolePrint("Listing federation apps failed first time, retrying ...\n\n")
+			action := "exiting."
+			if attempt == 1 {
+				action = "retrying ..."
+			}
+			w.consolePrint("Listing federation apps failed, %s\n\n", action)
 			// possible bad cached access token, retry
 			at = nil
 			continue
@@ -815,14 +819,9 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 	allApps := make([]*okta.Application, 0)
 	resp, err := pgntr.GetItems(&allApps)
 	if resp.StatusCode == http.StatusForbidden {
-		// fall back to using app links
+		// fall back to using app links, that endpoint doesn't have pagination
+		// so there isn't anything to DRY up between the two kinds of API calls
 		return w.listFedAppsFromAppLinks(&headers)
-
-		// TODO: might be worth spending some time DRY-ing up with an an
-		// okta.App interface that okta.ApplicationLink and okta.Application
-		// implement so we can get rid of the extra listFedAppsFromAppLinks
-		// method. If the first call to GetItems fails make a new paginator that
-		// uses the /api/v1/users/me/appLinks endpoint.
 	}
 	if err != nil {
 		return nil, err
@@ -860,37 +859,22 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 // via appLinks Requires assoicated OIDC app has been granted
 // okta.users.read.self to its scope.
 func (w *WebSSOAuthentication) listFedAppsFromAppLinks(headers *map[string]string) ([]*okta.Application, error) {
+	// appLinks doesn't have pagination/limit, filter, or query parameters
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/users/me/appLinks", w.config.OrgDomain()))
 	if err != nil {
 		return nil, err
 	}
 
-	params := map[string]string{
-		// NOTE: leaving in limit 200 but it doesn't appear that /api/v1/users/me/appLinks makes use of the limit parameter
-		"limit":  "200",
-		"q":      amazonAWS,
-		"filter": `status eq "ACTIVE"`,
-	}
-	pgntr := paginator.NewPaginator(w.config.HTTPClient(), apiURL, headers, &params)
+	pgntr := paginator.NewPaginator(w.config.HTTPClient(), apiURL, headers, nil)
 
 	allApps := make([]*okta.ApplicationLink, 0)
-	resp, err := pgntr.GetItems(&allApps)
+	_, err = pgntr.GetItems(&allApps)
 	if err != nil {
 		return nil, err
 	}
 
-	for resp.HasNextPage() {
-		var nextApps []*okta.ApplicationLink
-		resp, err = resp.Next(&nextApps)
-		if err != nil {
-			return nil, err
-		}
-		allApps = append(allApps, nextApps...)
-	}
-
 	apps := make([]*okta.Application, 0)
 	for _, appLink := range allApps {
-		// even though the query was for AWS fed apps check just in case
 		if appLink.Name != amazonAWS {
 			continue
 		}

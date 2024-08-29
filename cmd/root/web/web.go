@@ -91,7 +91,6 @@ func NewWebCommand() *cobra.Command {
 			if err != nil {
 				if _, pathError := err.(*fs.PathError); !pathError {
 					webssoauth.ConsolePrint(cfg, "WARNING: issue with %s file. Run `okta-aws-cli debug` command for additional diagnosis.\nError: %+v\n", config.OktaYaml, err)
-
 				}
 			}
 
