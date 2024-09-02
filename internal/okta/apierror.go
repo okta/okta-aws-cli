@@ -29,11 +29,11 @@ import (
 
 const (
 	// APIErrorMessageBase base API error message
-	APIErrorMessageBase = "the API returned an unknown error"
+	APIErrorMessageBase = "Okta API returned an unknown error"
 	// APIErrorMessageWithErrorDescription API error message with description
-	APIErrorMessageWithErrorDescription = "the API returned an error: %s"
+	APIErrorMessageWithErrorDescription = "Okta API returned an error: %s"
 	// APIErrorMessageWithErrorSummary API error message with summary
-	APIErrorMessageWithErrorSummary = "the API returned an error: %s"
+	APIErrorMessageWithErrorSummary = "Okta API returned an error: %s"
 	// HTTPHeaderWwwAuthenticate Www-Authenticate header
 	HTTPHeaderWwwAuthenticate = "Www-Authenticate"
 )

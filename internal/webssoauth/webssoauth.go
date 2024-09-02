@@ -149,52 +149,29 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 	var at *okta.AccessToken
 	var apps []*okta.Application
 	var err error
+
 	at = w.cachedAccessToken()
-
-	// If there is a cached okta access token, and it isn't expired, but the API
-	// 401s redo the authorize step.
-	for attempt := 1; attempt <= 2; attempt++ {
-		err = nil
-		if at == nil {
-			deviceAuth, err := w.authorize()
-			if err != nil {
-				return err
-			}
-
-			w.promptAuthentication(deviceAuth)
-
-			at, err = w.accessToken(deviceAuth)
-			if err != nil {
-				return err
-			}
-			at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
-			w.cacheAccessToken(at)
-		}
-		if w.config.FedAppID() != "" {
-			// Alternate path when operator knows their AWS Fed app ID
-			err = w.establishTokenWithFedAppID(clientID, w.config.FedAppID(), at, w.config.AWSRegion())
-			if at != nil && err != nil {
-				// possible bad cached access token, retry
-				at = nil
-				continue
-			}
+	if at == nil {
+		deviceAuth, err := w.authorize()
+		if err != nil {
 			return err
 		}
 
-		apps, err = w.listFedApps(clientID, at)
-		if at != nil && err != nil {
-			action := "exiting."
-			if attempt == 1 {
-				action = "retrying ..."
-			}
-			w.consolePrint("Listing federation apps failed, %s\n\n", action)
-			// possible bad cached access token, retry
-			at = nil
-			continue
+		w.promptAuthentication(deviceAuth)
+		at, err = w.accessToken(deviceAuth)
+		if err != nil {
+			return err
 		}
-		break
+		at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
+
+		w.cacheAccessToken(at)
 	}
 
+	if w.config.FedAppID() != "" {
+		return w.establishTokenWithFedAppID(clientID, w.config.FedAppID(), at, w.config.AWSRegion())
+	}
+
+	apps, err = w.listFedApps(clientID, at)
 	if err != nil {
 		return err
 	}
@@ -1075,7 +1052,7 @@ func NewClassicOrgError(orgDomain string) *ClassicOrgError {
 
 // Error Error interface error message
 func (e *ClassicOrgError) Error() string {
-	return fmt.Sprintf("%q is a Classic org, okta-aws-cli is an-OIE only tool", e.orgDomain)
+	return fmt.Sprintf("%q is a Classic org, okta-aws-cli is an OIE only tool", e.orgDomain)
 }
 
 // isClassicOrg Conduct simple check of well known endpoint to determine if the

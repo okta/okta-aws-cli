@@ -86,10 +86,10 @@ func NewWebCommand() *cobra.Command {
 				return err
 			}
 
-			// Warn if there is an issue with okta.yaml
 			_, err = config.OktaConfig()
 			if err != nil {
 				if _, pathError := err.(*fs.PathError); !pathError {
+					// Warn if okta.yaml exists and there is an error with it.
 					webssoauth.ConsolePrint(cfg, "WARNING: issue with %s file. Run `okta-aws-cli debug` command for additional diagnosis.\nError: %+v\n", config.OktaYaml, err)
 				}
 			}
@@ -101,25 +101,22 @@ func NewWebCommand() *cobra.Command {
 
 			for attempt := 1; attempt <= 2; attempt++ {
 				wsa, err := webssoauth.NewWebSSOAuthentication(cfg)
-				if _, ok := err.(*webssoauth.ClassicOrgError); ok {
-					return err
-				}
 				if err != nil {
-					break
+					return err
 				}
 
 				err = wsa.EstablishIAMCredentials()
-				if err == nil {
-					break
-				}
-
 				if apiErr, ok := err.(*okta.APIError); ok {
 					if apiErr.ErrorType == "invalid_grant" && webssoauth.RemoveCachedAccessToken() {
-						webssoauth.ConsolePrint(cfg, "\nCached access token appears to be stale, removing token and retrying device authorization ...\n\n")
+						webssoauth.ConsolePrint(cfg, "Cached access token appears to be stale, removing token and retrying device authorization ...\n\n")
 						continue
 					}
-					break
 				}
+				if err != nil {
+					return err
+				}
+
+				break
 			}
 
 			return err
