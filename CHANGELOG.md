@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.1 (September 03, 2024)
+
+### BUG FIXES
+
+* Fix buggy retry error loop that causes operator confusion. [#237](https://github.com/okta/okta-aws-cli/pull/237), thanks [@monde](https://github.com/monde)!
+* Clean up the non-admin user experience. [#235](https://github.com/okta/okta-aws-cli/pull/235), thanks [@monde](https://github.com/monde)!
+* Don't warn if okta.yaml doesn't exist. [#232](https://github.com/okta/okta-aws-cli/pull/232), thanks [@monde](https://github.com/monde)!
+* Correct Classic Org error and expected exit. [#231](https://github.com/okta/okta-aws-cli/pull/231), thanks [@monde](https://github.com/monde)!
+
 ## 2.3.0 (July 12, 2024)
 
 ### ENHANCEMENTS
