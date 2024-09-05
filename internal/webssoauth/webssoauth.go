@@ -458,63 +458,53 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[str
 }
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
-func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
-	oktaConfig, err := config.OktaConfig()
-	var configRoles map[string]string
-	if err == nil {
-		configRoles = oktaConfig.AWSCLI.ROLES
-	}
-
-	if len(roleARNs) == 1 || w.config.AWSIAMRole() != "" {
-		roleARN = w.config.AWSIAMRole()
-		if len(roleARNs) == 1 {
-			roleARN = roleARNs[0]
-		}
-		roleLabel := w.choiceFriendlyLabelRole(roleARN, configRoles)
-		roleData := roleTemplateData{
-			Role: roleLabel,
-		}
-
-		// reverse case when friendly role name alias is given as the input value
-		// --aws-iam-role "OK S3 Read"
-		if roleLabel == roleARN {
-			for rARN, rLbl := range configRoles {
-				if roleARN == rLbl {
-					roleARN = rARN
-					break
-				}
-			}
-		}
-
-		if !w.config.IsProcessCredentialsFormat() {
-			rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
-			if err != nil {
-				return "", err
-			}
-			fmt.Fprintln(os.Stderr, rich)
-		}
-		return roleARN, nil
-	}
-
-	promptRoles := []string{}
-	labelsARNs := map[string]string{}
+func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string, configRoles map[string]string) (roleARN string, err error) {
+	// roleLabels are the friendly names if configured or the ARNs themselves
+	roleLabels := make([]string, len(roleARNs))
+	roleArnByLabel := map[string]string{}
 	for _, arn := range roleARNs {
 		roleLabel := w.choiceFriendlyLabelRole(arn, configRoles)
-		promptRoles = append(promptRoles, roleLabel)
-		labelsARNs[roleLabel] = arn
+		roleLabels = append(roleLabels, roleLabel)
+		roleArnByLabel[roleLabel] = arn
 	}
 
-	prompt := &survey.Select{
-		Message: chooseRole,
-		Options: promptRoles,
-	}
-	var selected string
-	err = survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-	if err != nil {
-		return "", fmt.Errorf(askRoleError, err)
+	var roleLabelChoice string
+
+	// There is only a single choice so go ahead and use its label
+	if len(roleARNs) == 1 {
+		rArn := roleARNs[0]
+		roleLabelChoice = w.choiceFriendlyLabelRole(rArn, configRoles)
 	}
 
-	roleARN = labelsARNs[selected]
+	// The user already provided their choice via config
+	if roleLabelChoice == "" && w.config.AWSIAMRole() != "" {
+		rArg := w.config.AWSIAMRole()
+		roleLabelChoice = w.choiceFriendlyLabelRole(rArg, configRoles)
+	}
+
+	// Prompt the user to choose
+	if roleLabelChoice == "" {
+		prompt := &survey.Select{
+			Message: chooseRole,
+			Options: roleLabels,
+		}
+		err = survey.AskOne(prompt, &roleLabelChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return "", fmt.Errorf(askRoleError, err)
+		}
+	} else if !w.config.IsProcessCredentialsFormat() {
+		// The choice was determined without prompting the user so pretty print the role
+		// todo: explain why we check IsProcessCredentialsFormat?
+		rich, _, err := core.RunTemplate(roleSelectedTemplate, roleTemplateData{
+			Role: roleLabelChoice,
+		})
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintln(os.Stderr, rich)
+	}
+
+	roleARN = roleArnByLabel[roleLabelChoice]
 	if roleARN == "" {
 		return "", fmt.Errorf(noRolesError, idp)
 	}
@@ -525,60 +515,61 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 // promptForIDP prompt operator for the AWS IdP ARN given a slice of IdP ARNs.
 // If the fedApp has already been selected via an ask one survey we don't need
 // to pretty print out the IdP name again.
-func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
-	var configIDPs map[string]string
-	if oktaConfig, cErr := config.OktaConfig(); cErr == nil {
-		configIDPs = oktaConfig.AWSCLI.IDPS
-	}
-
+func (w *WebSSOAuthentication) promptForIDP(idpARNs []string, configIDPs map[string]string) (idpArnChoice string, err error) {
 	if len(idpARNs) == 0 {
-		return idpARN, errors.New(noIDPsError)
+		return "", errors.New(noIDPsError)
 	}
 
-	if len(idpARNs) == 1 || w.config.AWSIAMIdP() != "" {
-		idpARN = w.config.AWSIAMIdP()
-		if len(idpARNs) == 1 {
-			idpARN = idpARNs[0]
-		}
-		if w.fedAppAlreadySelected {
-			return idpARN, nil
-		}
+	// idpLabels are the friendly names if configured or the ARNs itself
+	idpLabels := make([]string, len(idpARNs))
+	idpArnByLabel := make(map[string]string, len(idpARNs))
+	for i, arn := range idpARNs {
+		idpLabel := w.choiceFriendlyLabelIDP(arn, arn, configIDPs)
+		idpArnByLabel[idpLabel] = arn
+		idpLabels[i] = idpLabel
+	}
 
-		idpLabel := w.choiceFriendlyLabelIDP(idpARN, idpARN, configIDPs)
-		idpData := idpTemplateData{
-			IDP: idpLabel,
+	var idpLabelChoice string
+
+	// There is only a single choice so go ahead and use its label
+	if len(idpARNs) == 1 {
+		idpArn := idpARNs[0]
+		idpLabelChoice = w.choiceFriendlyLabelIDP(idpArn, idpArn, configIDPs)
+	}
+
+	// The user already provided their choice via config
+	if idpLabelChoice == "" && w.config.AWSIAMIdP() != "" {
+		iArg := w.config.AWSIAMIdP()
+		idpLabelChoice = w.choiceFriendlyLabelIDP(iArg, iArg, configIDPs)
+	}
+
+	// Prompt the user to choose
+	if idpLabelChoice == "" {
+		prompt := &survey.Select{
+			Message: chooseIDP,
+			Options: idpLabels,
 		}
-		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
+		err = survey.AskOne(prompt, &idpLabelChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+		if err != nil {
+			return "", fmt.Errorf(askIDPError, err)
+		}
+	} else if !w.fedAppAlreadySelected {
+		// The choice was determined without prompting the user and the fedApp has not already been selected so pretty print the idp
+		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpTemplateData{
+			IDP: idpLabelChoice,
+		})
 		if err != nil {
 			return "", err
 		}
 		fmt.Fprintln(os.Stderr, rich)
-		return idpARN, nil
 	}
 
-	idpChoices := make(map[string]string, len(idpARNs))
-	idpChoiceLabels := make([]string, len(idpARNs))
-	for i, arn := range idpARNs {
-		idpLabel := w.choiceFriendlyLabelIDP(arn, arn, configIDPs)
-		idpChoices[idpLabel] = arn
-		idpChoiceLabels[i] = idpLabel
+	idpArnChoice = idpArnByLabel[idpLabelChoice]
+	if idpArnChoice == "" {
+		return idpArnChoice, errors.New(idpValueNotSelectedError)
 	}
 
-	var idpChoice string
-	prompt := &survey.Select{
-		Message: chooseIDP,
-		Options: idpChoiceLabels,
-	}
-	err = survey.AskOne(prompt, &idpChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
-	if err != nil {
-		return idpARN, fmt.Errorf(askIDPError, err)
-	}
-	idpARN = idpChoices[idpChoice]
-	if idpARN == "" {
-		return idpARN, errors.New(idpValueNotSelectedError)
-	}
-
-	return idpARN, nil
+	return idpArnChoice, nil
 }
 
 // promptForIdpAndRole UX to prompt operator for the AWS role whose credentials
@@ -588,13 +579,22 @@ func (w *WebSSOAuthentication) promptForIdpAndRole(idpRoles map[string][]string)
 	for idp := range idpRoles {
 		idps = append(idps, idp)
 	}
-	idp, err := w.promptForIDP(idps)
+
+	var configRoles map[string]string
+	var configIDPs map[string]string
+
+	if oktaConfig, cErr := config.OktaConfig(); cErr == nil {
+		configRoles = oktaConfig.AWSCLI.ROLES
+		configIDPs = oktaConfig.AWSCLI.IDPS
+	}
+
+	idp, err := w.promptForIDP(idps, configIDPs)
 	if err != nil {
 		return nil, err
 	}
 
 	roles := idpRoles[idp]
-	role, err := w.promptForRole(idp, roles)
+	role, err := w.promptForRole(idp, roles, configRoles)
 	if err != nil {
 		return nil, err
 	}
