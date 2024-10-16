@@ -99,14 +99,18 @@ func NewWebCommand() *cobra.Command {
 				return err
 			}
 
+			var apiErr *okta.APIError
+
 			for attempt := 1; attempt <= 2; attempt++ {
 				wsa, err := webssoauth.NewWebSSOAuthentication(cfg)
 				if err != nil {
 					return err
 				}
 
+				var ok bool
 				err = wsa.EstablishIAMCredentials()
-				if apiErr, ok := err.(*okta.APIError); ok {
+				apiErr, ok = err.(*okta.APIError)
+				if ok {
 					if apiErr.ErrorType == "invalid_grant" && webssoauth.RemoveCachedAccessToken() {
 						webssoauth.ConsolePrint(cfg, "Cached access token appears to be stale, removing token and retrying device authorization ...\n\n")
 						continue
@@ -119,7 +123,14 @@ func NewWebCommand() *cobra.Command {
 				break
 			}
 
-			return err
+			if err != nil {
+				if apiErr != nil && apiErr.ErrorType == "invalid_grant" {
+					webssoauth.ConsolePrint(cfg, "Authentication failed after multiple attempts. Please log out of Okta in your browser and log back in to resolve the issue.\n")
+				}
+				return err
+			}
+
+			return nil
 		},
 	}
 
