@@ -36,6 +36,7 @@ jobs:
       - run:
           name: Build binary to scan
           command: |
+            go mod vendor
             go build cmd/okta-aws-cli/main.go
       - run:
           name: Run Reversing Labs Wrapper Scanner
