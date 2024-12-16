@@ -6,20 +6,30 @@ interactions:
         proto: HTTP/1.1
         proto_major: 1
         proto_minor: 1
-        content_length: 0
+        content_length: 533
         transfer_encoding: []
         trailer: {}
         host: test.dne-okta.com
         remote_addr: ""
         request_uri: ""
-        body: ""
-        form: {}
+        body: client_assertion=eyJhbGciOiJSUzI1NiIsImtpZCI6ImtpZC1yb2NrIn0.eyJhdWQiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20vb2F1dGgyL2F1czh3MjNyMTNOdnlVd2xuMWQ3L3YxL3Rva2VuIiwiZXhwIjoxNzM0Mzg2ODc4LCJpYXQiOjE3MzQzODMyNzgsImlzcyI6IjBvYTZmdndhYTVVSExUckppMWQ3Iiwic3ViIjoiMG9hNmZ2d2FhNVVITFRySmkxZDcifQ.BBhbrh0J0s9Az0Pf49YND1zuKYOhGzgLNzlAssZjaF74yFlowFdkceBg2uGxUkzQ1nn4F1Z1VmrrUiIQs8Ogsg&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&grant_type=client_credentials&scope=okta-m2m-access
+        form:
+            client_assertion:
+                - eyJhbGciOiJSUzI1NiIsImtpZCI6ImtpZC1yb2NrIn0.eyJhdWQiOiJodHRwczovL21tb25kcmFnb24tYXdzLWNsaS0wMC5va3RhcHJldmlldy5jb20vb2F1dGgyL2F1czh3MjNyMTNOdnlVd2xuMWQ3L3YxL3Rva2VuIiwiZXhwIjoxNzM0Mzg2ODc4LCJpYXQiOjE3MzQzODMyNzgsImlzcyI6IjBvYTZmdndhYTVVSExUckppMWQ3Iiwic3ViIjoiMG9hNmZ2d2FhNVVITFRySmkxZDcifQ.BBhbrh0J0s9Az0Pf49YND1zuKYOhGzgLNzlAssZjaF74yFlowFdkceBg2uGxUkzQ1nn4F1Z1VmrrUiIQs8Ogsg
+            client_assertion_type:
+                - urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+            grant_type:
+                - client_credentials
+            scope:
+                - okta-m2m-access
         headers:
             Accept:
                 - application/json
             Content-Type:
                 - application/x-www-form-urlencoded
-        url: https://test.dne-okta.com/oauth2/aus8w23r13NvyUwln1d7/v1/token?client_assertion=abc123&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&grant_type=client_credentials&scope=okta-m2m-access
+            X-Okta-Aws-Cli-Operation:
+                - m2m
+        url: https://test.dne-okta.com/oauth2/aus8w23r13NvyUwln1d7/v1/token
         method: POST
       response:
         proto: HTTP/2.0
