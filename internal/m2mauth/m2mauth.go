@@ -24,7 +24,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -224,7 +223,6 @@ func (m *M2MAuthentication) accessToken() (*okta.AccessToken, error) {
 		return nil, err
 	}
 
-	var tokenRequestBuff io.ReadWriter
 	query := url.Values{}
 	tokenRequestURL := fmt.Sprintf(okta.CustomAuthzV1TokenEndpointFormat, m.config.OrgDomain(), m.config.AuthzID())
 
@@ -232,8 +230,7 @@ func (m *M2MAuthentication) accessToken() (*okta.AccessToken, error) {
 	query.Add("scope", m.config.CustomScope())
 	query.Add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
 	query.Add("client_assertion", clientAssertion)
-	tokenRequestURL += "?" + query.Encode()
-	req, err := http.NewRequest("POST", tokenRequestURL, tokenRequestBuff)
+	req, err := http.NewRequest("POST", tokenRequestURL, strings.NewReader(query.Encode()))
 	if err != nil {
 		return nil, err
 	}
