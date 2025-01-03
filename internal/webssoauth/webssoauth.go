@@ -652,7 +652,7 @@ func (w *WebSSOAuthentication) fetchSAMLAssertion(at *okta.AccessToken) (asserti
 		return assertion, err
 	}
 	req.Header.Add(accept, "text/html")
-	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
@@ -695,7 +695,7 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
@@ -777,7 +777,7 @@ func (w *WebSSOAuthentication) listFedAppsFromAppLinks(clientID string, at *okta
 	headers := map[string]string{
 		accept:                           utils.ApplicationJSON,
 		utils.ContentType:                utils.ApplicationJSON,
-		utils.UserAgentHeader:            config.UserAgentValue,
+		utils.UserAgentHeader:            w.config.UserAgent(),
 		utils.XOktaAWSCLIOperationHeader: utils.XOktaAWSCLIWebOperation,
 		"Authorization":                  fmt.Sprintf("%s %s", at.TokenType, at.AccessToken),
 	}
@@ -824,7 +824,7 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	var bodyBytes []byte
@@ -896,7 +896,7 @@ func (w *WebSSOAuthentication) authorize() (*okta.DeviceAuthorization, error) {
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)
@@ -1010,7 +1010,7 @@ func (w *WebSSOAuthentication) isClassicOrg() bool {
 		return false
 	}
 	req.Header.Add(accept, utils.ApplicationJSON)
-	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
 	resp, err := w.config.HTTPClient().Do(req)

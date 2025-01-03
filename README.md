@@ -382,6 +382,8 @@ These global settings are optional unless marked otherwise:
 | Verbosely print all API calls/responses to the screen | `true` if flag is present | `--debug-api-calls` | `OKTA_AWSCLI_DEBUG_API_CALLS=true` |
 | HTTP/HTTPS Proxy support | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) | n/a | `HTTP_PROXY` or `HTTPS_PROXY` |
 | Execute arguments after CLI arg terminator `--` as a separate process. Process will be executed with AWS cred values as AWS env vars `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`. | `true` if flag is present | `--exec` | `OKTA_AWSCLI_EXEC=true` |
+| Short user agent. HTTP requests made to the Okta API have user-agent set to `okta-aws-cli` allowing for a simple UA value in a policy rule. | `true` if flag is present | `--short-user-agent` | `OKTA_AWSCLI_SHORT_USER_AGENT=true` |
+
 
 
 ### Web command settings
