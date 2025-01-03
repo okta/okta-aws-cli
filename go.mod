@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/BurntSushi/toml v1.4.0
-	github.com/aws/aws-sdk-go v1.44.94
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/logrusorgru/aurora v2.0.3+incompatible
