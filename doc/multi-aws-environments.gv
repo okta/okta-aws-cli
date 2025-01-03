@@ -4,7 +4,7 @@ digraph D {
 
   okta_aws_cli [label="okta-aws-cli" fillcolor=grey style=filled];
 
-  oauth_app [label="OIDC Native app\n(okta.apps.read grant)"];
+  oauth_app [label="OIDC Native app\n(okta.users.read.self grant)"];
 
   okta_aws_cli -> oauth_app [label = "Client ID for\nOIDC Native app"];
 

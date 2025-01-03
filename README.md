@@ -43,7 +43,6 @@ format.
  - [Web Command](#web-command)
    - [Web Command Requirements](#web-command-requirements)
      - [Multiple AWS environments](#multiple-aws-environments)
-     - [Non-Admin Users](#non-admin-users)
  - [M2M Command](#m2m-command)
    - [M2M Command Requirements](#m2m-command-requirements)
  - [List-Profiles Command](#list-profiles-command)
@@ -66,7 +65,7 @@ format.
 
 | Command | Description |
 |-----|-----|
-| (empty) | When `okta-aws-cli` is executed without a subcommand **and** without arguments it will print the online help and exit. With arguments it defaults to the `web` command. |
+| (empty) | When executed without a subcommand **and** without arguments `okta-aws-cli` will print the online help and exit. With arguments it defaults to the `web` command. |
 | `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. |
 | `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. **IMPORTANT!** This a not a feature intended for a human use case. Be sure to use industry state of the art secrets management techniques with the private key. |
 | `list-profiles` | Lists profile names in ~/.okta/okta.yaml. |
@@ -115,7 +114,8 @@ The `Session Token` has a default expiry of 60 minutes.
 
 **IMPORTANT!** The Okta AWS Federation Application does not work in a headless
 environment; it only operates with a human performing authorization in a web
-browser.
+browser for an elevated security posture combining device authorization with
+human authentication.
 
 ### Web Command Requirements
 
@@ -131,12 +131,12 @@ Authorization` , and `Token Exchange`. These settings are in the Okta Admin UI
 at `Applications > [the OIDC app] > General Settings > Grant type`.
 
 If [Multiple AWS environments](#multiple-aws-environments) (alleviates the need
-for use of the `--aws-acct-fed-app-id` argument) are to be supported by
-a single OIDC application, the OIDC app must have the `okta.apps.read` grant
-for admin users and `okta.users.read.self` for non-admin users. Application
-grants are configured at `Applications > [the OIDC app] > Okta API Scopes` in
-the Okta Admin UI.
- 
+for use of the `--aws-acct-fed-app-id` argument) are to be supported by a single
+OIDC application, the OIDC app must have the `okta.users.read.self` grant to
+inspect which AWS Fed apps have been linked to the user. Application grants are
+configured at `Applications > [the OIDC app] > Okta API Scopes` in the Okta
+Admin UI.
+
 The pairing with the AWS Federation Application is achieved in the Fed app's
 Sign On Settings. These settings are in the Okta Admin UI at `Applications > [the
 AWS Fed app] > Sign On`. There are two values that need to be set on the Sign On
@@ -158,10 +158,11 @@ URL below. Then follow the directions in that wizard.
 #### Multiple AWS environments
 
 To support multiple AWS environments, associate additional AWS Federation
-applications with an OIDC app. The OIDC app **must** have the `okta.apps.read`
-grant to support admin users. To support non-admin users the OIDC app **must**
-have the `okta.users.read.self` grant. The following is an illustration of the
-association of objects that make up this kind of configuration.
+applications with an OIDC app.  The OIDC app **must** have the
+`okta.users.read.self` grant so that `okta-aws-cli` can inpsect the user's app
+links to see which AWS Fed apps have been assigned to them. The following is an
+illustration of the association of objects that make up this kind of
+configuration.
 
 ![okta-aws-cli supporting multiple AWS environments](./doc/multi-aws-environments.jpg)
 
@@ -172,41 +173,14 @@ The example diagram reflects the following:
 * Fed App #2 is linked to an IdP and Role dedicated to ec2 operations
 * Fed App #3 is oriented for an administrator is comprised of an IdP and Role with many different permissions
 
-##### Multiple AWS environments for Non-Admin Users
+##### Implementation details of multiple AWS environments
 
-The multiple AWS environments feature will work for non-admin users if the OIDC
-Native app is granted the`okta.users.read.self` scope and the user is assigned
-to the OIDC Native app and assigned to each Okta AWS Federation app.  The API
-endpoint `GET /api/v1/users/me/appLinks` is referenced to discover which
-applications are assigned to the non-admin user. The appLinks endpoint only
+Given the OIDC Native app is granted the`okta.users.read.self` scope and the
+user is assigned to the OIDC Native app and assigned to each Okta AWS Federation
+app. Then the API endpoint `GET /api/v1/users/me/appLinks` is referenced to
+discover which applications are assigned to the user. The appLinks endpoint only
 lists Okta AWS Federation apps that the user would be able to see in the user's
 Okta Console.
-
-**IMPORTANT!!!**
-
-Below is a deprecated recommendation for non-admin users. We are leaving it in
-the README for legacy purposes. We are no longer recommending this workaround so
-long as the OIDC app is granted the `okta.users.read.self` scope.
-
-**OLD work around for non-admin users**
-
-Multiple AWS environments requires extra configuration for non-admin users.
-Follow these steps to support non-admin users.
-
-1) Create a custom admin role with the only permission being "View application
-and their details", and a resource set constrained to "All AWS Account
-Federation apps".
-
-2) Create a group that will contain the AWS custom admin role users.
-
-3) Add a rule on the admin console authentication policy that denies access if
-the use is a member of the group from step 2.
-
-4) Assign non-admin users this custom role in step 1 and assign them to the
-group in step 2.
-
-The "Admin" button will be visible on the Okta dashboard of non-admin users but
-they will receive a 403 if they attempt to open the Admin UI.
 
 ## M2M Command
 
@@ -412,9 +386,8 @@ These global settings are optional unless marked otherwise:
 
 ### Web command settings
 
-If the OIDC Native App doesn't also have the `okta.apps.read` grant (for admin
-users) or the `okta.users.read.self` grant (for non-admin users) the client ID
-of the [Okta AWS
+If the OIDC Native App doesn't also have the `okta.users.read.self` grant the
+client ID of the [Okta AWS
 Federation](https://www.okta.com/integrations/aws-account-federation/)
 integration application is also required.
 
@@ -465,7 +438,7 @@ OKTA_AWSCLI_OIDC_CLIENT_ID=0oa5wyqjk6Wm148fE1d7
 
 #### Command line flags example
 
-##### OIDC client has `okta.apps.read` grant
+##### OIDC client has `okta.users.read.self` grant
 
 ```shell
 
@@ -473,7 +446,7 @@ $ okta-aws-cli web --org-domain my-org.okta.com \
     --oidc-client-id 0oa5wyqjk6Wm148fE1d7 \
 ```
 
-#### OIDC client **does not** have `okta.apps.read` grant (admins) or `okta.users.read.self` grant (non-admins)
+#### OIDC client **does not** have the `okta.users.read.self` grant
 ```shell
 
 $ okta-aws-cli web --org-domain my-org.okta.com \
