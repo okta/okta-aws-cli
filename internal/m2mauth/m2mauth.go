@@ -236,7 +236,7 @@ func (m *M2MAuthentication) accessToken() (*okta.AccessToken, error) {
 	}
 	req.Header.Add("Accept", utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
-	req.Header.Add(utils.UserAgentHeader, config.UserAgentValue)
+	req.Header.Add(utils.UserAgentHeader, m.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIM2MOperation)
 	resp, err := m.config.HTTPClient().Do(req)
 	if err != nil {

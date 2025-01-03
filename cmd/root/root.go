@@ -150,6 +150,13 @@ func init() {
 			Usage:  "Execute any shell commands after the '--' CLI arguments termination",
 			EnvVar: config.ExecEnvVar,
 		},
+		{
+			Name:   config.ShortUserAgentFlag,
+			Short:  "y",
+			Value:  false,
+			Usage:  "Set CLI's User-Agent header to okta-aws-cli so it can be used in a policy rule",
+			EnvVar: config.ShortUserAgentEnvVar,
+		},
 	}
 
 	rootCmd = NewRootCommand()
