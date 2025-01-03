@@ -171,7 +171,7 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 		return w.establishTokenWithFedAppID(clientID, w.config.FedAppID(), at, w.config.AWSRegion())
 	}
 
-	apps, err = w.listFedApps(clientID, at)
+	apps, err = w.listFedAppsFromAppLinks(clientID, at)
 	if err != nil {
 		return err
 	}
@@ -770,15 +770,10 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 	}
 }
 
-// listFedApps Lists Okta AWS Fed Apps that are active. Errors after that occur
-// after getting anything other than a 403 on /api/v1/apps will be retried on
-// the fall back to /api/v1/users/me/appLinks . Requires assoicated OIDC app has
-// been granted okta.apps.read to its scope.
-func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken) ([]*okta.Application, error) {
-	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/apps", w.config.OrgDomain()))
-	if err != nil {
-		return nil, err
-	}
+// listFedAppsFromAppLinks Lists Okta AWS Fed Apps assign to the current user
+// via appLinks Requires assoicated OIDC app has been granted
+// okta.users.read.self to its scope.
+func (w *WebSSOAuthentication) listFedAppsFromAppLinks(clientID string, at *okta.AccessToken) ([]*okta.Application, error) {
 	headers := map[string]string{
 		accept:                           utils.ApplicationJSON,
 		utils.ContentType:                utils.ApplicationJSON,
@@ -786,63 +781,14 @@ func (w *WebSSOAuthentication) listFedApps(clientID string, at *okta.AccessToken
 		utils.XOktaAWSCLIOperationHeader: utils.XOktaAWSCLIWebOperation,
 		"Authorization":                  fmt.Sprintf("%s %s", at.TokenType, at.AccessToken),
 	}
-	params := map[string]string{
-		"limit":  "200",
-		"q":      amazonAWS,
-		"filter": `status eq "ACTIVE"`,
-	}
-	pgntr := paginator.NewPaginator(w.config.HTTPClient(), apiURL, &headers, &params)
 
-	allApps := make([]*okta.Application, 0)
-	resp, err := pgntr.GetItems(&allApps)
-	if resp.StatusCode == http.StatusForbidden {
-		// fall back to using app links, that endpoint doesn't have pagination
-		// so there isn't anything to DRY up between the two kinds of API calls
-		return w.listFedAppsFromAppLinks(&headers)
-	}
-	if err != nil {
-		return nil, err
-	}
-	for resp.HasNextPage() {
-		var nextApps []*okta.Application
-		resp, err = resp.Next(&nextApps)
-		if err != nil {
-			return nil, err
-		}
-		allApps = append(allApps, nextApps...)
-	}
-
-	apps := make([]*okta.Application, 0)
-	for _, app := range allApps {
-		// even though the query was for AWS fed apps check just in case
-		if app.Name != amazonAWS {
-			continue
-		}
-		// even though the query filted on active status check just in case
-		if app.Status != "ACTIVE" {
-			continue
-		}
-		// only apps that that have client the web sso client
-		if app.Settings.App.WebSSOClientID != clientID {
-			continue
-		}
-		apps = append(apps, app)
-	}
-
-	return apps, nil
-}
-
-// listFedAppsFromAppLinks Lists Okta AWS Fed Apps assign to the current user
-// via appLinks Requires assoicated OIDC app has been granted
-// okta.users.read.self to its scope.
-func (w *WebSSOAuthentication) listFedAppsFromAppLinks(headers *map[string]string) ([]*okta.Application, error) {
 	// appLinks doesn't have pagination/limit, filter, or query parameters
 	apiURL, err := url.Parse(fmt.Sprintf("https://%s/api/v1/users/me/appLinks", w.config.OrgDomain()))
 	if err != nil {
 		return nil, err
 	}
 
-	pgntr := paginator.NewPaginator(w.config.HTTPClient(), apiURL, headers, nil)
+	pgntr := paginator.NewPaginator(w.config.HTTPClient(), apiURL, &headers, nil)
 
 	allApps := make([]*okta.ApplicationLink, 0)
 	_, err = pgntr.GetItems(&allApps)
