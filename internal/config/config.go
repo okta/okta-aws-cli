@@ -927,7 +927,7 @@ func (c *Config) ShortUserAgent() bool {
 	return c.shortUserAgent
 }
 
-// SetDebugAPICalls --
+// SetShortUserAgent --
 func (c *Config) SetShortUserAgent(shortUserAgent bool) error {
 	c.shortUserAgent = shortUserAgent
 	return nil
