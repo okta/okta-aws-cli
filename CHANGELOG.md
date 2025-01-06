@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.4.0 (January XX, 2025)
+
+### ENHANCEMENTS
+
+* Multiple apps feature only requires `okta.users.read.self` scope [#254](https://github.com/okta/okta-aws-cli/pull/254), thanks [@monde](https://github.com/monde)!
+* Toggle API HTTP User-Agent header to `okta-aws-cli` to ease use in a policy rule [#257](https://github.com/okta/okta-aws-cli/pull/257), thanks [@monde](https://github.com/monde)!
+* Improve error message suggestion for expired token [#256](https://github.com/okta/okta-aws-cli/pull/256), thanks [@Eitol](https://github.com/Eitol)!
+* JTI protection on m2m auth token [#259](https://github.com/okta/okta-aws-cli/pull/259), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+
+### MAINTENANCE
+
+* Update github.com/aws/aws-sdk-go to v1.55.5 [#255](https://github.com/okta/okta-aws-cli/pull/255), thanks [@monde](https://github.com/monde)!
+
+### BUG FIXES
+
+* Correct client assertion handling in API POST [#253](https://github.com/okta/okta-aws-cli/pull/253), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+
 ## 2.3.1 (September 03, 2024)
 
 ### BUG FIXES
