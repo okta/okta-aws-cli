@@ -31,11 +31,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// UserAgentValue the user agent value
-var UserAgentValue string
+// longUserAgent the long user agent value
+var longUserAgent string
+
+// shortUserAgent the short user agent value
+var shortUserAgent = "okta-aws-cli"
 
 func init() {
-	UserAgentValue = fmt.Sprintf("okta-aws-cli/%s (%s; %s; %s)", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	longUserAgent = fmt.Sprintf("okta-aws-cli/%s (%s; %s; %s)", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
 
 const (
@@ -105,6 +108,8 @@ const (
 	QRCodeFlag = "qr-code"
 	// SessionDurationFlag cli flag const
 	SessionDurationFlag = "session-duration"
+	// ShortUserAgentFlag cli flag const
+	ShortUserAgentFlag = "short-user-agent"
 	// WriteAWSCredentialsFlag cli flag const
 	WriteAWSCredentialsFlag = "write-aws-credentials"
 	// LegacyAWSVariablesFlag cli flag const
@@ -174,6 +179,8 @@ const (
 	ProfileEnvVar = "OKTA_AWSCLI_PROFILE"
 	// QRCodeEnvVar env var const
 	QRCodeEnvVar = "OKTA_AWSCLI_QR_CODE"
+	// ShortUserAgentEnvVar env var const
+	ShortUserAgentEnvVar = "OKTA_AWSCLI_DEBUG_SHORT_USER_AGENT"
 	// WriteAWSCredentialsEnvVar env var const
 	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
 
@@ -269,6 +276,7 @@ type Config struct {
 	privateKeyFile      string
 	profile             string
 	qrCode              bool
+	shortUserAgent      bool
 	writeAWSCredentials bool
 	clock               Clock
 }
@@ -300,6 +308,7 @@ type Attributes struct {
 	PrivateKeyFile      string
 	Profile             string
 	QRCode              bool
+	ShortUserAgent      bool
 	WriteAWSCredentials bool
 }
 
@@ -344,6 +353,7 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 		privateKeyFile:      attrs.PrivateKeyFile,
 		profile:             attrs.Profile,
 		qrCode:              attrs.QRCode,
+		shortUserAgent:      attrs.ShortUserAgent,
 		writeAWSCredentials: attrs.WriteAWSCredentials,
 	}
 	err = cfg.SetOrgDomain(attrs.OrgDomain)
@@ -458,6 +468,7 @@ func readConfig() (Attributes, error) {
 		KeyID:               viper.GetString(getFlagNameFromProfile(awsProfile, KeyIDFlag)),
 		Profile:             awsProfile,
 		QRCode:              viper.GetBool(getFlagNameFromProfile(awsProfile, QRCodeFlag)),
+		ShortUserAgent:      viper.GetBool(getFlagNameFromProfile(awsProfile, ShortUserAgentFlag)),
 		WriteAWSCredentials: viper.GetBool(getFlagNameFromProfile(awsProfile, WriteAWSCredentialsFlag)),
 	}
 	if attrs.Format == "" {
@@ -589,6 +600,9 @@ func readConfig() (Attributes, error) {
 	}
 	if !attrs.CacheAccessToken {
 		attrs.CacheAccessToken = viper.GetBool(downCase(CacheAccessTokenEnvVar))
+	}
+	if !attrs.ShortUserAgent {
+		attrs.ShortUserAgent = viper.GetBool(downCase(ShortUserAgentEnvVar))
 	}
 	if !attrs.Exec {
 		attrs.Exec = viper.GetBool(downCase(ExecEnvVar))
@@ -906,6 +920,25 @@ func (c *Config) QRCode() bool {
 func (c *Config) SetQRCode(qrCode bool) error {
 	c.qrCode = qrCode
 	return nil
+}
+
+// ShortUserAgent --
+func (c *Config) ShortUserAgent() bool {
+	return c.shortUserAgent
+}
+
+// SetShortUserAgent --
+func (c *Config) SetShortUserAgent(shortUserAgent bool) error {
+	c.shortUserAgent = shortUserAgent
+	return nil
+}
+
+// UserAgent the user agent value
+func (c *Config) UserAgent() string {
+	if c.shortUserAgent {
+		return shortUserAgent
+	}
+	return longUserAgent
 }
 
 // OktaConfigPath returns OS specific path to the okta config file, for example
