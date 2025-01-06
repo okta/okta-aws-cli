@@ -33,6 +33,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/google/uuid"
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/exec"
@@ -209,6 +210,7 @@ func (m *M2MAuthentication) makeClientAssertion() (string, error) {
 		Expiry:   jwt.NewNumericDate(now.Add(time.Hour * time.Duration(1))),
 		Issuer:   m.config.OIDCAppID(),
 		Audience: tokenRequestURL,
+		ID:       uuid.New().String(),
 	}
 
 	jwtBuilder := jwt.Signed(privateKeySinger).Claims(claims)
