@@ -265,3 +265,199 @@ func TestChoiceFriendlyLabelRole(t *testing.T) {
 		})
 	}
 }
+func TestPromptForRole(t *testing.T) {
+	testCases := []struct {
+		name        string
+		idpARN      string
+		configRoles map[string]string
+		roleARNs    []string
+		roleArg     string
+		expected    string
+	}{
+		{
+			name:    "friendly label",
+			idpARN:  "arn:aws:iam::123:role/rickrole",
+			roleArg: "Rock N Role",
+			roleARNs: []string{
+				"arn:aws:iam::123:role/rocknrole",
+				"arn:aws:iam::123:role/rickrole",
+			},
+			configRoles: map[string]string{
+				"arn:aws:iam::123:role/rocknrole": "Rock N Role",
+				"arn:aws:iam::123:role/rickrole":  "Rick Role",
+				"arn:aws:iam::.*:role/never":      "Never Gonna Give You Up",
+			},
+			expected: "arn:aws:iam::123:role/rocknrole",
+		},
+		{
+			name:    "friendly label configured but arn arg supplied",
+			idpARN:  "arn:aws:iam::123:role/rickrole",
+			roleArg: "arn:aws:iam::123:role/rocknrole",
+			roleARNs: []string{
+				"arn:aws:iam::123:role/rocknrole",
+				"arn:aws:iam::123:role/rickrole",
+			},
+			configRoles: map[string]string{
+				"arn:aws:iam::123:role/rocknrole": "Rock N Role",
+				"arn:aws:iam::123:role/rickrole":  "Rick Role",
+				"arn:aws:iam::.*:role/never":      "Never Gonna Give You Up",
+			},
+			expected: "arn:aws:iam::123:role/rocknrole",
+		},
+		{
+			name:    "friendly label with wildcard",
+			idpARN:  "arn:aws:iam::123:role/rickrole",
+			roleArg: "Never Gonna Give You Up",
+			roleARNs: []string{
+				"arn:aws:iam::123:role/never",
+				"arn:aws:iam::123:role/rocknrole",
+			},
+			configRoles: map[string]string{
+				"arn:aws:iam::123:role/rocknrole": "Rock N Role",
+				"arn:aws:iam::123:role/rickrole":  "Rick Role",
+				"arn:aws:iam::.*:role/never":      "Never Gonna Give You Up",
+			},
+			expected: "arn:aws:iam::123:role/never",
+		},
+		{
+			name:    "no friendly labels arn arg supplied",
+			idpARN:  "arn:aws:iam::123:role/rickrole",
+			roleArg: "arn:aws:iam::123:role/rocknrole",
+			roleARNs: []string{
+				"arn:aws:iam::123:role/never",
+				"arn:aws:iam::123:role/rocknrole",
+			},
+			configRoles: nil,
+			expected:    "arn:aws:iam::123:role/rocknrole",
+		},
+		{
+			name:    "single arn option no arg supplied",
+			idpARN:  "arn:aws:iam::123:role/rickrole",
+			roleArg: "",
+			roleARNs: []string{
+				"arn:aws:iam::123:role/never",
+			},
+			configRoles: nil,
+			expected:    "arn:aws:iam::123:role/never",
+		},
+	}
+	t.Parallel()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := config.NewConfig(&config.Attributes{
+				AWSIAMRole: tc.roleArg,
+			})
+			require.NoError(t, err)
+
+			w, err := NewWebSSOAuthentication(cfg)
+			roleARn, err := w.promptForRole(tc.idpARN, tc.roleARNs, tc.configRoles)
+			if roleARn != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, roleARn)
+			}
+		})
+	}
+}
+
+func TestPromptForIdp(t *testing.T) {
+	testCases := []struct {
+		name       string
+		configIdps map[string]string
+		idpARNs    []string
+		idpArg     string
+		expected   string
+	}{
+		{
+			name:   "friendly label",
+			idpArg: "My IdP",
+			idpARNs: []string{
+				"arn:aws:iam::123:saml-provider/youridp",
+				"arn:aws:iam::123:saml-provider/myidp",
+				"arn:aws:iam::123:saml-provider/aidp",
+			},
+			configIdps: map[string]string{
+				"arn:aws:iam::123:saml-provider/youridp": "Your IdP",
+				"arn:aws:iam::123:saml-provider/myidp":   "My IdP",
+				"arn:aws:iam::.*:saml-provider/aidp":     "A IdP",
+			},
+			expected: "arn:aws:iam::123:saml-provider/myidp",
+		},
+		{
+			name:   "friendly label configured but arn arg supplied",
+			idpArg: "arn:aws:iam::123:saml-provider/myidp",
+			idpARNs: []string{
+				"arn:aws:iam::123:saml-provider/youridp",
+				"arn:aws:iam::123:saml-provider/myidp",
+				"arn:aws:iam::123:saml-provider/aidp",
+			},
+			configIdps: map[string]string{
+				"arn:aws:iam::123:saml-provider/youridp": "Your IdP",
+				"arn:aws:iam::123:saml-provider/myidp":   "My IdP",
+				"arn:aws:iam::.*:saml-provider/aidp":     "A IdP",
+			},
+			expected: "arn:aws:iam::123:saml-provider/myidp",
+		},
+		{
+			name:   "friendly label with wildcard",
+			idpArg: "A IdP",
+			idpARNs: []string{
+				"arn:aws:iam::123:saml-provider/youridp",
+				"arn:aws:iam::123:saml-provider/myidp",
+				"arn:aws:iam::123:saml-provider/aidp",
+			},
+			configIdps: map[string]string{
+				"arn:aws:iam::123:saml-provider/youridp": "Your IdP",
+				"arn:aws:iam::123:saml-provider/myidp":   "My IdP",
+				"arn:aws:iam::.*:saml-provider/aidp":     "A IdP",
+			},
+			expected: "arn:aws:iam::123:saml-provider/aidp",
+		},
+		{
+			name:   "no friendly labels arn arg supplied",
+			idpArg: "arn:aws:iam::123:saml-provider/youridp",
+			idpARNs: []string{
+				"arn:aws:iam::123:saml-provider/youridp",
+				"arn:aws:iam::123:saml-provider/myidp",
+				"arn:aws:iam::123:saml-provider/aidp",
+			},
+			configIdps: nil,
+			expected:   "arn:aws:iam::123:saml-provider/youridp",
+		},
+		{
+			name:   "single arn option no arg supplied",
+			idpArg: "",
+			idpARNs: []string{
+				"arn:aws:iam::123:saml-provider/myidp",
+			},
+			configIdps: nil,
+			expected:   "arn:aws:iam::123:saml-provider/myidp",
+		},
+		{
+			name:   "single arn option no arg supplied with friendly label",
+			idpArg: "",
+			idpARNs: []string{
+				"arn:aws:iam::123:saml-provider/myidp",
+			},
+			configIdps: map[string]string{
+				"arn:aws:iam::123:saml-provider/youridp": "Your IdP",
+				"arn:aws:iam::123:saml-provider/myidp":   "My IdP",
+				"arn:aws:iam::.*:saml-provider/aidp":     "A IdP",
+			},
+			expected: "arn:aws:iam::123:saml-provider/myidp",
+		},
+	}
+	t.Parallel()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := config.NewConfig(&config.Attributes{
+				AWSIAMIdP: tc.idpArg,
+			})
+			require.NoError(t, err)
+
+			w, err := NewWebSSOAuthentication(cfg)
+			roleARn, err := w.promptForIDP(tc.idpARNs, tc.configIdps)
+			if roleARn != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, roleARn)
+			}
+		})
+	}
+}
