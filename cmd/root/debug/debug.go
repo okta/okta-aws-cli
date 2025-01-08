@@ -31,7 +31,7 @@ func NewDebugCommand() *cobra.Command {
 		Use:   "debug",
 		Short: "Simple debug of okta.yaml and exit",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.EvaluateSettings()
+			config, err := config.NewEvaluatedConfig()
 			if err != nil {
 				return err
 			}

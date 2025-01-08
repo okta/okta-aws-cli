@@ -81,7 +81,7 @@ func NewWebCommand() *cobra.Command {
 		Use:   "web",
 		Short: "Human oriented authentication and device authorization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.EvaluateSettings()
+			cfg, err := config.NewEvaluatedConfig()
 			if err != nil {
 				return err
 			}

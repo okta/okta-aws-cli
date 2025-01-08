@@ -314,11 +314,12 @@ type ConfigAttributes struct {
 	WriteAWSCredentials bool
 }
 
-// EvaluateSettings Returns a new config gathering values in this order of precedence:
+// NewEvaluatedConfig Returns a new config loading and evaluating attributes in
+// this order of precedence:
 //  1. CLI flags
 //  2. ENV variables
 //  3. .env file
-func EvaluateSettings() (*Config, error) {
+func NewEvaluatedConfig() (*Config, error) {
 	cfgAttrs, err := loadConfigAttributesFromFlagsAndVars()
 	if err != nil {
 		return nil, err

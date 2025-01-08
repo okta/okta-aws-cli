@@ -30,7 +30,7 @@ func NewProfilesListCommand() *cobra.Command {
 		Use:   "list-profiles",
 		Short: "Lists profile names in ~/.okta/okta.yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.EvaluateSettings()
+			config, err := config.NewEvaluatedConfig()
 			if err != nil {
 				return err
 			}
