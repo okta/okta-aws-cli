@@ -73,6 +73,9 @@ format.
 
 ## Web Command
 
+**NOTE**: AWS Federation App and associated web SSO token used for the web
+command does not support device security posture.
+
 ```shell
 $ okta-aws-cli web --oidc-client-id 0oabc --aws-acct-fed-app-id 0oaxy --org-domain my-org.okta.com
 export AWS_ACCESS_KEY_ID=ASIAUJHVCS6UQC52NOL7
