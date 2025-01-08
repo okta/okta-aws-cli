@@ -208,7 +208,9 @@ type OktaYamlConfig struct {
 	} `yaml:"awscli"`
 }
 
-// OktaYamlConfigProfile represents config settings that are indexed by profile name
+// OktaYamlConfigProfile represents config settings that are indexed by profile
+// name. This is a convenience struct pretty printing profile information from
+// the list profiles command cmd/root/profileslist/profiles-list.go
 type OktaYamlConfigProfile struct {
 	AllProfiles         string `yaml:"all-profiles"`
 	AuthzID             string `yaml:"authz-id"`
