@@ -78,7 +78,7 @@ func TestWebSSOAuthAccessToken(t *testing.T) {
 }
 
 func setupTest(t *testing.T) (*config.Config, func(t *testing.T)) {
-	attrs := &config.Attributes{
+	attrs := &config.ConfigAttributes{
 		OrgDomain: os.Getenv("OKTA_AWSCLI_ORG_DOMAIN"),
 		OIDCAppID: os.Getenv("OKTA_AWSCLI_OIDC_CLIENT_ID"),
 	}

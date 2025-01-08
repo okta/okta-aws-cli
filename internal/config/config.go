@@ -283,8 +283,8 @@ type Config struct {
 	clock               Clock
 }
 
-// Attributes config construction
-type Attributes struct {
+// ConfigAttributes attributes for config construction
+type ConfigAttributes struct {
 	AllProfiles         bool
 	AuthzID             string
 	AWSCredentials      string
@@ -319,7 +319,7 @@ type Attributes struct {
 //  2. ENV variables
 //  3. .env file
 func EvaluateSettings() (*Config, error) {
-	cfgAttrs, err := readConfig()
+	cfgAttrs, err := loadConfigAttributesFromFlagsAndVars()
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func EvaluateSettings() (*Config, error) {
 }
 
 // NewConfig create config from attributes
-func NewConfig(attrs *Attributes) (*Config, error) {
+func NewConfig(attrs *ConfigAttributes) (*Config, error) {
 	var err error
 	cfg := &Config{
 		allProfiles:         attrs.AllProfiles,
@@ -413,7 +413,9 @@ func (c *Config) ReadConfigProfileKeys() ([]string, error) {
 	return nil, nil
 }
 
-func readConfig() (Attributes, error) {
+// loadConfigAttributesFromFlagsAndVars helper function to load configuration
+// attributes with viper by inspecting CLI flags then environment variables.
+func loadConfigAttributesFromFlagsAndVars() (ConfigAttributes, error) {
 	// Side loading multiple profiles from okta.yaml file if it exists
 	if oktaYamlConfig, err := NewOktaYamlConfig(); err == nil {
 		profiles := oktaYamlConfig.AWSCLI.PROFILES
@@ -444,7 +446,7 @@ func readConfig() (Attributes, error) {
 		awsProfile = "default"
 	}
 
-	attrs := Attributes{
+	attrs := ConfigAttributes{
 		AllProfiles:         viper.GetBool(getFlagNameFromProfile(awsProfile, AllProfilesFlag)),
 		AuthzID:             viper.GetString(getFlagNameFromProfile(awsProfile, AuthzIDFlag)),
 		AWSCredentials:      viper.GetString(getFlagNameFromProfile(awsProfile, AWSCredentialsFlag)),
