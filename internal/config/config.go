@@ -420,7 +420,7 @@ func readConfig() (Attributes, error) {
 		viper.SetConfigType("yaml")
 		yamlData, err := yaml.Marshal(&profiles)
 		if err != nil {
-			path, _ := OktaConfigPath()
+			path, _ := oktaConfigPath()
 			fmt.Fprintf(os.Stderr, "WARNING: error reading from %q: %+v.\n\n", path, err)
 		}
 		if err == nil {
@@ -943,9 +943,9 @@ func (c *Config) UserAgent() string {
 	return longUserAgent
 }
 
-// OktaConfigPath returns OS specific path to the okta config file, for example
+// oktaConfigPath returns OS specific path to the okta config file, for example
 // $HOME/.okta/okta.yaml
-func OktaConfigPath() (path string, err error) {
+func oktaConfigPath() (path string, err error) {
 	var homeDir string
 	homeDir, err = os.UserHomeDir()
 	if err != nil {
@@ -958,7 +958,7 @@ func OktaConfigPath() (path string, err error) {
 
 // OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
 func OktaConfig() (config *OktaYamlConfig, err error) {
-	configPath, err := OktaConfigPath()
+	configPath, err := oktaConfigPath()
 	if err != nil {
 		return
 	}
