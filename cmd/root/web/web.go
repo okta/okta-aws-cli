@@ -86,7 +86,7 @@ func NewWebCommand() *cobra.Command {
 				return err
 			}
 
-			_, err = config.OktaConfig()
+			_, err = config.NewOktaYamlConfig()
 			if err != nil {
 				if _, pathError := err.(*fs.PathError); !pathError {
 					// Warn if okta.yaml exists and there is an error with it.

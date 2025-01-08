@@ -250,9 +250,9 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 	choices := make([]string, len(apps))
 	var selected string
 	var configIDPs map[string]string
-	oktaConfig, err := config.OktaConfig()
+	oktaYamlConfig, err := config.NewOktaYamlConfig()
 	if err == nil {
-		configIDPs = oktaConfig.AWSCLI.IDPS
+		configIDPs = oktaYamlConfig.AWSCLI.IDPS
 	}
 
 	for i, app := range apps {
@@ -459,10 +459,10 @@ func (w *WebSSOAuthentication) choiceFriendlyLabelRole(arn string, roles map[str
 
 // promptForRole prompt operator for the AWS Role ARN given a slice of Role ARNs
 func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (roleARN string, err error) {
-	oktaConfig, err := config.OktaConfig()
+	oktaYamlConfig, err := config.NewOktaYamlConfig()
 	var configRoles map[string]string
 	if err == nil {
-		configRoles = oktaConfig.AWSCLI.ROLES
+		configRoles = oktaYamlConfig.AWSCLI.ROLES
 	}
 
 	if len(roleARNs) == 1 || w.config.AWSIAMRole() != "" {
@@ -527,8 +527,8 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 // to pretty print out the IdP name again.
 func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, err error) {
 	var configIDPs map[string]string
-	if oktaConfig, cErr := config.OktaConfig(); cErr == nil {
-		configIDPs = oktaConfig.AWSCLI.IDPS
+	if oktaYamlConfig, cErr := config.NewOktaYamlConfig(); cErr == nil {
+		configIDPs = oktaYamlConfig.AWSCLI.IDPS
 	}
 
 	if len(idpARNs) == 0 {

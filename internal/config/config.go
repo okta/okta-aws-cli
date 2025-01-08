@@ -399,8 +399,8 @@ func getFlagNameFromProfile(awsProfile, flag string) string {
 // ReadConfigProfileKeys returns the config profile names
 func (c *Config) ReadConfigProfileKeys() ([]string, error) {
 	// Side loading multiple profiles from okta.yaml file if it exists
-	if oktaConfig, err := OktaConfig(); err == nil {
-		profiles := oktaConfig.AWSCLI.PROFILES
+	if oktaYamlConfig, err := NewOktaYamlConfig(); err == nil {
+		profiles := oktaYamlConfig.AWSCLI.PROFILES
 
 		keys := make([]string, 0, len(profiles))
 
@@ -415,8 +415,8 @@ func (c *Config) ReadConfigProfileKeys() ([]string, error) {
 
 func readConfig() (Attributes, error) {
 	// Side loading multiple profiles from okta.yaml file if it exists
-	if oktaConfig, err := OktaConfig(); err == nil {
-		profiles := oktaConfig.AWSCLI.PROFILES
+	if oktaYamlConfig, err := NewOktaYamlConfig(); err == nil {
+		profiles := oktaYamlConfig.AWSCLI.PROFILES
 		viper.SetConfigType("yaml")
 		yamlData, err := yaml.Marshal(&profiles)
 		if err != nil {
@@ -956,8 +956,8 @@ func oktaConfigPath() (path string, err error) {
 	return
 }
 
-// OktaConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
-func OktaConfig() (config *OktaYamlConfig, err error) {
+// NewOktaYamlConfig returns an Okta YAML Config object representation of $HOME/.okta/okta.yaml
+func NewOktaYamlConfig() (config *OktaYamlConfig, err error) {
 	configPath, err := oktaConfigPath()
 	if err != nil {
 		return
