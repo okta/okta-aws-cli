@@ -18,6 +18,6 @@ package logger
 
 // Logger Interface used for logging ouput
 type Logger interface {
-	Info(format string, a ...any) (int, error)
-	Warn(format string, a ...any) (int, error)
+	Info(format string, a ...any)
+	Warn(format string, a ...any)
 }

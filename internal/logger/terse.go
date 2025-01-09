@@ -22,13 +22,12 @@ import (
 )
 
 // TerseLogger logger that only prints info level lines
-type TerseLogger struct {
+type TerseLogger struct{}
+
+// Info prints formatted message to stdout
+func (l *TerseLogger) Info(format string, a ...any) {
+	_, _ = fmt.Fprintf(os.Stdout, format, a...)
 }
 
-func (l *TerseLogger) Info(format string, a ...any) (int, error) {
-	return fmt.Fprintf(os.Stdout, format, a...)
-}
-
-func (l *TerseLogger) Warn(format string, a ...any) (int, error) {
-	return -1, nil
-}
+// Warn is a no-op, it prints nothing
+func (l *TerseLogger) Warn(format string, a ...any) {}

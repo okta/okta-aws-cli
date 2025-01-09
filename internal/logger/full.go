@@ -22,13 +22,14 @@ import (
 )
 
 // FullLogger logger for stderr (warn) and stdout (info) logging
-type FullLogger struct {
+type FullLogger struct{}
+
+// Info prints formatted message to stdout
+func (l *FullLogger) Info(format string, a ...any) {
+	_, _ = fmt.Fprintf(os.Stdout, format, a...)
 }
 
-func (l *FullLogger) Info(format string, a ...any) (int, error) {
-	return fmt.Fprintf(os.Stdout, format, a...)
-}
-
-func (l *FullLogger) Warn(format string, a ...any) (int, error) {
-	return fmt.Fprintf(os.Stderr, format, a...)
+// Warn prints formatted message to stderr
+func (l *FullLogger) Warn(format string, a ...any) {
+	_, _ = fmt.Fprintf(os.Stderr, format, a...)
 }
