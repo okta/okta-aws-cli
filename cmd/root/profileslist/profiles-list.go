@@ -17,8 +17,6 @@
 package profileslist
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -35,7 +33,7 @@ func NewProfilesListCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Profiles:")
+			config.Logger.Info("Profiles:\n")
 
 			keys, err := config.ReadConfigProfileKeys()
 			if err != nil {
@@ -43,7 +41,7 @@ func NewProfilesListCommand() *cobra.Command {
 			}
 
 			for _, key := range keys {
-				fmt.Printf(" %s\n", key)
+				config.Logger.Info(" %s\n", key)
 			}
 
 			return nil

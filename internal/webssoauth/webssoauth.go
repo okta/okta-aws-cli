@@ -135,7 +135,7 @@ func NewWebSSOAuthentication(cfg *config.Config) (token *WebSSOAuthentication, e
 
 	// Check if exec arg is present and that there are args for it before doing any work
 	if cfg.Exec() {
-		if _, err := exec.NewExec(); err != nil {
+		if _, err := exec.NewExec(cfg); err != nil {
 			return nil, err
 		}
 	}
@@ -275,7 +275,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 				if err != nil {
 					return "", err
 				}
-				fmt.Fprintln(os.Stderr, rich)
+				w.config.Logger.Warn(rich)
 			}
 
 			return app.ID, nil
@@ -334,7 +334,7 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		}
 
 		if w.config.Exec() {
-			exe, _ := exec.NewExec()
+			exe, _ := exec.NewExec(w.config)
 			if err := exe.Run(cc); err != nil {
 				return err
 			}
@@ -344,7 +344,7 @@ func (w *WebSSOAuthentication) establishTokenWithFedAppID(clientID, fedAppID str
 		for cc := range ccch {
 			err = output.RenderAWSCredential(w.config, cc)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "failed to render credential %s: %s\n", cc.Profile, err)
+				w.config.Logger.Warn("failed to render credential %s: %s\n", cc.Profile, err)
 				continue
 			}
 		}
@@ -406,7 +406,7 @@ func (w *WebSSOAuthentication) awsAssumeRoleWithSAML(iar *idpAndRole, assertion,
 	})
 	if p, err := w.fetchAWSAccountAlias(sessCopy); err != nil {
 		org := "org"
-		fmt.Fprintf(os.Stderr, "unable to determine account alias, setting alias name to %q\n", org)
+		w.config.Logger.Warn("unable to determine account alias, setting alias name to %q\n", org)
 		profileName = org
 	} else {
 		profileName = p
@@ -491,7 +491,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 			if err != nil {
 				return "", err
 			}
-			fmt.Fprintln(os.Stderr, rich)
+			w.config.Logger.Warn(rich)
 		}
 		return roleARN, nil
 	}
@@ -552,7 +552,7 @@ func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, er
 		if err != nil {
 			return "", err
 		}
-		fmt.Fprintln(os.Stderr, rich)
+		w.config.Logger.Warn(rich)
 		return idpARN, nil
 	}
 
@@ -1121,7 +1121,7 @@ func ConsolePrint(config *config.Config, format string, a ...any) {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, format, a...)
+	config.Logger.Warn(format, a...)
 }
 
 func (w *WebSSOAuthentication) consolePrint(format string, a ...any) {
@@ -1141,7 +1141,7 @@ func (w *WebSSOAuthentication) fetchAllAWSCredentialsWithSAMLRole(idpRolesMap ma
 				defer wg.Done()
 				cc, err := w.awsAssumeRoleWithSAML(iar, assertion, region)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "failed to fetch AWS creds IdP %q, and Role %q, error:\n%+v\n", iar.idp, iar.role, err)
+					w.config.Logger.Warn("failed to fetch AWS creds IdP %q, and Role %q, error:\n%+v\n", iar.idp, iar.role, err)
 					return
 				}
 				ccch <- cc

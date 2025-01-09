@@ -29,6 +29,8 @@ import (
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+
+	"github.com/okta/okta-aws-cli/internal/logger"
 )
 
 // longUserAgent the long user agent value
@@ -281,6 +283,7 @@ type Config struct {
 	shortUserAgent      bool
 	writeAWSCredentials bool
 	clock               Clock
+	Logger              logger.Logger
 }
 
 // ConfigAttributes attributes for config construction
@@ -324,7 +327,18 @@ func NewEvaluatedConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewConfig(&cfgAttrs)
+	var config *Config
+	if config, err = NewConfig(&cfgAttrs); err != nil {
+		return nil, err
+	}
+	switch cfgAttrs.Format {
+	case ProcessCredentialsFormat:
+		config.Logger = &logger.TerseLogger{}
+	default:
+		config.Logger = &logger.FullLogger{}
+	}
+
+	return config, nil
 }
 
 // NewConfig create config from attributes
@@ -994,137 +1008,137 @@ awscli:
     "arn:aws:iam::012345678901:role/admin": "Dev Admin"
     "arn:aws:iam::012345678901:role/operator": "Dev Ops"
 	`
-	fmt.Fprintf(os.Stderr, "Given this YAML as an example template of okta.yaml for reference:\n%s\n", exampleYaml)
+	c.Logger.Warn("Given this YAML as an example template of okta.yaml for reference:\n%s\n", exampleYaml)
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: can't find user home directory $HOME\n")
-		fmt.Fprintf(os.Stderr, "         see https://pkg.go.dev/os#UserHomeDir\n")
+		c.Logger.Warn("WARNING: can't find user home directory $HOME\n")
+		c.Logger.Warn("         see https://pkg.go.dev/os#UserHomeDir\n")
 		return
 	}
-	fmt.Fprintf(os.Stderr, "found home directory %q\n", homeDir)
+	c.Logger.Warn("found home directory %q\n", homeDir)
 
 	configPath := filepath.Join(homeDir, DotOkta, OktaYaml)
 	yamlConfig, err := os.ReadFile(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: can't read okta config %q\n", configPath)
+		c.Logger.Warn("WARNING: can't read okta config %q\n", configPath)
 		return
 	}
-	fmt.Fprintf(os.Stderr, "okta.yaml is readable %q\n", configPath)
+	c.Logger.Warn("okta.yaml is readable %q\n", configPath)
 
 	conf := map[string]any{}
 	err = yaml.Unmarshal(yamlConfig, &conf)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml is invalid yaml format\n")
+		c.Logger.Warn("WARNING: okta.yaml is invalid yaml format\n")
 		return
 	}
-	fmt.Fprintf(os.Stderr, "okta.yaml is valid yaml\n")
+	c.Logger.Warn("okta.yaml is valid yaml\n")
 
 	awscli, ok := conf["awscli"]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli\" section\n")
+		c.Logger.Warn("WARNING: okta.yaml missing \"awscli\" section\n")
 		return
 	}
-	fmt.Fprintf(os.Stderr, "okta.yaml has root \"awscli\" section\n")
+	c.Logger.Warn("okta.yaml has root \"awscli\" section\n")
 
 	if awscli == nil {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli\" section has no values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli\" section has no values\n")
 		return
 	}
 	_awscli, ok := awscli.(map[any]any)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli\" is not a map of values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli\" is not a map of values\n")
 	}
 	idps, ok := _awscli["idps"]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli.idps\" section\n")
+		c.Logger.Warn("WARNING: okta.yaml missing \"awscli.idps\" section\n")
 		return
 	}
 	if idps == nil {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section has no values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.idps\" section has no values\n")
 		return
 	}
 
 	// map[interface {}]interface {}
 	_idps, ok := idps.(map[any]any)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section is not a map of ARN string key to friendly string label values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.idps\" section is not a map of ARN string key to friendly string label values\n")
 		return
 	}
 	if len(_idps) == 0 {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.idps\" section is an empty map of ARN string key to friendly string label values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.idps\" section is an empty map of ARN string key to friendly string label values\n")
 		return
 	}
 
 	for k, v := range _idps {
 		if _, ok := k.(string); !ok {
-			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" value of ARN key \"%v\" is not a string\n", k)
+			c.Logger.Warn("okta.yaml \"awscli.idps\" value of ARN key \"%v\" is not a string\n", k)
 			return
 		}
 		if _, ok := v.(string); !ok {
-			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" ARN key %q's friendly label value \"%v\" is not a string\n", k, v)
+			c.Logger.Warn("okta.yaml \"awscli.idps\" ARN key %q's friendly label value \"%v\" is not a string\n", k, v)
 			return
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.idps\" section is a map of %d ARN string keys to friendly string label values\n", len(_idps))
+	c.Logger.Warn("okta.yaml \"awscli.idps\" section is a map of %d ARN string keys to friendly string label values\n", len(_idps))
 
 	roles, ok := _awscli["roles"]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli.roles\" section\n")
+		c.Logger.Warn("WARNING: okta.yaml missing \"awscli.roles\" section\n")
 		return
 	}
 	if roles == nil {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section has no values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.roles\" section has no values\n")
 		return
 	}
 
 	_roles, ok := roles.(map[any]any)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section is not a map of ARN string key to friendly string label values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.roles\" section is not a map of ARN string key to friendly string label values\n")
 		return
 	}
 	if len(_roles) == 0 {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.roles\" section is an empty map of ARN string key to friendly string label values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.roles\" section is an empty map of ARN string key to friendly string label values\n")
 		return
 	}
 
 	for k, v := range _roles {
 		if _, ok := k.(string); !ok {
-			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" value of ARN key \"%v\" is not a string\n", k)
+			c.Logger.Warn("okta.yaml \"awscli.roles\" value of ARN key \"%v\" is not a string\n", k)
 			return
 		}
 		if _, ok := v.(string); !ok {
-			fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" ARN key %q's friendly label value \"%v\" is not a string\n", k, v)
+			c.Logger.Warn("okta.yaml \"awscli.roles\" ARN key %q's friendly label value \"%v\" is not a string\n", k, v)
 			return
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.roles\" section is a map of %d ARN string keys to friendly string label values\n", len(_roles))
+	c.Logger.Warn("okta.yaml \"awscli.roles\" section is a map of %d ARN string keys to friendly string label values\n", len(_roles))
 
 	profiles, ok := _awscli["profiles"]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml missing \"awscli.profiles\" section\n")
+		c.Logger.Warn("WARNING: okta.yaml missing \"awscli.profiles\" section\n")
 		return
 	}
 	if profiles == nil {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.profiles\" section has no values\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.profiles\" section has no values\n")
 		return
 	}
 
 	_profiles, ok := profiles.(map[any]any)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.profiles\" section is not a map of separate config settings keyed by profile name\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.profiles\" section is not a map of separate config settings keyed by profile name\n")
 		return
 	}
 	if len(_profiles) == 0 {
-		fmt.Fprintf(os.Stderr, "WARNING: okta.yaml \"awscli.profiles\" section is an empty map of separate config settings keyed by profile name\n")
+		c.Logger.Warn("WARNING: okta.yaml \"awscli.profiles\" section is an empty map of separate config settings keyed by profile name\n")
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "okta.yaml \"awscli.profiles\" section is a map of %d separate config settings keyed by profile name\n", len(_profiles))
+	c.Logger.Warn("okta.yaml \"awscli.profiles\" section is a map of %d separate config settings keyed by profile name\n", len(_profiles))
 
-	fmt.Fprintf(os.Stderr, "okta.yaml is OK\n")
+	c.Logger.Warn("okta.yaml is OK\n")
 	return nil
 }
 

@@ -68,7 +68,7 @@ func NewM2MAuthentication(cfg *config.Config) (*M2MAuthentication, error) {
 
 	// Check if exec arg is present and that there are args for it before doing any work
 	if cfg.Exec() {
-		if _, err := exec.NewExec(); err != nil {
+		if _, err := exec.NewExec(cfg); err != nil {
 			return nil, err
 		}
 	}
@@ -103,7 +103,7 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 	}
 
 	if m.config.Exec() {
-		exe, _ := exec.NewExec()
+		exe, _ := exec.NewExec(m.config)
 		if err := exe.Run(cc); err != nil {
 			return err
 		}

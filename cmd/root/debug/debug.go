@@ -17,9 +17,6 @@
 package debug
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -37,7 +34,7 @@ func NewDebugCommand() *cobra.Command {
 			}
 			err = config.RunConfigChecks()
 			// NOTE: still print out the done message, even if there was an error it will get printed as well
-			fmt.Fprintf(os.Stderr, "debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete\n")
+			config.Logger.Warn("debugging okta-aws-cli config $HOME/.okta/okta.yaml is complete\n")
 			if err != nil {
 				return err
 			}

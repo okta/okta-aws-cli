@@ -23,17 +23,19 @@ import (
 	"strings"
 
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
+	"github.com/okta/okta-aws-cli/internal/config"
 	"github.com/okta/okta-aws-cli/internal/utils"
 )
 
 // Exec is a executor / a process runner
 type Exec struct {
-	name string
-	args []string
+	name   string
+	args   []string
+	config *config.Config
 }
 
 // NewExec Create a new executor
-func NewExec() (*Exec, error) {
+func NewExec(c *config.Config) (*Exec, error) {
 	args := []string{}
 	foundArgs := false
 	for _, arg := range os.Args {
@@ -55,8 +57,9 @@ func NewExec() (*Exec, error) {
 	name := args[0]
 	args = args[1:]
 	ex := &Exec{
-		name: name,
-		args: args,
+		name:   name,
+		args:   args,
+		config: c,
 	}
 
 	return ex, nil
@@ -85,14 +88,14 @@ func (e *Exec) Run(cc *oaws.CredentialContainer) error {
 
 	out, err := cmd.Output()
 	if ee, ok := err.(*osexec.ExitError); ok {
-		fmt.Fprintf(os.Stderr, "error running process\n")
-		fmt.Fprintf(os.Stderr, "%s %s\n", e.name, strings.Join(e.args, " "))
-		fmt.Fprintf(os.Stderr, utils.PassThroughStringNewLineFMT, ee.Stderr)
+		e.config.Logger.Warn("error running process\n")
+		e.config.Logger.Warn("%s %s\n", e.name, strings.Join(e.args, " "))
+		e.config.Logger.Warn(utils.PassThroughStringNewLineFMT, ee.Stderr)
 	}
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%s", string(out))
+	e.config.Logger.Info("%s", string(out))
 	return nil
 }
