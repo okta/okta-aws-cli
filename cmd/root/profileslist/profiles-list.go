@@ -17,8 +17,6 @@
 package profileslist
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -30,12 +28,12 @@ func NewProfilesListCommand() *cobra.Command {
 		Use:   "list-profiles",
 		Short: "Lists profile names in ~/.okta/okta.yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.EvaluateSettings()
+			config, err := config.NewEvaluatedConfig()
 			if err != nil {
 				return err
 			}
 
-			fmt.Println("Profiles:")
+			config.Logger.Info("Profiles:\n")
 
 			keys, err := config.ReadConfigProfileKeys()
 			if err != nil {
@@ -43,7 +41,7 @@ func NewProfilesListCommand() *cobra.Command {
 			}
 
 			for _, key := range keys {
-				fmt.Printf(" %s\n", key)
+				config.Logger.Info(" %s\n", key)
 			}
 
 			return nil

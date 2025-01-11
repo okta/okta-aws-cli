@@ -18,7 +18,6 @@ package output
 
 import (
 	"encoding/json"
-	"fmt"
 
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
 	"github.com/okta/okta-aws-cli/internal/config"
@@ -51,6 +50,6 @@ func (p *ProcessCredentials) Output(c *config.Config, cc *oaws.CredentialContain
 		return err
 	}
 
-	fmt.Printf("%s", credJSON)
+	c.Logger.Info("%s", credJSON)
 	return nil
 }

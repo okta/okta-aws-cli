@@ -17,8 +17,6 @@
 package output
 
 import (
-	"fmt"
-	"os"
 	"runtime"
 
 	oaws "github.com/okta/okta-aws-cli/internal/aws"
@@ -45,20 +43,20 @@ func (e *EnvVar) Output(c *config.Config, cc *oaws.CredentialContainer) error {
 		SecretAccessKey: cc.SecretAccessKey,
 		SessionToken:    cc.SessionToken,
 	}
-	fmt.Fprintf(os.Stderr, "\n")
+	c.Logger.Warn("\n")
 	if runtime.GOOS == "windows" {
-		fmt.Printf("setx AWS_ACCESS_KEY_ID %s\n", evc.AccessKeyID)
-		fmt.Printf("setx AWS_SECRET_ACCESS_KEY %s\n", evc.SecretAccessKey)
-		fmt.Printf("setx AWS_SESSION_TOKEN %s\n", evc.SessionToken)
+		c.Logger.Info("setx AWS_ACCESS_KEY_ID %s\n", evc.AccessKeyID)
+		c.Logger.Info("setx AWS_SECRET_ACCESS_KEY %s\n", evc.SecretAccessKey)
+		c.Logger.Info("setx AWS_SESSION_TOKEN %s\n", evc.SessionToken)
 		if e.LegacyAWSVariables {
-			fmt.Printf("setx AWS_SECURITY_TOKEN %s\n", evc.SessionToken)
+			c.Logger.Info("setx AWS_SECURITY_TOKEN %s\n", evc.SessionToken)
 		}
 	} else {
-		fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", evc.AccessKeyID)
-		fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", evc.SecretAccessKey)
-		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", evc.SessionToken)
+		c.Logger.Info("export AWS_ACCESS_KEY_ID=%s\n", evc.AccessKeyID)
+		c.Logger.Info("export AWS_SECRET_ACCESS_KEY=%s\n", evc.SecretAccessKey)
+		c.Logger.Info("export AWS_SESSION_TOKEN=%s\n", evc.SessionToken)
 		if e.LegacyAWSVariables {
-			fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", evc.SessionToken)
+			c.Logger.Info("export AWS_SECURITY_TOKEN=%s\n", evc.SessionToken)
 		}
 	}
 

@@ -27,6 +27,11 @@ import (
 	"github.com/okta/okta-aws-cli/internal/webssoauth"
 )
 
+const (
+	// InvalidGrant constant
+	InvalidGrant = "invalid_grant"
+)
+
 var (
 	flags = []cliFlag.Flag{
 		{
@@ -81,12 +86,12 @@ func NewWebCommand() *cobra.Command {
 		Use:   "web",
 		Short: "Human oriented authentication and device authorization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.EvaluateSettings()
+			cfg, err := config.NewEvaluatedConfig()
 			if err != nil {
 				return err
 			}
 
-			_, err = config.OktaConfig()
+			_, err = config.NewOktaYamlConfig()
 			if err != nil {
 				if _, pathError := err.(*fs.PathError); !pathError {
 					// Warn if okta.yaml exists and there is an error with it.
@@ -111,7 +116,7 @@ func NewWebCommand() *cobra.Command {
 				err = wsa.EstablishIAMCredentials()
 				apiErr, ok = err.(*okta.APIError)
 				if ok {
-					if apiErr.ErrorType == "invalid_grant" && webssoauth.RemoveCachedAccessToken() {
+					if apiErr.ErrorType == InvalidGrant && webssoauth.RemoveCachedAccessToken() {
 						webssoauth.ConsolePrint(cfg, "Cached access token appears to be stale, removing token and retrying device authorization ...\n\n")
 						continue
 					}
@@ -124,7 +129,7 @@ func NewWebCommand() *cobra.Command {
 			}
 
 			if err != nil {
-				if apiErr != nil && apiErr.ErrorType == "invalid_grant" {
+				if apiErr != nil && apiErr.ErrorType == InvalidGrant {
 					webssoauth.ConsolePrint(cfg, "Authentication failed after multiple attempts. Please log out of Okta in your browser and log back in to resolve the issue.\n")
 				}
 				return err
