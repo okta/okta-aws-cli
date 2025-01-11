@@ -127,7 +127,7 @@ func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (
 	input := &sts.AssumeRoleWithWebIdentityInput{
 		DurationSeconds:  aws.Int64(m.config.AWSSessionDuration()),
 		RoleArn:          aws.String(m.config.AWSIAMRole()),
-		RoleSessionName:  aws.String("okta-aws-cli"),
+		RoleSessionName:  aws.String(m.config.AWSSTSRoleSessionName()),
 		WebIdentityToken: &at.AccessToken,
 	}
 	svcResp, err := svc.AssumeRoleWithWebIdentity(input)
