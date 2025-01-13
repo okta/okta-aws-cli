@@ -61,6 +61,13 @@ var (
 			Usage:  "Custom Authorization Server ID",
 			EnvVar: config.AuthzIDEnvVar,
 		},
+		{
+			Name:   config.AWSSTSRoleSessionNameFlag,
+			Short:  "q",
+			Value:  "okta-aws-cli",
+			Usage:  "STS Role Session Name",
+			EnvVar: config.AWSSTSRoleSessionNameEnvVar,
+		},
 	}
 	requiredFlags = []interface{}{"org-domain", "oidc-client-id", "aws-iam-role", "key-id", []string{"private-key", "private-key-file"}}
 )

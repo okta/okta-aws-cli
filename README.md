@@ -470,6 +470,7 @@ These settings are optional unless marked otherwise:
 | Private Key File (**required** in lieu of private key) | File holding PEM (pkcs#1 or pkcs#9) private key whose public key is stored on the service app | `--private-key-file [value]` | `OKTA_AWSCLI_PRIVATE_KEY_FILE` |
 | Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use default otherwise. Default `default` | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Custom scope name | The custom scope established in the custom authorization server. Default `okta-m2m-access` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |
+| Custom STS Role Session Name | Customize STS Role Session Name. Default `okta-aws-cli` | `--aws-sts-role-session-name [value]` | `OKTA_AWSCLI_STS_ROLE_SESSION_NAME` |
 
 ### Friendly IdP and Role menu labels
 
