@@ -198,7 +198,7 @@ associated with a given IAM Role for the AWS CLI operator.`,
 
 	// deprecations
 	altText := fmt.Sprintf("please use --%s CLI flag instead\n", config.AWSSessionDurationFlag)
-	cmd.PersistentFlags().MarkDeprecated(config.SessionDurationFlag, altText)
+	_ = cmd.PersistentFlags().MarkDeprecated(config.SessionDurationFlag, altText)
 
 	return cmd
 }
