@@ -80,6 +80,8 @@ const (
 	AWSIAMRoleFlag = "aws-iam-role"
 	// AWSRegionFlag cli flag const
 	AWSRegionFlag = "aws-region"
+	// AWSSessionDurationFlag cli flag const
+	AWSSessionDurationFlag = "aws-session-duration"
 	// AWSSTSRoleSessionNameFlag cli flag const
 	AWSSTSRoleSessionNameFlag = "aws-sts-role-session-name"
 	// CustomScopeFlag cli flag const
@@ -110,7 +112,7 @@ const (
 	ProfileFlag = "profile"
 	// QRCodeFlag cli flag const
 	QRCodeFlag = "qr-code"
-	// SessionDurationFlag cli flag const
+	// SessionDurationFlag DEPRECATED cli flag const
 	SessionDurationFlag = "session-duration"
 	// ShortUserAgentFlag cli flag const
 	ShortUserAgentFlag = "short-user-agent"
@@ -225,6 +227,7 @@ type OktaYamlConfigProfile struct {
 	AWSIAMIdP             string `yaml:"aws-iam-idp"`
 	AWSIAMRole            string `yaml:"aws-iam-role"`
 	AWSRegion             string `yaml:"aws-region"`
+	AWSSessionDuration    string `yaml:"aws-session-duration"`
 	AWSSTSRoleSessionName string `yaml:"aws-sts-role-session-name"`
 	CustomScope           string `yaml:"custom-scope"`
 	Debug                 string `yaml:"debug"`
