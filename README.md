@@ -113,7 +113,9 @@ or emits JSON in [process
 credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
 format.
 
-The `Session Token` has a default expiry of 60 minutes.
+The AWS `Session Token` has a default expiry of 60 minutes and can be configured
+with the AWS Session Duration CLI flag. The expiry of the Okta access / web sso
+token is static at 60 minutes, and can not be configured otherwise.
 
 **IMPORTANT!** The Okta AWS Federation Application does not work in a headless
 environment; it only operates with a human performing authorization in a web
@@ -373,10 +375,10 @@ These global settings are optional unless marked otherwise:
 | Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `my-org.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_AWSCLI_ORG_DOMAIN` |
 | OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
 | AWS IAM Role ARN (**optional** for `web`, **required** for `m2m`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
-| AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
+| AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--aws-session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
 | Output format | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file, `process-credentials` for credentials as JSON, or `noop` for no output which can be useful with `--exec` | `--format [value]` | `OKTA_AWSCLI_FORMAT` |
 | Profile | Default is `default` | `--profile [value]` | `OKTA_AWSCLI_PROFILE` |
-| Cache Okta access token at `$HOME/.okta/awscli-access-token.json` to reduce need to open device authorization URL | `true` if flag is present | `--cache-access-token` | `OKTA_AWSCLI_CACHE_ACCESS_TOKEN=true` |
+| Cache Okta access token at `$HOME/.okta/awscli-access-token.json` to reduce need to open device authorization URL. Okta access token has an expiry of 60 minutes and can not be configured otherwise. | `true` if flag is present | `--cache-access-token` | `OKTA_AWSCLI_CACHE_ACCESS_TOKEN=true` |
 | Alternate AWS credentials file path | Path to alternative credentials file other than AWS CLI default | `--aws-credentials` | `OKTA_AWSCLI_AWS_CREDENTIALS` |
 | (Over)write the given profile to the AWS credentials file. WARNING: When enabled, overwriting can inadvertently remove dangling comments and extraneous formatting from the creds file. | `true` if flag is present | `--write-aws-credentials` | `OKTA_AWSCLI_WRITE_AWS_CREDENTIALS=true` |
 | Emit deprecated AWS variable `aws_security_token` with duplicated value from `aws_session_token`. AWS CLI removed any reference and documentation for `aws_security_token` in November 2014. | `true` if flag is present | `--legacy-aws-variables` | `OKTA_AWSCLI_LEGACY_AWS_VARIABLES=true` |

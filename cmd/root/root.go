@@ -67,8 +67,15 @@ func init() {
 			EnvVar: config.AWSIAMRoleEnvVar,
 		},
 		{
-			Name:   config.SessionDurationFlag,
+			Name:   config.AWSSessionDurationFlag,
 			Short:  "s",
+			Value:  "",
+			Usage:  "Session duration for role.",
+			EnvVar: config.AWSSessionDurationEnvVar,
+		},
+		{
+			// DEPRECATED
+			Name:   config.SessionDurationFlag,
 			Value:  "",
 			Usage:  "Session duration for role.",
 			EnvVar: config.AWSSessionDurationEnvVar,
@@ -188,6 +195,10 @@ associated with a given IAM Role for the AWS CLI operator.`,
 
 	cmd.SetUsageTemplate(resourceUsageTemplate())
 	cliFlag.MakeFlagBindings(cmd, flags, true)
+
+	// deprecations
+	altText := fmt.Sprintf("please use --%s CLI flag instead\n", config.AWSSessionDurationFlag)
+	_ = cmd.PersistentFlags().MarkDeprecated(config.SessionDurationFlag, altText)
 
 	return cmd
 }
