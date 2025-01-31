@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.4.0 (January 31, 2025)
+
+### ENHANCEMENTS
+
+* Multiple apps feature only requires `okta.users.read.self` scope [#254](https://github.com/okta/okta-aws-cli/pull/254), thanks [@monde](https://github.com/monde)!
+* Toggle API HTTP User-Agent header to `okta-aws-cli` to ease use in a policy rule [#257](https://github.com/okta/okta-aws-cli/pull/257), thanks [@monde](https://github.com/monde)!
+* Improve error message suggestion for expired token [#256](https://github.com/okta/okta-aws-cli/pull/256), thanks [@Eitol](https://github.com/Eitol)!
+* JTI protection on m2m auth token [#259](https://github.com/okta/okta-aws-cli/pull/259), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+* m2m allow STS role session name to be overridden [#262](https://github.com/okta/okta-aws-cli/pull/262), thanks [@monde](https://github.com/monde)!
+
+### MAINTENANCE
+
+* Update github.com/aws/aws-sdk-go to v1.55.5 [#255](https://github.com/okta/okta-aws-cli/pull/255), thanks [@monde](https://github.com/monde)!
+* Update golang.org/x/net to v0.34.0 [#266](https://github.com/okta/okta-aws-cli/pull/266), thanks [@monde](https://github.com/monde)!
+* Rename/deprecate CLI flag `--session-duration` to `--aws-session-duration` [#263](https://github.com/okta/okta-aws-cli/pull/263), thanks [@monde](https://github.com/monde)!
+* README note that AWS Fed app doesn't support device security posture [#260](https://github.com/okta/okta-aws-cli/pull/260), thanks [@monde](https://github.com/monde)!
+
+### BUG FIXES
+
+* Correct client assertion handling in API POST [#253](https://github.com/okta/okta-aws-cli/pull/253), thanks [@duytiennguyen-okta](https://github.com/duytiennguyen-okta)!
+* Only read cached access token if the feature is enabled. [#267](https://github.com/okta/okta-aws-cli/pull/267), thanks [@monde](https://github.com/monde)!
+* Control stdio for process credentials output [#261](https://github.com/okta/okta-aws-cli/pull/261), thanks [@monde](https://github.com/monde)!
+
 ## 2.3.1 (September 03, 2024)
 
 ### BUG FIXES
