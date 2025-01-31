@@ -1058,8 +1058,12 @@ func RemoveCachedAccessToken() bool {
 }
 
 // cachedAccessToken will returned the cached access token if it exists and is
-// not expired.
+// not expired and --cached-access-token is enabled.
 func (w *WebSSOAuthentication) cachedAccessToken() (at *okta.AccessToken) {
+	if !w.config.CacheAccessToken() {
+		return
+	}
+
 	accessTokenPath, err := cachedAccessTokenPath()
 	if err != nil {
 		return
