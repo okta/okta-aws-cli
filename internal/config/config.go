@@ -479,7 +479,7 @@ func loadConfigAttributesFromFlagsAndVars() (Attributes, error) {
 		AWSIAMIdP:             viper.GetString(getFlagNameFromProfile(awsProfile, AWSIAMIdPFlag)),
 		AWSIAMRole:            viper.GetString(getFlagNameFromProfile(awsProfile, AWSIAMRoleFlag)),
 		AWSRegion:             viper.GetString(getFlagNameFromProfile(awsProfile, AWSRegionFlag)),
-		AWSSessionDuration:    viper.GetInt64(getFlagNameFromProfile(awsProfile, SessionDurationFlag)),
+		AWSSessionDuration:    viper.GetInt64(getFlagNameFromProfile(awsProfile, AWSSessionDurationFlag)),
 		AWSSTSRoleSessionName: viper.GetString(getFlagNameFromProfile(awsProfile, AWSSTSRoleSessionNameFlag)),
 		CustomScope:           viper.GetString(getFlagNameFromProfile(awsProfile, CustomScopeFlag)),
 		Debug:                 viper.GetBool(getFlagNameFromProfile(awsProfile, DebugFlag)),
@@ -561,7 +561,12 @@ func loadConfigAttributesFromFlagsAndVars() (Attributes, error) {
 		attrs.AWSRegion = viper.GetString(downCase(AWSRegionEnvVar))
 	}
 
-	// if session duration is 0, inspect the ENV VAR for a value, else set
+	// if session duration is 0, check DEPRECATED session duration flag
+	if attrs.AWSSessionDuration == 0 {
+		attrs.AWSSessionDuration = viper.GetInt64(getFlagNameFromProfile(awsProfile, SessionDurationFlag))
+	}
+
+	// if session duration is still 0, inspect the ENV VAR for a value, else set
 	// a default of 3600
 	if attrs.AWSSessionDuration == 0 {
 		attrs.AWSSessionDuration = viper.GetInt64(downCase(AWSSessionDurationEnvVar))
