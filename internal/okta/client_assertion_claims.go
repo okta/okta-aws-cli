@@ -17,7 +17,7 @@
 package okta
 
 import (
-	"gopkg.in/square/go-jose.v2/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 // ClientAssertionClaims Okta Client Assertion Claims model

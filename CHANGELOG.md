@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.4.1 (February 10, 2025)
+
+### BUG FIXES
+
+* Correct bug evaluating AWS Session Duration CLI flag  [#269](https://github.com/okta/okta-aws-cli/pull/269), thanks [@curator](https://github.com/curator)!
+
+### MAINTENANCE
+
+* Upgrade gopkg.in/square/go-jose.v2 v2.6.0 to github.com/go-jose/go-jose/v4 v4.0.4
+  * https://github.com/okta/okta-aws-cli/security/dependabot/9
+
 ## 2.4.0 (January 31, 2025)
 
 ### ENHANCEMENTS
