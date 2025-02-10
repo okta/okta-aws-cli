@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.1 (February 10, 2025)
+
+### BUG FIXES
+
+* Correct bug evaluating AWS Session Duration CLI flag  [#269](https://github.com/okta/okta-aws-cli/pull/269), thanks [@curator](https://github.com/curator)!
+
 ## 2.4.0 (January 31, 2025)
 
 ### ENHANCEMENTS
