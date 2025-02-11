@@ -275,7 +275,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 				if err != nil {
 					return "", err
 				}
-				w.config.Logger.Warn(rich)
+				w.config.Logger.Warn(rich + "\n")
 			}
 
 			return app.ID, nil
@@ -491,7 +491,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 			if err != nil {
 				return "", err
 			}
-			w.config.Logger.Warn(rich)
+			w.config.Logger.Warn(rich + "\n")
 		}
 		return roleARN, nil
 	}
@@ -552,7 +552,7 @@ func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, er
 		if err != nil {
 			return "", err
 		}
-		w.config.Logger.Warn(rich)
+		w.config.Logger.Warn(rich + "\n")
 		return idpARN, nil
 	}
 
