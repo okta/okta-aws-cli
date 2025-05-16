@@ -100,3 +100,9 @@ func NewAPIError(resp *http.Response) error {
 	}
 	return &e
 }
+
+func APIErr(bodyBytes []byte) (ae *APIError, err error) {
+	ae = &APIError{}
+	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
+	return
+}

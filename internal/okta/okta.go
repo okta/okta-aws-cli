@@ -22,4 +22,7 @@ const (
 
 	// CustomAuthzV1TokenEndpointFormat sprintf format string for custom oauth server token endpoint
 	CustomAuthzV1TokenEndpointFormat = "https://%s/oauth2/%s/v1/token"
+
+	// CustomAuthzV1ChallengeEndpointFormat sprintf format string for custom oauth server token endpoint
+	CustomAuthzV1ChallengeEndpointFormat = "https://%s/oauth2/%s/v1/challenge"
 )

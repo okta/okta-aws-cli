@@ -16,6 +16,16 @@
 
 package utils
 
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/okta"
+)
+
 const (
 	// ContentType http header content type
 	ContentType = "Content-Type"
@@ -42,4 +52,84 @@ const (
 	SecretAccessKey = "SecretAccessKey"
 	// SessionToken AWS creds session token
 	SessionToken = "SessionToken"
+
+	// DefaultAuthzID The default authorization server id
+	DefaultAuthzID = "default"
+	// Accept HTTP Accept header
+	Accept = "Accept"
+	// DotOktaDir The dot dirctory for Okta apps
+	DotOktaDir = ".okta"
+	// AccessTokenFileName file name of where the cached access token is places
+	AccessTokenFileName = "awscli-access-token.json"
 )
+
+// CachedAccessTokenPath Path to the cached access token in $HOME/.okta/awscli-access-token.json
+func CachedAccessTokenPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, DotOktaDir, AccessTokenFileName), nil
+}
+
+// CacheAccessToken will cache the access token for later use if enabled. Silent
+// if fails.
+func CacheAccessToken(cfg *config.Config, at *okta.AccessToken) {
+	if !cfg.CacheAccessToken() {
+		return
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	oktaDir := filepath.Join(homeDir, DotOktaDir)
+	// noop if dir exists
+	err = os.MkdirAll(oktaDir, 0o700)
+	if err != nil {
+		return
+	}
+
+	atJSON, err := json.Marshal(at)
+	if err != nil {
+		return
+	}
+
+	configPath := filepath.Join(homeDir, DotOktaDir, AccessTokenFileName)
+	_ = os.WriteFile(configPath, atJSON, 0o600)
+}
+
+// CachedAccessToken will returned the cached access token if it exists and is
+// not expired and --cached-access-token is enabled.
+func CachedAccessToken(cfg *config.Config) (at *okta.AccessToken) {
+	if !cfg.CacheAccessToken() {
+		return
+	}
+
+	accessTokenPath, err := CachedAccessTokenPath()
+	if err != nil {
+		return
+	}
+	atJSON, err := os.ReadFile(accessTokenPath)
+	if err != nil {
+		return
+	}
+
+	_at := okta.AccessToken{}
+	err = json.Unmarshal(atJSON, &_at)
+	if err != nil {
+		return
+	}
+
+	expiry, err := time.Parse(time.RFC3339, _at.Expiry)
+	if err != nil {
+		return
+	}
+	if expiry.Before(time.Now()) {
+		// expiry is in the past
+		return
+	}
+
+	return &_at
+}
