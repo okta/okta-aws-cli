@@ -125,6 +125,11 @@ const (
 	// CacheAccessTokenFlag cli flag const
 	CacheAccessTokenFlag = "cache-access-token"
 
+	// UsernameFlag cli flag const
+	UsernameFlag = "username"
+	// PasswordFlag cli flag const
+	PasswordFlag = "password"
+
 	////////////////////////////////////////////////////////////
 	// ENV VARS
 	////////////////////////////////////////////////////////////
@@ -192,6 +197,11 @@ const (
 	// WriteAWSCredentialsEnvVar env var const
 	WriteAWSCredentialsEnvVar = "OKTA_AWSCLI_WRITE_AWS_CREDENTIALS"
 
+	// UsernameEnvVar env var const
+	UsernameEnvVar = "OKTA_AWSCLI_USERNAME"
+	// PasswordEnvVar env var const
+	PasswordEnvVar = "OKTA_AWSCLI_PASSWORD"
+
 	////////////////////////////////////////////////////////////
 	// Other
 	////////////////////////////////////////////////////////////
@@ -248,6 +258,8 @@ type OktaYamlConfigProfile struct {
 	LegacyAWSVariables    string `yaml:"legacy-aws-variables"`
 	ExpiryAWSVariables    string `yaml:"expiry-aws-variables"`
 	CacheAccessToken      string `yaml:"cache-access-token"`
+	Username              string `yaml:"username"`
+	Password              string `yaml:"password"`
 }
 
 // Clock interface to abstract time operations
@@ -291,6 +303,8 @@ type Config struct {
 	qrCode                bool
 	shortUserAgent        bool
 	writeAWSCredentials   bool
+	username              string
+	password              string
 	clock                 Clock
 	Logger                logger.Logger
 }
@@ -325,6 +339,8 @@ type Attributes struct {
 	QRCode                bool
 	ShortUserAgent        bool
 	WriteAWSCredentials   bool
+	Username              string
+	Password              string
 }
 
 // NewEvaluatedConfig Returns a new config loading and evaluating attributes in
@@ -383,6 +399,8 @@ func NewConfig(attrs *Attributes) (*Config, error) {
 		qrCode:                attrs.QRCode,
 		shortUserAgent:        attrs.ShortUserAgent,
 		writeAWSCredentials:   attrs.WriteAWSCredentials,
+		username:              attrs.Username,
+		password:              attrs.Password,
 	}
 	err = cfg.SetOrgDomain(attrs.OrgDomain)
 	if err != nil {
@@ -501,6 +519,8 @@ func loadConfigAttributesFromFlagsAndVars() (Attributes, error) {
 		QRCode:                viper.GetBool(getFlagNameFromProfile(awsProfile, QRCodeFlag)),
 		ShortUserAgent:        viper.GetBool(getFlagNameFromProfile(awsProfile, ShortUserAgentFlag)),
 		WriteAWSCredentials:   viper.GetBool(getFlagNameFromProfile(awsProfile, WriteAWSCredentialsFlag)),
+		Username:              viper.GetString(getFlagNameFromProfile(awsProfile, UsernameFlag)),
+		Password:              viper.GetString(getFlagNameFromProfile(awsProfile, PasswordFlag)),
 	}
 	if attrs.Format == "" {
 		attrs.Format = EnvVarFormat
@@ -559,6 +579,12 @@ func loadConfigAttributesFromFlagsAndVars() (Attributes, error) {
 	}
 	if attrs.AWSRegion == "" {
 		attrs.AWSRegion = viper.GetString(downCase(AWSRegionEnvVar))
+	}
+	if attrs.Username == "" {
+		attrs.Username = viper.GetString(downCase(UsernameEnvVar))
+	}
+	if attrs.Password == "" {
+		attrs.Password = viper.GetString(downCase(PasswordEnvVar))
 	}
 
 	// if session duration is 0, check DEPRECATED session duration flag
@@ -947,6 +973,28 @@ func (c *Config) KeyID() string {
 // SetKeyID --
 func (c *Config) SetKeyID(keyID string) error {
 	c.keyID = keyID
+	return nil
+}
+
+// Username --
+func (c *Config) Username() string {
+	return c.username
+}
+
+// SetUsername --
+func (c *Config) SetUsername(username string) error {
+	c.username = username
+	return nil
+}
+
+// Password --
+func (c *Config) Password() string {
+	return c.password
+}
+
+// SetPassword --
+func (c *Config) SetPassword(password string) error {
+	c.password = password
 	return nil
 }
 

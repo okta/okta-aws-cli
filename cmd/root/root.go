@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	debugCmd "github.com/okta/okta-aws-cli/cmd/root/debug"
+	"github.com/okta/okta-aws-cli/cmd/root/direct"
 	"github.com/okta/okta-aws-cli/cmd/root/m2m"
 	"github.com/okta/okta-aws-cli/cmd/root/web"
 	"github.com/okta/okta-aws-cli/internal/ansi"
@@ -171,6 +172,8 @@ func init() {
 	rootCmd.AddCommand(webCmd)
 	m2mCmd := m2m.NewM2MCommand()
 	rootCmd.AddCommand(m2mCmd)
+	directCmd := direct.NewDirectCommand()
+	rootCmd.AddCommand(directCmd)
 	debugCfgCmd := debugCmd.NewDebugCommand()
 	rootCmd.AddCommand(debugCfgCmd)
 	listProfilesCmd := profileslist.NewProfilesListCommand()

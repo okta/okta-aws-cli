@@ -37,6 +37,8 @@ const (
 	UserAgentHeader = "User-Agent"
 	// XOktaAWSCLIOperationHeader the okta aws cli header
 	XOktaAWSCLIOperationHeader = "X-Okta-Aws-Cli-Operation"
+	// XOktaAWSCLIDirectOperation direct op value for the x okta aws cli header
+	XOktaAWSCLIDirectOperation = "direct"
 	// XOktaAWSCLIWebOperation web op value for the x okta aws cli header
 	XOktaAWSCLIWebOperation = "web"
 	// XOktaAWSCLIM2MOperation m2m op value for the x okta aws cli header
