@@ -89,7 +89,7 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 		return err
 	}
 
-	cc, err := oaws.AWSAssumeRoleWithWebIdentity(m.config, at)
+	cc, err := oaws.AssumeRoleWithWebIdentity(m.config, at)
 	if err != nil {
 		return err
 	}

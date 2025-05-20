@@ -92,7 +92,7 @@ func (da *DirectAuthentication) EstablishIAMCredentials() error {
 		utils.CacheAccessToken(da.config, at)
 	}
 
-	cc, err := oaws.AWSAssumeRoleWithWebIdentity(da.config, at)
+	cc, err := oaws.AssumeRoleWithWebIdentity(da.config, at)
 	if err != nil {
 		return fmt.Errorf("AWS Assume Role With Web Identity error %w", err)
 	}
@@ -138,7 +138,7 @@ func (da *DirectAuthentication) challengeAndPollForAT(mfaToken *okta.MFAToken) (
 	}
 	// https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/#challenge-response
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("requesting OOB MFA token received response %q", resp.Status)
+		return nil, fmt.Errorf("challenging OOB MFA token received response %q", resp.Status)
 	}
 
 	ct := resp.Header.Get(utils.ContentType)
@@ -179,7 +179,7 @@ func (da *DirectAuthentication) challengeAndPollForAT(mfaToken *okta.MFAToken) (
 		resp, err := da.config.HTTPClient().Do(req)
 		bodyBytes, _ = io.ReadAll(resp.Body)
 		if err != nil {
-			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
+			return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorMessage, err))
 		}
 		if resp.StatusCode == http.StatusOK {
 			// done
@@ -189,16 +189,16 @@ func (da *DirectAuthentication) challengeAndPollForAT(mfaToken *okta.MFAToken) (
 			// continue polling if status code is 400 and "error" is "authorization_pending"
 			apiErr, err := okta.APIErr(bodyBytes)
 			if err != nil {
-				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API error body %q", string(bodyBytes)))
+				return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorBodyMessage, string(bodyBytes)))
 			}
-			if apiErr.ErrorType != "authorization_pending" && apiErr.ErrorType != "slow_down" {
-				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API polling error %q - %q", apiErr.ErrorType, apiErr.ErrorDescription))
+			if apiErr.ErrorType != okta.AuthorizationPendingErrorType && apiErr.ErrorType != okta.SlowDownErrorType {
+				return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorPollingMessage, apiErr.ErrorType, apiErr.ErrorDescription))
 			}
 
-			return errors.New("continue polling")
+			return errors.New(okta.ContinuePollingMessage)
 		}
 
-		return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API status %q %q", resp.Status, string(bodyBytes)))
+		return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorStatusMessage, resp.Status, string(bodyBytes)))
 	}
 
 	bOff := boff.NewBackoff(context.Background())
@@ -253,7 +253,7 @@ func (da *DirectAuthentication) requestMFAToken() (*okta.MFAToken, error) {
 
 	ct := resp.Header.Get(utils.ContentType)
 	if !strings.Contains(ct, utils.ApplicationJSON) {
-		return nil, fmt.Errorf("authorize non-JSON API response content type %q", ct)
+		return nil, fmt.Errorf(okta.NonJSONContentTypeErrorMessage, ct)
 	}
 
 	var mfaToken okta.MFAToken

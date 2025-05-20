@@ -94,7 +94,8 @@ func (c *ProcessCredential) MarshalJSON() ([]byte, error) {
 	return json.Marshal(obj)
 }
 
-func AWSAssumeRoleWithWebIdentity(cfg *config.Config, at *okta.AccessToken) (cc *CredentialContainer, err error) {
+// AssumeRoleWithWebIdentity helper function to make the assume role with web identity AWS API call
+func AssumeRoleWithWebIdentity(cfg *config.Config, at *okta.AccessToken) (cc *CredentialContainer, err error) {
 	awsCfg := aws.NewConfig().WithHTTPClient(cfg.HTTPClient())
 	region := cfg.AWSRegion()
 	if region != "" {

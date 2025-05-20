@@ -36,6 +36,11 @@ const (
 	APIErrorMessageWithErrorSummary = "Okta API returned an error: %s"
 	// HTTPHeaderWwwAuthenticate Www-Authenticate header
 	HTTPHeaderWwwAuthenticate = "Www-Authenticate"
+
+	// AuthorizationPendingErrorType --
+	AuthorizationPendingErrorType = "authorization_pending"
+	// SlowDownErrorType --
+	SlowDownErrorType = "slow_down"
 )
 
 // APIError Wrapper for Okta API error
@@ -101,6 +106,7 @@ func NewAPIError(resp *http.Response) error {
 	return &e
 }
 
+// APIErr helper function to create and APIError pointer from a slice of bytes
 func APIErr(bodyBytes []byte) (ae *APIError, err error) {
 	ae = &APIError{}
 	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
