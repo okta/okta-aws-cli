@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.0 (May 20, 2025)
+
+* New `direct` command for OOB MFA password grant auth flow [#277](https://github.com/okta/okta-aws-cli/pull/277), thanks [@monde](https://github.com/monde)!
+
+### ENHANCEMENTS
+
 ## 2.4.1 (February 10, 2025)
 
 ### BUG FIXES
