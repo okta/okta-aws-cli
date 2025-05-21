@@ -354,13 +354,23 @@ $ okta-aws-cli direct \
 }
 ```
 
-The `direct` command makes use of the (direct
-authorization)[https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/]
+The `direct` command makes use of the [direct
+authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/)
 flow that uses a username/password grant. It is a multifactor authentication
 flow doing push to [Okta
 Verify](https://help.okta.com/en-us/content/topics/mobile/okta-verify-overview.htm)
 for the second factor. This will allow for a user experience similar to Nike
 Gimme Creds on a Classic classic org with a username and password.
+
+Follow the directions in the [direct
+authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/)
+documentation to set up the required resources for this flow. The documentation
+specifically covers
+
+- authenticator settings for your org 
+- setting up an authorization server 
+- setting up the up the OIDC app app 
+- required authentication policy settings
 
 When executed `okta-aws-cli direct` requests an access token that is associated
 with the Okta service application. The token is then exchanged and challenged
