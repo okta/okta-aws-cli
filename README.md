@@ -360,7 +360,7 @@ flow that uses a username/password grant. It is a multifactor authentication
 flow doing push to [Okta
 Verify](https://help.okta.com/en-us/content/topics/mobile/okta-verify-overview.htm)
 for the second factor. This will allow for a user experience similar to Nike
-Gimme Creds on a Classic classic org with a username and password.
+Gimme Creds on a Classic org with a username and password.
 
 Follow the directions in the [direct
 authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/)
@@ -375,7 +375,7 @@ specifically covers
 When executed `okta-aws-cli direct` requests an access token that is associated
 with the Okta service application. The token is then exchanged and challenged
 during the out-of-bounds authorization with a push to Okta Verify. After the
-operator acknowledges the request in Okta Verity the Okta authorization server
+operator acknowledges the request in Okta Verify the Okta authorization server
 returns a final access token. This token is presented to AWS STS using
 [AssumeRoleWithWebIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithWebIdentity.html).
 AWS and Okta communicate directly by OIDC protocol to confirm authorization for
