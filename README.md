@@ -9,7 +9,8 @@ retrieve AWS IAM temporary credentials for use in AWS CLI, AWS SDKs, and other
 tools accessing the AWS API. It has two primary commands:
 
 - `web` - combined human and device authorization
-- `m2m` -  headless authorization
+- `m2m` - headless authorization
+- `direct` - [direct authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/)  (OOB MFA)
 
 ```shell
  # *nix, export statements
@@ -26,10 +27,11 @@ SETX AWS_SESSION_TOKEN AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5T...
 
 ```
 
-The result of both the `web` and `m2m` operations is to secure and emit [IAM temporary
+The result of both the `web`, `m2m`, and `direct` operations are to secure and
+emit [IAM temporary
 credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html).
-The credentials have three different output formats that are chosen by the user:
-[environment
+The credentials have three different output formats that are chosen by the
+user: [environment
 variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html),
 AWS [credentials
 file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html),
@@ -45,11 +47,13 @@ format.
      - [Multiple AWS environments](#multiple-aws-environments)
  - [M2M Command](#m2m-command)
    - [M2M Command Requirements](#m2m-command-requirements)
+ - [Direct Command](#direct-command)
+   - [Direct Command Requirements](#direct-command-requirements)
  - [List-Profiles Command](#list-profiles-command)
  - [Configuration](#configuration)
    - [Global settings](#global-settings)
    - [Web command settings](#web-command-settings)
-   - [M2M command settings](#m2m-command-settings)
+   - [Direct command settings](#direct-command-settings)
    - [Friendly IdP and Role menu labels](#friendly-idp-and-role-menu-labels)
    - [Configuration by profile name](#configuration-by-profile-name)
  - [Debug okta.yaml](#debug-oktayaml)
@@ -68,6 +72,7 @@ format.
 | (empty) | When executed without a subcommand **and** without arguments `okta-aws-cli` will print the online help and exit. With arguments it defaults to the `web` command. |
 | `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. |
 | `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. **IMPORTANT!** This a not a feature intended for a human use case. Be sure to use industry state of the art secrets management techniques with the private key. |
+| `direct` | Human or machine/headless oriented retrieval of temporary IAM credentials through out-of-bounds MFA [Direct Authentication](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/) |
 | `list-profiles` | Lists profile names in ~/.okta/okta.yaml. |
 | `debug` | Debug okta.yaml config file and exit. |
 
@@ -193,6 +198,9 @@ Okta Console.
 use industry state of the art secrets management techniques with the private
 key.***
 
+**NOTE**: The `m2m` command only operates with an Okta OIDC app, not the Okta
+AWS Federation app.
+
 ```shell
 # This example presumes its arguments are set as environment variables such as
 # one may find in a headless CI environment.
@@ -311,6 +319,92 @@ role of the `sts:AssumeRoleWithWebIdentity` action type. This setting is on the
 trust relationship tab when viewing a specific role in the AWS Console. Also
 note the ARNs of these roles for later use.
 
+## Direct Command
+
+**NOTE**: The `direct` command only operates with an Okta OIDC app, not the
+Okta AWS Federation app.
+
+```shell
+# use the shell to read in username/password, both can be set directly as CLI
+# flags for the headless use case
+
+# zsh style
+# read "myusername?Okta Username: " && read -s "mypassword?Okta Password: " && echo 
+
+# bash style
+$ read -p "Okta Username: " myusername && read -s -p "Okta Password: " mypassword && echo
+
+Okta Username: test@example.com
+Okta Password:
+
+$ okta-aws-cli direct \
+  --format noop \
+  --org-domain test.okta.com \
+  --oidc-client-id 0oa123 \
+  --authz-id aus456 \
+  --aws-iam-role arn:aws:iam::1234567890:role/my-role \
+  --username "${myusername}" \
+  --password "${mypassword}" \
+  --exec -- aws sts get-caller-identity
+
+{
+    "UserId": "ZYZ789:okta-aws-cli",
+    "Account": "1234567890",
+    "Arn": "arn:aws:sts::1234567890:assumed-role/my-role"
+}
+```
+
+The `direct` command makes use of the [direct
+authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/)
+flow that uses a username/password grant. It is a multifactor authentication
+flow doing push to [Okta
+Verify](https://help.okta.com/en-us/content/topics/mobile/okta-verify-overview.htm)
+for the second factor. This will allow for a user experience similar to Nike
+Gimme Creds on a Classic classic org with a username and password.
+
+Follow the directions in the [direct
+authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/)
+documentation to set up the required resources for this flow. The documentation
+specifically covers
+
+- authenticator settings for your org 
+- setting up an authorization server 
+- setting up the up the OIDC app app 
+- required authentication policy settings
+
+When executed `okta-aws-cli direct` requests an access token that is associated
+with the Okta service application. The token is then exchanged and challenged
+during the out-of-bounds authorization with a push to Okta Verify. After the
+operator acknowledges the request in Okta Verity the Okta authorization server
+returns a final access token. This token is presented to AWS STS using
+[AssumeRoleWithWebIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithWebIdentity.html).
+AWS and Okta communicate directly by OIDC protocol to confirm authorization for
+IAM credentials.
+
+Given access is granted by AWS the result of `okta-aws-cli direct` is a set
+made up of `Access Key ID`, `Secret Access Key`, and `Session Token` of [AWS
+credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+for the AWS CLI. The Okta AWS CLI expresses the AWS credentials as [environment
+variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html),
+or appended (or overwrites existing values) to an AWS CLI [credentials
+file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html),
+or emits JSON in [process
+credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-process-credentials.html)
+format.
+
+The `Session Token` has a default expiry of 60 minutes.
+
+### Direct Command Requirements
+
+Direct is an integration of:
+
+- Otka's [Direct Authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/), and out-of-bounds MFA flow
+- [Okta API service app](https://developer.okta.com/docs/guides/implement-oauth-for-okta-serviceapp/main/)
+- Okta [custom](https://developer.okta.com/docs/guides/customize-authz-server/main/) authorization server
+- [Okta access policy](https://developer.okta.com/docs/guides/configure-access-policy/main/) associated with the service app and have rule(s) for the client credentials flow
+- [AWS IAM OpenID Connect (OIDC) identity provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
+
+
 ## List-Profiles Command
 
 ```shell
@@ -373,8 +467,8 @@ These global settings are optional unless marked otherwise:
 |-----|-----|-----|-----|
 | AWS Region (**optional**) | AWS region (will override ENV VAR `AWS_REGION` and `AWS_DEFAULT_REGION`) e.g. `us-east-2` | `--aws-region [value]` | `OKTA_AWSCLI_AWS_REGION` |
 | Okta Org Domain (**required**) | Full host and domain name of the Okta org e.g. `my-org.okta.com` or the custom domain value | `--org-domain [value]` | `OKTA_AWSCLI_ORG_DOMAIN` |
-| OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` the API services app ID | `--oidc-client-id [value]` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
-| AWS IAM Role ARN (**optional** for `web`, **required** for `m2m`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
+| OIDC Client ID (**required**) | For `web` the OIDC native application / [Allowed Web SSO Client ID](#allowed-web-sso-client-id), for `m2m` and `direct` the API services app ID | `--oidc-client-id [value]` | `OKTA_AWSCLI_OIDC_CLIENT_ID` |
+| AWS IAM Role ARN (**optional** for `web`, **required** for `m2m` and `direct`) | For web preselects the role list to this preferred IAM role for the given IAM Identity Provider. For `m2m` and `direct` | `--aws-iam-role [value]` | `OKTA_AWSCLI_IAM_ROLE` |
 | AWS Session Duration | The lifetime, in seconds, of the AWS credentials. Must be between 60 and 43200. | `--aws-session-duration [value]` | `OKTA_AWSCLI_SESSION_DURATION` |
 | Output format | Default is `env-var`. Options: `env-var` for output to environment variables, `aws-credentials` for output to AWS credentials file, `process-credentials` for credentials as JSON, or `noop` for no output which can be useful with `--exec` | `--format [value]` | `OKTA_AWSCLI_FORMAT` |
 | Profile | Default is `default` | `--profile [value]` | `OKTA_AWSCLI_PROFILE` |
@@ -388,7 +482,6 @@ These global settings are optional unless marked otherwise:
 | HTTP/HTTPS Proxy support | HTTP/HTTPS URL of proxy service (based on golang [net/http/httpproxy](https://pkg.go.dev/golang.org/x/net/http/httpproxy) package) | n/a | `HTTP_PROXY` or `HTTPS_PROXY` |
 | Execute arguments after CLI arg terminator `--` as a separate process. Process will be executed with AWS cred values as AWS env vars `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`. | `true` if flag is present | `--exec` | `OKTA_AWSCLI_EXEC=true` |
 | Short user agent. HTTP requests made to the Okta API have user-agent set to `okta-aws-cli` allowing for a simple UA value in a policy rule. | `true` if flag is present | `--short-user-agent` | `OKTA_AWSCLI_SHORT_USER_AGENT=true` |
-
 
 
 ### Web command settings
@@ -472,6 +565,17 @@ These settings are optional unless marked otherwise:
 | Private Key File (**required** in lieu of private key) | File holding PEM (pkcs#1 or pkcs#9) private key whose public key is stored on the service app | `--private-key-file [value]` | `OKTA_AWSCLI_PRIVATE_KEY_FILE` |
 | Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use default otherwise. Default `default` | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Custom scope name | The custom scope established in the custom authorization server. Default `okta-m2m-access` | `--custom-scope [value]` | `OKTA_AWSCLI_CUSTOM_SCOPE` |
+| Custom STS Role Session Name | Customize STS Role Session Name. Default `okta-aws-cli` | `--aws-sts-role-session-name [value]` | `OKTA_AWSCLI_STS_ROLE_SESSION_NAME` |
+
+### Direct command settings
+
+These settings are optional unless marked otherwise:
+
+| Name | Description | Command line flag | ENV var and .env file value |
+|-----|-----|-----|-----|
+| Username (**required**) | The username of the operator | `--username [value]` | `OKTA_AWSCLI_USERNAME` |
+| Password (**required**) | The password of the operator | `--password [value]` | `OKTA_AWSCLI_PASSWORD` |
+| Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use default otherwise. Default `default` | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Custom STS Role Session Name | Customize STS Role Session Name. Default `okta-aws-cli` | `--aws-sts-role-session-name [value]` | `OKTA_AWSCLI_STS_ROLE_SESSION_NAME` |
 
 ### Friendly IdP and Role menu labels

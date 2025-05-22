@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-Present, Okta, Inc.
+ * Copyright (c) 2025-Present, Okta, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package okta
 
-const (
-	// OAuthV1TokenEndpointFormat sprintf format string for base oauth server token endpoint
-	OAuthV1TokenEndpointFormat = "https://%s/oauth2/v1/token"
-
-	// CustomAuthzV1TokenEndpointFormat sprintf format string for custom oauth server token endpoint
-	CustomAuthzV1TokenEndpointFormat = "https://%s/oauth2/%s/v1/token"
-
-	// CustomAuthzV1ChallengeEndpointFormat sprintf format string for custom oauth server token endpoint
-	CustomAuthzV1ChallengeEndpointFormat = "https://%s/oauth2/%s/v1/challenge"
-)
+// MFAToken Encapsulates Okta API response for the OOB MFA Token at
+// /oauth2/{authzID}/v1/token
+type MFAToken struct {
+	ErrorType        string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+	Token            string `json:"mfa_token"`
+}

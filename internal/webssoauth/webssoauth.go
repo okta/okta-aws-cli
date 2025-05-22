@@ -28,7 +28,6 @@ import (
 	"net/url"
 	"os"
 	osexec "os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -60,7 +59,6 @@ import (
 
 const (
 	amazonAWS                = "amazon_aws"
-	accept                   = "Accept"
 	nameKey                  = "name"
 	saml2Attribute           = "saml2:attribute"
 	samlAttributesRole       = "https://aws.amazon.com/SAML/Attributes/Role"
@@ -74,8 +72,6 @@ const (
 	chooseRole               = "Choose a Role:"
 	idpSelectedTemplate      = `  {{color "default+hb"}}IdP: {{color "reset"}}{{color "cyan"}}{{ .IDP }}{{color "reset"}}`
 	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
-	dotOktaDir               = ".okta"
-	tokenFileName            = "awscli-access-token.json"
 	arnLabelPrintFmt         = "      %q: %q\n"
 	arnPrintFmt              = "    %q\n"
 )
@@ -150,7 +146,7 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 	var apps []*okta.Application
 	var err error
 
-	at = w.cachedAccessToken()
+	at = utils.CachedAccessToken(w.config)
 	if at == nil {
 		deviceAuth, err := w.authorize()
 		if err != nil {
@@ -164,7 +160,7 @@ func (w *WebSSOAuthentication) EstablishIAMCredentials() error {
 		}
 		at.Expiry = time.Now().Add(time.Duration(at.ExpiresIn) * time.Second).Format(time.RFC3339)
 
-		w.cacheAccessToken(at)
+		utils.CacheAccessToken(w.config, at)
 	}
 
 	if w.config.FedAppID() != "" {
@@ -651,7 +647,7 @@ func (w *WebSSOAuthentication) fetchSAMLAssertion(at *okta.AccessToken) (asserti
 	if err != nil {
 		return assertion, err
 	}
-	req.Header.Add(accept, "text/html")
+	req.Header.Add(utils.Accept, "text/html")
 	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
@@ -693,7 +689,7 @@ func (w *WebSSOAuthentication) fetchSSOWebToken(clientID, awsFedAppID string, at
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.Accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
@@ -775,7 +771,7 @@ func (w *WebSSOAuthentication) promptAuthentication(da *okta.DeviceAuthorization
 // okta.users.read.self to its scope.
 func (w *WebSSOAuthentication) listFedAppsFromAppLinks(clientID string, at *okta.AccessToken) ([]*okta.Application, error) {
 	headers := map[string]string{
-		accept:                           utils.ApplicationJSON,
+		utils.Accept:                     utils.ApplicationJSON,
 		utils.ContentType:                utils.ApplicationJSON,
 		utils.UserAgentHeader:            w.config.UserAgent(),
 		utils.XOktaAWSCLIOperationHeader: utils.XOktaAWSCLIWebOperation,
@@ -822,7 +818,7 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.Accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
@@ -843,7 +839,7 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 		resp, err := w.config.HTTPClient().Do(req)
 		bodyBytes, _ = io.ReadAll(resp.Body)
 		if err != nil {
-			return backoff.Permanent(fmt.Errorf("fetching access token polling received API err %w", err))
+			return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorMessage, err))
 		}
 		if resp.StatusCode == http.StatusOK {
 			// done
@@ -851,18 +847,18 @@ func (w *WebSSOAuthentication) accessToken(deviceAuth *okta.DeviceAuthorization)
 		}
 		if resp.StatusCode == http.StatusBadRequest {
 			// continue polling if status code is 400 and "error" is "authorization_pending"
-			apiErr, err := apiErr(bodyBytes)
+			apiErr, err := okta.APIErr(bodyBytes)
 			if err != nil {
-				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API error body %q", string(bodyBytes)))
+				return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorBodyMessage, string(bodyBytes)))
 			}
-			if apiErr.ErrorType != "authorization_pending" && apiErr.ErrorType != "slow_down" {
-				return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API polling error %q - %q", apiErr.ErrorType, apiErr.ErrorDescription))
+			if apiErr.ErrorType != okta.AuthorizationPendingErrorType && apiErr.ErrorType != okta.SlowDownErrorType {
+				return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorPollingMessage, apiErr.ErrorType, apiErr.ErrorDescription))
 			}
 
-			return errors.New("continue polling")
+			return errors.New(okta.ContinuePollingMessage)
 		}
 
-		return backoff.Permanent(fmt.Errorf("fetching access token polling received unexpected API status %q %q", resp.Status, string(bodyBytes)))
+		return backoff.Permanent(fmt.Errorf(okta.PollingFetchAccessTokenAPIErrorStatusMessage, resp.Status, string(bodyBytes)))
 	}
 
 	bOff := boff.NewBackoff(context.Background())
@@ -894,7 +890,7 @@ func (w *WebSSOAuthentication) authorize() (*okta.DeviceAuthorization, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.Accept, utils.ApplicationJSON)
 	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
@@ -909,7 +905,7 @@ func (w *WebSSOAuthentication) authorize() (*okta.DeviceAuthorization, error) {
 
 	ct := resp.Header.Get(utils.ContentType)
 	if !strings.Contains(ct, utils.ApplicationJSON) {
-		return nil, fmt.Errorf("authorize non-JSON API response content type %q", ct)
+		return nil, fmt.Errorf(okta.NonJSONContentTypeErrorMessage, ct)
 	}
 
 	var da okta.DeviceAuthorization
@@ -980,12 +976,6 @@ func findSAMLRoleAttibute(n *html.Node) (node *html.Node, found bool) {
 	return nil, false
 }
 
-func apiErr(bodyBytes []byte) (ae *okta.APIError, err error) {
-	ae = &okta.APIError{}
-	err = json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(ae)
-	return
-}
-
 // ClassicOrgError Convenience error class.
 type ClassicOrgError struct {
 	orgDomain string
@@ -1009,7 +999,7 @@ func (w *WebSSOAuthentication) isClassicOrg() bool {
 	if err != nil {
 		return false
 	}
-	req.Header.Add(accept, utils.ApplicationJSON)
+	req.Header.Add(utils.Accept, utils.ApplicationJSON)
 	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
@@ -1034,19 +1024,10 @@ func (w *WebSSOAuthentication) isClassicOrg() bool {
 	return false
 }
 
-// cachedAccessTokenPath Path to the cached access token in $HOME/.okta/awscli-access-token.json
-func cachedAccessTokenPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(homeDir, dotOktaDir, tokenFileName), nil
-}
-
 // RemoveCachedAccessToken Remove cached access token if it exists. Returns true
 // if the file exists was reremoved, swallows errors otherwise.
 func RemoveCachedAccessToken() bool {
-	accessTokenPath, err := cachedAccessTokenPath()
+	accessTokenPath, err := utils.CachedAccessTokenPath()
 	if err != nil {
 		return false
 	}
@@ -1055,68 +1036,6 @@ func RemoveCachedAccessToken() bool {
 	}
 
 	return true
-}
-
-// cachedAccessToken will returned the cached access token if it exists and is
-// not expired and --cached-access-token is enabled.
-func (w *WebSSOAuthentication) cachedAccessToken() (at *okta.AccessToken) {
-	if !w.config.CacheAccessToken() {
-		return
-	}
-
-	accessTokenPath, err := cachedAccessTokenPath()
-	if err != nil {
-		return
-	}
-	atJSON, err := os.ReadFile(accessTokenPath)
-	if err != nil {
-		return
-	}
-
-	_at := okta.AccessToken{}
-	err = json.Unmarshal(atJSON, &_at)
-	if err != nil {
-		return
-	}
-
-	expiry, err := time.Parse(time.RFC3339, _at.Expiry)
-	if err != nil {
-		return
-	}
-	if expiry.Before(time.Now()) {
-		// expiry is in the past
-		return
-	}
-
-	return &_at
-}
-
-// cacheAccessToken will cache the access token for later use if enabled. Silent
-// if fails.
-func (w *WebSSOAuthentication) cacheAccessToken(at *okta.AccessToken) {
-	if !w.config.CacheAccessToken() {
-		return
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-
-	oktaDir := filepath.Join(homeDir, dotOktaDir)
-	// noop if dir exists
-	err = os.MkdirAll(oktaDir, 0o700)
-	if err != nil {
-		return
-	}
-
-	atJSON, err := json.Marshal(at)
-	if err != nil {
-		return
-	}
-
-	configPath := filepath.Join(homeDir, dotOktaDir, tokenFileName)
-	_ = os.WriteFile(configPath, atJSON, 0o600)
 }
 
 // ConsolePrint printf formatted warning messages.
