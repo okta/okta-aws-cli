@@ -400,7 +400,6 @@ Direct is an integration of:
 
 - Otka's [Direct Authorization](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/), and out-of-bounds MFA flow
 - [Okta API service app](https://developer.okta.com/docs/guides/implement-oauth-for-okta-serviceapp/main/)
-- Okta [custom](https://developer.okta.com/docs/guides/customize-authz-server/main/) authorization server
 - [Okta access policy](https://developer.okta.com/docs/guides/configure-access-policy/main/) associated with the service app and have rule(s) for the client credentials flow
 - [AWS IAM OpenID Connect (OIDC) identity provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
 
@@ -575,7 +574,7 @@ These settings are optional unless marked otherwise:
 |-----|-----|-----|-----|
 | Username (**required**) | The username of the operator | `--username [value]` | `OKTA_AWSCLI_USERNAME` |
 | Password (**required**) | The password of the operator | `--password [value]` | `OKTA_AWSCLI_PASSWORD` |
-| Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use default otherwise. Default `default` | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
+| Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use Org authorization server otherwise. Default Org AS | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Custom STS Role Session Name | Customize STS Role Session Name. Default `okta-aws-cli` | `--aws-sts-role-session-name [value]` | `OKTA_AWSCLI_STS_ROLE_SESSION_NAME` |
 
 ### Friendly IdP and Role menu labels
