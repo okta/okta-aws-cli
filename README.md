@@ -500,7 +500,7 @@ These settings are all optional:
 | Display QR Code | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
 | Automatically open the activation URL with the system web browser | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 | Automatically open the activation URL with the given web browser command | Shell escaped browser command | `--open-browser-command [command]` | `OKTA_AWSCLI_OPEN_BROWSER_COMMAND` |
-| Gather all profiles for all IdPs and Roles associated with an AWS Fed App (implies aws-credentials file output format)) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
+| Gather all profiles for all IdPs and Roles associated with an AWS Fed App (implies aws-credentials file output format) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 
 #### Allowed Web SSO Client ID
 
