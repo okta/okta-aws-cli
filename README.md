@@ -321,7 +321,7 @@ note the ARNs of these roles for later use.
 
 ## Direct Command
 
-**NOTE**: The `direct` command only operates with an Okta OIDC app, not the
+**NOTE**: The `direct` command only operates with an Okta OIDC app, not with the
 Okta AWS Federation app.
 
 ```shell
