@@ -73,7 +73,7 @@ format.
 | `web` | Human oriented retrieval of temporary IAM credentials through Okta authentication and device authorization. |
 | `m2m` | Machine/headless oriented retrieval of temporary IAM credentials through Okta authentication with a private key. **IMPORTANT!** This a not a feature intended for a human use case. Be sure to use industry state of the art secrets management techniques with the private key. |
 | `direct` | Human or machine/headless oriented retrieval of temporary IAM credentials through out-of-bounds MFA [Direct Authentication](https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/) |
-| `list-profiles` | Lists profile names in ~/.okta/okta.yaml. |
+| `list-profiles` | Lists profile names in `~/.okta/okta.yaml`. |
 | `debug` | Debug okta.yaml config file and exit. |
 
 ## Web Command
@@ -416,7 +416,7 @@ Profiles:
  another-sample-account Y (Non-Prod)
 ```
 
-List-profiles command is a human oriented command to show the list of profile names stored in the ~/.okta/okta.yaml file.  The user
+List-profiles command is a human oriented command to show the list of profile names stored in the `~/.okta/okta.yaml` file.  The user
 executes `okta-aws-cli list-profiles` where a list of profile name shall be listed for convenience.  The names will be indented.
 
 ## Configuration
@@ -500,7 +500,7 @@ These settings are all optional:
 | Display QR Code | `true` if flag is present | `--qr-code` | `OKTA_AWSCLI_QR_CODE=true` |
 | Automatically open the activation URL with the system web browser | `true` if flag is present | `--open-browser` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 | Automatically open the activation URL with the given web browser command | Shell escaped browser command | `--open-browser-command [command]` | `OKTA_AWSCLI_OPEN_BROWSER_COMMAND` |
-| Gather all profiles for all IdPs and Roles associated with an AWS Fed App (implies aws-credentials file output format)) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
+| Gather all profiles for all IdPs and Roles associated with an AWS Fed App (implies aws-credentials file output format) | `true` if flag is present | `--all-profiles` | `OKTA_AWSCLI_OPEN_BROWSER=true` |
 
 #### Allowed Web SSO Client ID
 
