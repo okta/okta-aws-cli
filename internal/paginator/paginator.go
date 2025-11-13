@@ -26,7 +26,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/okta/okta-aws-cli/internal/okta"
+	"github.com/okta/okta-aws-cli/v2/internal/okta"
 )
 
 const (

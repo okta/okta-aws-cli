@@ -21,10 +21,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/okta/okta-aws-cli/internal/config"
-	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
-	"github.com/okta/okta-aws-cli/internal/okta"
-	"github.com/okta/okta-aws-cli/internal/webssoauth"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	cliFlag "github.com/okta/okta-aws-cli/v2/internal/flag"
+	"github.com/okta/okta-aws-cli/v2/internal/okta"
+	"github.com/okta/okta-aws-cli/v2/internal/webssoauth"
 )
 
 const (

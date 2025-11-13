@@ -27,9 +27,9 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/ini.v1"
 
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/utils"
+	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/utils"
 )
 
 const (

@@ -19,8 +19,8 @@ package output
 import (
 	"runtime"
 
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
+	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
 )
 
 // EnvVar Environment Variable output formatter

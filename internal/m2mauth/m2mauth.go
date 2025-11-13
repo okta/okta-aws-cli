@@ -33,12 +33,12 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/google/uuid"
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/exec"
-	"github.com/okta/okta-aws-cli/internal/okta"
-	"github.com/okta/okta-aws-cli/internal/output"
-	"github.com/okta/okta-aws-cli/internal/utils"
+	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/exec"
+	"github.com/okta/okta-aws-cli/v2/internal/okta"
+	"github.com/okta/okta-aws-cli/v2/internal/output"
+	"github.com/okta/okta-aws-cli/v2/internal/utils"
 )
 
 const (

@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/okta/okta-aws-cli/cmd/root"
+	"github.com/okta/okta-aws-cli/v2/cmd/root"
 )
 
 func main() {

@@ -727,6 +727,20 @@ okta-aws-cli is distributed to Windows via [Chocolatey](https://community.chocol
 > choco install okta-aws-cli
 ```
 
+### Go Install
+
+If you have Go 1.21 or later installed, you can install okta-aws-cli directly using `go install`:
+
+```bash
+# Install the latest version
+go install github.com/okta/okta-aws-cli/v2@latest
+
+# Install a specific version
+go install github.com/okta/okta-aws-cli/v2@v2.5.1
+```
+
+This will install the `okta-aws-cli` binary to your `$GOPATH/bin` directory (typically `~/go/bin`). Make sure this directory is in your `PATH`.
+
 ### Local build/install
 
 See [Development](#development) section.

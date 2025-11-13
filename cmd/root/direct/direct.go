@@ -19,9 +19,9 @@ package direct
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/directauth"
-	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/directauth"
+	cliFlag "github.com/okta/okta-aws-cli/v2/internal/flag"
 )
 
 var (

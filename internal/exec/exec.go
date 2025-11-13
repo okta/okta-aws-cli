@@ -22,9 +22,9 @@ import (
 	osexec "os/exec"
 	"strings"
 
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/utils"
+	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/utils"
 )
 
 // Exec is a executor / a process runner

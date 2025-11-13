@@ -22,8 +22,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/testutils"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
