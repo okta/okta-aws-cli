@@ -30,9 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/google/uuid"
@@ -92,7 +89,7 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 		return err
 	}
 
-	cc, err := m.awsAssumeRoleWithWebIdentity(at)
+	cc, err := oaws.AssumeRoleWithWebIdentity(m.config, at)
 	if err != nil {
 		return err
 	}
@@ -110,39 +107,6 @@ func (m *M2MAuthentication) EstablishIAMCredentials() error {
 	}
 
 	return nil
-}
-
-func (m *M2MAuthentication) awsAssumeRoleWithWebIdentity(at *okta.AccessToken) (cc *oaws.CredentialContainer, err error) {
-	awsCfg := aws.NewConfig().WithHTTPClient(m.config.HTTPClient())
-	region := m.config.AWSRegion()
-	if region != "" {
-		awsCfg = awsCfg.WithRegion(region)
-	}
-	sess, err := session.NewSession(awsCfg)
-	if err != nil {
-		return
-	}
-
-	svc := sts.New(sess)
-	input := &sts.AssumeRoleWithWebIdentityInput{
-		DurationSeconds:  aws.Int64(m.config.AWSSessionDuration()),
-		RoleArn:          aws.String(m.config.AWSIAMRole()),
-		RoleSessionName:  aws.String(m.config.AWSSTSRoleSessionName()),
-		WebIdentityToken: &at.AccessToken,
-	}
-	svcResp, err := svc.AssumeRoleWithWebIdentity(input)
-	if err != nil {
-		return
-	}
-
-	cc = &oaws.CredentialContainer{
-		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
-		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
-		SessionToken:    *svcResp.Credentials.SessionToken,
-		Expiration:      svcResp.Credentials.Expiration,
-	}
-
-	return cc, nil
 }
 
 func (m *M2MAuthentication) createKeySigner() (jose.Signer, error) {

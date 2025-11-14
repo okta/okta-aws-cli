@@ -19,6 +19,12 @@ package aws
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/internal/okta"
 )
 
 // CredentialContainer denormalized struct of all the values can be presented in
@@ -86,4 +92,38 @@ func (c *ProcessCredential) MarshalJSON() ([]byte, error) {
 		obj.Expiration = exp
 	}
 	return json.Marshal(obj)
+}
+
+// AssumeRoleWithWebIdentity helper function to make the assume role with web identity AWS API call
+func AssumeRoleWithWebIdentity(cfg *config.Config, at *okta.AccessToken) (cc *CredentialContainer, err error) {
+	awsCfg := aws.NewConfig().WithHTTPClient(cfg.HTTPClient())
+	region := cfg.AWSRegion()
+	if region != "" {
+		awsCfg = awsCfg.WithRegion(region)
+	}
+	sess, err := session.NewSession(awsCfg)
+	if err != nil {
+		return
+	}
+
+	svc := sts.New(sess)
+	input := &sts.AssumeRoleWithWebIdentityInput{
+		DurationSeconds:  aws.Int64(cfg.AWSSessionDuration()),
+		RoleArn:          aws.String(cfg.AWSIAMRole()),
+		RoleSessionName:  aws.String(cfg.AWSSTSRoleSessionName()),
+		WebIdentityToken: &at.AccessToken,
+	}
+	svcResp, err := svc.AssumeRoleWithWebIdentity(input)
+	if err != nil {
+		return
+	}
+
+	cc = &CredentialContainer{
+		AccessKeyID:     *svcResp.Credentials.AccessKeyId,
+		SecretAccessKey: *svcResp.Credentials.SecretAccessKey,
+		SessionToken:    *svcResp.Credentials.SessionToken,
+		Expiration:      svcResp.Credentials.Expiration,
+	}
+
+	return cc, nil
 }
