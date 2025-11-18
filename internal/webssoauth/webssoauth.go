@@ -47,14 +47,14 @@ import (
 	brwsr "github.com/pkg/browser"
 	"golang.org/x/net/html"
 
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	boff "github.com/okta/okta-aws-cli/internal/backoff"
-	"github.com/okta/okta-aws-cli/internal/config"
-	"github.com/okta/okta-aws-cli/internal/exec"
-	"github.com/okta/okta-aws-cli/internal/okta"
-	"github.com/okta/okta-aws-cli/internal/output"
-	"github.com/okta/okta-aws-cli/internal/paginator"
-	"github.com/okta/okta-aws-cli/internal/utils"
+	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
+	boff "github.com/okta/okta-aws-cli/v2/internal/backoff"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/exec"
+	"github.com/okta/okta-aws-cli/v2/internal/okta"
+	"github.com/okta/okta-aws-cli/v2/internal/output"
+	"github.com/okta/okta-aws-cli/v2/internal/paginator"
+	"github.com/okta/okta-aws-cli/v2/internal/utils"
 )
 
 const (

@@ -21,17 +21,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/okta/okta-aws-cli/cmd/root/profileslist"
+	"github.com/okta/okta-aws-cli/v2/cmd/root/profileslist"
 
 	"github.com/spf13/cobra"
 
-	debugCmd "github.com/okta/okta-aws-cli/cmd/root/debug"
-	"github.com/okta/okta-aws-cli/cmd/root/direct"
-	"github.com/okta/okta-aws-cli/cmd/root/m2m"
-	"github.com/okta/okta-aws-cli/cmd/root/web"
-	"github.com/okta/okta-aws-cli/internal/ansi"
-	"github.com/okta/okta-aws-cli/internal/config"
-	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
+	debugCmd "github.com/okta/okta-aws-cli/v2/cmd/root/debug"
+	"github.com/okta/okta-aws-cli/v2/cmd/root/direct"
+	"github.com/okta/okta-aws-cli/v2/cmd/root/m2m"
+	"github.com/okta/okta-aws-cli/v2/cmd/root/web"
+	"github.com/okta/okta-aws-cli/v2/internal/ansi"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	cliFlag "github.com/okta/okta-aws-cli/v2/internal/flag"
 )
 
 var (

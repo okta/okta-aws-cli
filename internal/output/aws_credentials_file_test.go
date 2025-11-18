@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/okta/okta-aws-cli/internal/aws"
+	"github.com/okta/okta-aws-cli/v2/internal/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/ini.v1"

@@ -17,8 +17,8 @@
 package output
 
 import (
-	oaws "github.com/okta/okta-aws-cli/internal/aws"
-	"github.com/okta/okta-aws-cli/internal/config"
+	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
 )
 
 // NoopCredentials Don't output credentials

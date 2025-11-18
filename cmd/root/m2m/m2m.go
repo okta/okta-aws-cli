@@ -19,9 +19,9 @@ package m2m
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/okta/okta-aws-cli/internal/config"
-	cliFlag "github.com/okta/okta-aws-cli/internal/flag"
-	"github.com/okta/okta-aws-cli/internal/m2mauth"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
+	cliFlag "github.com/okta/okta-aws-cli/v2/internal/flag"
+	"github.com/okta/okta-aws-cli/v2/internal/m2mauth"
 )
 
 var (

@@ -19,7 +19,7 @@ package profileslist
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/okta/okta-aws-cli/internal/config"
+	"github.com/okta/okta-aws-cli/v2/internal/config"
 )
 
 // NewProfilesListCommand Sets up the debug cobra sub command

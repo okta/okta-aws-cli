@@ -1,4 +1,4 @@
-module github.com/okta/okta-aws-cli
+module github.com/okta/okta-aws-cli/v2
 
 go 1.21
 

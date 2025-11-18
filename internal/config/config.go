@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
-	"github.com/okta/okta-aws-cli/internal/logger"
+	"github.com/okta/okta-aws-cli/v2/internal/logger"
 )
 
 // longUserAgent the long user agent value
