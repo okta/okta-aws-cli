@@ -258,6 +258,7 @@ type OktaYamlConfigProfile struct {
 	LegacyAWSVariables    string `yaml:"legacy-aws-variables"`
 	ExpiryAWSVariables    string `yaml:"expiry-aws-variables"`
 	CacheAccessToken      string `yaml:"cache-access-token"`
+	ShortUserAgent        string `yaml:"short-user-agent"`
 	Username              string `yaml:"username"`
 	Password              string `yaml:"password"`
 }
