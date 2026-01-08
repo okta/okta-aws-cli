@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.2 (Jan 8, 2025)
+
+* Fix windows runtime error of could not find the home directory [#297](https://github.com/okta/okta-aws-cli/pull/297) by [@pranav-okta](https://github.com/pranav-okta)
+* Fix output formatting [#271](https://github.com/okta/okta-aws-cli/pull/271) by [@curator](https://github.com/curator)
+
 ## 2.5.0 (May 20, 2025)
 
 * New `direct` command for OOB MFA password grant auth flow [#277](https://github.com/okta/okta-aws-cli/pull/277), thanks [@monde](https://github.com/monde)!
