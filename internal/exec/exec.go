@@ -75,6 +75,11 @@ func (e *Exec) Run(cc *oaws.CredentialContainer) error {
 		if strings.HasPrefix(k, "AWS_") {
 			pairs[k] = pair[1]
 		}
+
+		// fix 'RuntimeError: Could not determine home directory.' on windows when using --exec to run AWS cli v2
+		if strings.HasPrefix(k, "HOME") {
+			pairs[k] = pair[1]
+		}
 	}
 	// add creds env var names to pairs
 	pairs["AWS_ACCESS_KEY_ID"] = cc.AccessKeyID
