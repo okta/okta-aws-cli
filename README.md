@@ -133,7 +133,7 @@ For web command the Okta AWS CLI requires an OIE organization and an [OIDC Nativ
 Application](https://developer.okta.com/blog/2021/11/12/native-sso) paired with
 an [Okta AWS Federation integration
 application](https://www.okta.com/integrations/aws-account-federation/). The
-Okta AWS Fed app is itself paired with an [AWS IAM identitys
+Okta AWS Fed app is itself paired with an [AWS IAM identity
 provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create.html).
 
 The OIDC Native Application requires Grant Types `Authorization Code`, `Device
