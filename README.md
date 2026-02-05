@@ -169,7 +169,7 @@ URL below. Then follow the directions in that wizard.
 
 To support multiple AWS environments, associate additional AWS Federation
 applications with an OIDC app.  The OIDC app **must** have the
-`okta.users.read.self` grant so that `okta-aws-cli` can inpsect the user's app
+`okta.users.read.self` grant so that `okta-aws-cli` can inspect the user's app
 links to see which AWS Fed apps have been assigned to them. The following is an
 illustration of the association of objects that make up this kind of
 configuration.
