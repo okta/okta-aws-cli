@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.3 (Feb 5, 2026)
+
+* Add `golangci-lint` to the project [#293](https://github.com/okta/okta-aws-cli/pull/293) by [](https://github.com/pranav-okta)
+
 ## 2.5.2 (Jan 8, 2025)
 
 * Fix windows runtime error of could not find the home directory [#297](https://github.com/okta/okta-aws-cli/pull/297) by [@pranav-okta](https://github.com/pranav-okta)
