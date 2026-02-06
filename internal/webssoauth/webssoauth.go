@@ -92,7 +92,7 @@ type roleTemplateData struct {
 // - CLI polls for access token from device auth at /oauth2/v1/token
 //   - Access token granted by Okta once user is authorized
 //
-// - CLI presents access token to Okta AWS Fed app for a SAML assertion at /login/token/sso
+// - CLI presents web SSO token to Okta AWS Fed app via POST to /login/token/sso for a SAML assertion
 // - CLI presents SAML assertion to AWS STS for temporary AWS IAM creds
 type WebSSOAuthentication struct {
 	config                *config.Config
@@ -640,14 +640,18 @@ func (w *WebSSOAuthentication) extractIDPAndRolesMapFromAssertion(encoded string
 
 // fetchSAMLAssertion Gets the SAML assertion from Okta API /login/token/sso
 func (w *WebSSOAuthentication) fetchSAMLAssertion(at *okta.AccessToken) (assertion string, err error) {
-	params := url.Values{"token": {at.AccessToken}}
-	apiURL := fmt.Sprintf("https://%s/login/token/sso?%s", w.config.OrgDomain(), params.Encode())
+	apiURL := fmt.Sprintf("https://%s/login/token/sso", w.config.OrgDomain())
 
-	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	// Send token in POST body as form data to prevent exposure in URL/logs
+	params := url.Values{"token": {at.AccessToken}}
+	body := strings.NewReader(params.Encode())
+
+	req, err := http.NewRequest(http.MethodPost, apiURL, body)
 	if err != nil {
 		return assertion, err
 	}
 	req.Header.Add(utils.Accept, "text/html")
+	req.Header.Add(utils.ContentType, utils.ApplicationXFORM)
 	req.Header.Add(utils.UserAgentHeader, w.config.UserAgent())
 	req.Header.Add(utils.XOktaAWSCLIOperationHeader, utils.XOktaAWSCLIWebOperation)
 
