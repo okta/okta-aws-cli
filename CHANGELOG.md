@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### SECURITY
+
+* Move web SSO token from URL query parameter to POST request body for `/login/token/sso` endpoint to prevent token exposure in server logs, browser history, and proxy logs
+
 ## 2.5.3 (Feb 5, 2026)
 
 * Add `golangci-lint` to the project [#293](https://github.com/okta/okta-aws-cli/pull/293) by [](https://github.com/pranav-okta)
