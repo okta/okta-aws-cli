@@ -1,9 +1,6 @@
 name: release
 on:
   push:
-    branches:
-      - master
-      - m2m_feature
     tags:
       - "v*"
 jobs:
