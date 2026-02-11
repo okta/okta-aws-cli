@@ -5,35 +5,35 @@ on:
       - master
       - m2m_feature
     tags:
-      - 'v*'
+      - "v*"
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f #v3.4.0
-      -
-        name: Unshallow
+
+      - name: Unshallow
         run: git fetch --prune --unshallow
-      -
-        name: Set up Go
+
+      - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 #v3.5.0
         with:
           go-version: 1.21
-      -
-        name: Import GPG key
+
+      - name: Import GPG key
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@111c56156bcc6918c056dbef52164cfa583dc549 #v5.2.0
+        uses:
+          crazy-max/ghaction-import-gpg@111c56156bcc6918c056dbef52164cfa583dc549 #v5.2.0
           # These secrets will need to be configured for the repository:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      -
-        name: Run GoReleaser
+
+      - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6.0.0
         with:
-          version: '~> v2'
+          version: "~> v2"
           args: release --clean
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}

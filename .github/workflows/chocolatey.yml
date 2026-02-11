@@ -1,14 +1,16 @@
 name: Chocolatey Deploy
 
-# This GH action will push a okta-aws-cli build to chocolatey.org when a
-# okta-aws-cli GH release is completed.
-# 
+# This workflow runs after the release workflow completes successfully,
+# ensuring release assets are available before packaging for Chocolatey.
+#
 # inspired by https://github.com/rcmaehl/MSEdgeRedirect thank you rcmaehl 🙏🙏🙏
 
 on:
-  release:
+  workflow_run:
+    workflows: ["release"]
     types:
-      - published
+      - completed
+  workflow_dispatch: # Manual trigger for re-runs if needed
 
 defaults:
   run:
@@ -17,53 +19,62 @@ defaults:
 jobs:
   chocolatey:
     runs-on: windows-latest
+    # Only run if manually triggered OR release workflow succeeded on a tag
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v')) }}
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
-      -
-        name: Unshallow
+
+      - name: Unshallow
         run: git fetch --prune --unshallow
-      -
-        name: Get latest release tag
+
+      - name: Get latest release tag
         uses: oprypin/find-latest-tag@v1
         with:
           repository: ${{ github.repository }}
           releases-only: true
         id: latesttag
-      -
-        name: Set Version
+
+      - name: Set Version
         id: version
         run: |
           version=$(echo "${{ steps.latesttag.outputs.tag }}" | grep -oE "[[:digit:]]{1,}\.[[:digit:]]{1,}\.[[:digit:]]{1,}")
           echo "nuget=$version" >> $GITHUB_OUTPUT
           sed -i "s/{VERSION}/${version}/g" "nuspec/chocolatey/okta-aws-cli.nuspec"
-      -
-        name: Set Checksum
+
+      - name: Download and Embed Binary
         run: |
           filename="okta-aws-cli_${{ steps.version.outputs.nuget }}_windows_386.zip"
           url="https://github.com/${{ github.repository }}/releases/download/${{ steps.latesttag.outputs.tag }}/${filename}"
-          sed -i "s#{ZIPURL}#${url}#g" "nuspec/chocolatey/tools/chocolateyinstall.ps1"
-          curl -sSL "${url}" -o "nuspec/chocolatey/${filename}"
-          sha256=$(cat "nuspec/chocolatey/${filename}" | sha256sum -)
-          sed -i "s/{SHA256CHECKSUM}/${sha256:0:64}/g" "nuspec/chocolatey/tools/chocolateyinstall.ps1"
-      -
-        name: Choco Downgrade
+
+          echo "Downloading ${url}..."
+          curl -sSL --fail "${url}" -o "nuspec/chocolatey/tools/okta-aws-cli.zip"
+
+          # Verify the downloaded file is a valid zip archive
+          if [ "$(head -c 2 "nuspec/chocolatey/tools/okta-aws-cli.zip")" != "PK" ]; then
+            echo "ERROR: Downloaded file is not a valid zip archive"
+            exit 1
+          fi
+
+          echo "Successfully downloaded and verified binary"
+          ls -la nuspec/chocolatey/tools/
+
+      - name: Choco Downgrade
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install chocolatey --version=1.2.1 --allow-downgrade -y -r --no-progress
-      -
-        name: Pack Release
+
+      - name: Pack Release
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: pack nuspec/chocolatey/okta-aws-cli.nuspec --outputdirectory nuspec/chocolatey
-      -
-        name: Choco Upgrade
+
+      - name: Choco Upgrade
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: upgrade chocolatey
-      -
-        name: Upload Release
+
+      - name: Upload Release
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: push nuspec/chocolatey/okta-aws-cli.${{ steps.version.outputs.nuget }}.nupkg -s https://push.chocolatey.org/ -k ${{ secrets.CHOCO_API_KEY }}
