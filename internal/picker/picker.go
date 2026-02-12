@@ -55,7 +55,8 @@ var (
 type Model struct {
 	title        string
 	items        []string
-	filtered     []string
+	searchKeys   []string // extracted search terms (e.g., role name from ARN)
+	filtered     []int    // indices into items
 	matches      []fuzzy.Match
 	cursor       int
 	selected     string
@@ -64,6 +65,16 @@ type Model struct {
 	cancelled    bool
 	windowHeight int
 	maxVisible   int
+}
+
+// extractSearchKey extracts the searchable part from an item
+// For ARNs like "arn:aws:iam::123:role/AdminRole", returns "AdminRole"
+// For other strings, returns the last part after "/"
+func extractSearchKey(item string) string {
+	if idx := strings.LastIndex(item, "/"); idx != -1 && idx < len(item)-1 {
+		return item[idx+1:]
+	}
+	return item
 }
 
 // New creates a new picker model
@@ -76,10 +87,21 @@ func New(title string, items []string) Model {
 	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
 	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 
+	searchKeys := make([]string, len(items))
+	for i, item := range items {
+		searchKeys[i] = extractSearchKey(item)
+	}
+
+	filtered := make([]int, len(items))
+	for i := range items {
+		filtered[i] = i
+	}
+
 	return Model{
 		title:      title,
 		items:      items,
-		filtered:   items,
+		searchKeys: searchKeys,
+		filtered:   filtered,
 		textInput:  ti,
 		maxVisible: 15,
 	}
@@ -111,7 +133,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			if len(m.filtered) > 0 && m.cursor < len(m.filtered) {
-				m.selected = m.filtered[m.cursor]
+				m.selected = m.items[m.filtered[m.cursor]]
 			}
 			m.quitting = true
 			return m, tea.Quit
@@ -171,16 +193,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) filter() {
 	query := m.textInput.Value()
 	if query == "" {
-		m.filtered = m.items
+		m.filtered = make([]int, len(m.items))
+		for i := range m.items {
+			m.filtered[i] = i
+		}
 		m.matches = nil
 		return
 	}
 
-	matches := fuzzy.Find(query, m.items)
+	matches := fuzzy.Find(query, m.searchKeys)
 	m.matches = matches
-	m.filtered = make([]string, len(matches))
+	m.filtered = make([]int, len(matches))
 	for i, match := range matches {
-		m.filtered[i] = match.Str
+		m.filtered[i] = match.Index
 	}
 }
 
@@ -203,17 +228,11 @@ func (m Model) View() string {
 
 		if len(m.filtered) > m.maxVisible {
 			half := m.maxVisible / 2
-			start = m.cursor - half
-			if start < 0 {
-				start = 0
-			}
+			start = max(m.cursor-half, 0)
 			end = start + m.maxVisible
 			if end > len(m.filtered) {
 				end = len(m.filtered)
-				start = end - m.maxVisible
-				if start < 0 {
-					start = 0
-				}
+				start = max(end-m.maxVisible, 0)
 			}
 		}
 
@@ -222,13 +241,13 @@ func (m Model) View() string {
 		}
 
 		for i := start; i < end; i++ {
-			item := m.filtered[i]
+			itemIndex := m.filtered[i]
 			cursor := "  "
 			if i == m.cursor {
 				cursor = cursorStyle.Render("> ")
 			}
 
-			displayItem := m.renderItem(i, item)
+			displayItem := m.renderItem(i, itemIndex)
 			b.WriteString(cursor + displayItem + "\n")
 		}
 
@@ -244,54 +263,73 @@ func (m Model) View() string {
 	return b.String()
 }
 
-func (m Model) renderItem(index int, item string) string {
-	isSelected := index == m.cursor
+func (m Model) renderItem(filteredIndex int, itemIndex int) string {
+	isSelected := filteredIndex == m.cursor
 	hasQuery := m.textInput.Value() != ""
+	fullItem := m.items[itemIndex]
+	searchKey := m.searchKeys[itemIndex]
+
+	if hasQuery && filteredIndex < len(m.matches) {
+		return m.highlightInFullItem(fullItem, searchKey, m.matches[filteredIndex], isSelected)
+	}
 
 	if isSelected {
-		if hasQuery && index < len(m.matches) {
-			return m.highlightMatchesSelected(m.matches[index])
-		}
-		return selectedStyle.Render(item)
+		return selectedStyle.Render(fullItem)
 	}
-
-	if hasQuery && index < len(m.matches) {
-		return m.highlightMatches(m.matches[index])
-	}
-	return normalStyle.Render(item)
+	return normalStyle.Render(fullItem)
 }
 
-func (m Model) highlightMatches(match fuzzy.Match) string {
+// highlightInFullItem highlights matched characters in the full item.
+// The match was performed against searchKey, but we display fullItem.
+// We find the searchKey suffix in fullItem and apply highlighting there.
+func (m Model) highlightInFullItem(fullItem, searchKey string, match fuzzy.Match, isSelected bool) string {
+	// Find where searchKey appears in fullItem (should be at the end after last /)
+	keyStart := strings.LastIndex(fullItem, searchKey)
+	if keyStart == -1 {
+		// Fallback: searchKey not found, just render without highlight
+		if isSelected {
+			return selectedStyle.Render(fullItem)
+		}
+		return normalStyle.Render(fullItem)
+	}
+
+	// Build result with highlighting only in the searchKey portion
 	var result strings.Builder
+
+	// Prefix part (before searchKey)
+	prefix := fullItem[:keyStart]
+	if isSelected {
+		result.WriteString(selectedStyle.Render(prefix))
+	} else {
+		result.WriteString(normalStyle.Render(prefix))
+	}
+
+	// SearchKey part with match highlighting
 	matchSet := make(map[int]bool)
 	for _, idx := range match.MatchedIndexes {
 		matchSet[idx] = true
 	}
 
-	for i, char := range match.Str {
+	for i, char := range searchKey {
 		if matchSet[i] {
 			result.WriteString(matchStyle.Render(string(char)))
+		} else if isSelected {
+			result.WriteString(selectedStyle.Render(string(char)))
 		} else {
 			result.WriteString(normalStyle.Render(string(char)))
 		}
 	}
-	return result.String()
-}
 
-func (m Model) highlightMatchesSelected(match fuzzy.Match) string {
-	var result strings.Builder
-	matchSet := make(map[int]bool)
-	for _, idx := range match.MatchedIndexes {
-		matchSet[idx] = true
-	}
-
-	for i, char := range match.Str {
-		if matchSet[i] {
-			result.WriteString(matchStyle.Render(string(char)))
+	// Suffix part (after searchKey, if any)
+	suffix := fullItem[keyStart+len(searchKey):]
+	if len(suffix) > 0 {
+		if isSelected {
+			result.WriteString(selectedStyle.Render(suffix))
 		} else {
-			result.WriteString(selectedStyle.Render(string(char)))
+			result.WriteString(normalStyle.Render(suffix))
 		}
 	}
+
 	return result.String()
 }
 
@@ -333,11 +371,4 @@ func Pick(title string, items []string) (string, error) {
 	}
 
 	return result.Selected(), nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
