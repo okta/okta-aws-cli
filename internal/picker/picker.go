@@ -88,12 +88,9 @@ func New(title string, items []string) Model {
 	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 
 	searchKeys := make([]string, len(items))
+	filtered := make([]int, len(items))
 	for i, item := range items {
 		searchKeys[i] = extractSearchKey(item)
-	}
-
-	filtered := make([]int, len(items))
-	for i := range items {
 		filtered[i] = i
 	}
 
