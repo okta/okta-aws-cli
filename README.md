@@ -578,6 +578,23 @@ These settings are optional unless marked otherwise:
 | Authorization Server ID | The ID of the Okta authorization server, set ID for a custom authorization server, will use default otherwise. Default `default` | `--authz-id [value]` | `OKTA_AWSCLI_AUTHZ_ID` |
 | Custom STS Role Session Name | Customize STS Role Session Name. Default `okta-aws-cli` | `--aws-sts-role-session-name [value]` | `OKTA_AWSCLI_STS_ROLE_SESSION_NAME` |
 
+### Interactive Selection with Fuzzy Search
+
+When multiple IdPs or Roles are available, `okta-aws-cli` presents an interactive
+picker with fuzzy search capabilities. This makes it easy to find the right
+option even when you have many roles configured.
+
+![Fuzzy Search Picker Demo](.github/assets/demo.gif)
+
+**Features:**
+- **Fuzzy search**: Type to filter options - matches are highlighted
+- **Smart filtering**: Search is performed on the role/IdP name only (the part after the last `/`), not the full ARN
+- **Keyboard navigation**: Use `↑`/`↓` arrows to navigate, `Enter` to select, `Esc` to cancel
+- **Scroll indicators**: Shows count of items above/below when list is long
+
+When typing `dev`, only roles containing "dev" in the role name will be shown,
+with the matching characters highlighted.
+
 ### Friendly IdP and Role menu labels
 
 When the operator has many AWS Federation apps listing the AWS IAM IdP ARNs can
@@ -591,18 +608,28 @@ and Roles can also be evaluated are regular expressions (see example below).
 `$HOME/.okta/okta.yaml` as a configuration file and location. We will continue
 that practice with read-only friendly okta-aws-cli application values.
 
-#### Before
+#### Before (without friendly labels)
 
 ```
-? Choose an IdP:  [Use arrows to move, type to filter]
+? Choose an IdP:
+
+  > Type to filter...
+
 > Fed App 1 Label
   Fed App 2 Label
   Fed App 3 Label
   Fed App 4 Label
 
-? Choose a Role:  [Use arrows to move, type to filter]
+  (esc to cancel)
+
+? Choose a Role:
+
+  > Type to filter...
+
 > arn:aws:iam::123456789012:role/admin
   arn:aws:iam::123456789012:role/ops
+
+  (esc to cancel)
 ```
 
 #### Example `$HOME/.okta/okta.yaml`
@@ -620,18 +647,28 @@ awscli:
     "arn:aws:iam::.*:role/operator": "Ops"
 ```
 
-#### After
+#### After (with friendly labels from okta.yaml)
 
 ```
-? Choose an IdP:  [Use arrows to move, type to filter]
+? Choose an IdP:
+
+  > Type to filter...
+
 > Data Production
   Data Development
   Marketing Production
   Marketing Development
 
-? Choose a Role:  [Use arrows to move, type to filter]
+  (esc to cancel)
+
+? Choose a Role:
+
+  > Type to filter...
+
 > Admin
   Ops
+
+  (esc to cancel)
 ```
 
 ### Configuration by profile name

@@ -33,15 +33,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/core"
-	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/google/shlex"
 	"github.com/mdp/qrterminal"
 	brwsr "github.com/pkg/browser"
@@ -54,7 +52,13 @@ import (
 	"github.com/okta/okta-aws-cli/v2/internal/okta"
 	"github.com/okta/okta-aws-cli/v2/internal/output"
 	"github.com/okta/okta-aws-cli/v2/internal/paginator"
+	"github.com/okta/okta-aws-cli/v2/internal/picker"
 	"github.com/okta/okta-aws-cli/v2/internal/utils"
+)
+
+var (
+	labelStyle = lipgloss.NewStyle().Bold(true)
+	valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
 )
 
 const (
@@ -70,18 +74,9 @@ const (
 	noRolesError             = "no roles chosen for provider %q"
 	chooseIDP                = "Choose an IdP:"
 	chooseRole               = "Choose a Role:"
-	idpSelectedTemplate      = `  {{color "default+hb"}}IdP: {{color "reset"}}{{color "cyan"}}{{ .IDP }}{{color "reset"}}`
-	roleSelectedTemplate     = `  {{color "default+hb"}}Role: {{color "reset"}}{{color "cyan"}}{{ .Role }}{{color "reset"}}`
 	arnLabelPrintFmt         = "      %q: %q\n"
 	arnPrintFmt              = "    %q\n"
 )
-
-type idpTemplateData struct {
-	IDP string
-}
-type roleTemplateData struct {
-	Role string
-}
 
 // WebSSOAuthentication Encapsulates the work of getting temporary IAM
 // credentials through Okta's Web SSO authentication with an Okta AWS Federation
@@ -104,15 +99,6 @@ type idpAndRole struct {
 	idp    string
 	role   string
 	region string
-}
-
-var stderrIsOutAskOpt = func(options *survey.AskOptions) error {
-	options.Stdio = terminal.Stdio{
-		In:  os.Stdin,
-		Out: os.Stderr,
-		Err: os.Stderr,
-	}
-	return nil
 }
 
 // NewWebSSOAuthentication New Web SSO Authentication constructor
@@ -264,14 +250,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 
 		if app.Settings.App.IdentityProviderARN != "" && idpARN == app.Settings.App.IdentityProviderARN {
 			if !w.config.IsProcessCredentialsFormat() {
-				idpData := idpTemplateData{
-					IDP: choiceLabel,
-				}
-				rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
-				if err != nil {
-					return "", err
-				}
-				w.config.Logger.Warn(rich + "\n")
+				w.config.Logger.Warn(fmt.Sprintf("  %s %s\n", labelStyle.Render("IdP:"), valueStyle.Render(choiceLabel)))
 			}
 
 			return app.ID, nil
@@ -281,11 +260,7 @@ func (w *WebSSOAuthentication) selectFedApp(apps []*okta.Application) (string, e
 		idps[choiceLabel] = app
 	}
 
-	prompt := &survey.Select{
-		Message: chooseIDP,
-		Options: choices,
-	}
-	err = survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	selected, err = picker.Pick(chooseIDP, choices)
 	if err != nil {
 		return "", fmt.Errorf(askIDPError, err)
 	}
@@ -467,9 +442,6 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 			roleARN = roleARNs[0]
 		}
 		roleLabel := w.choiceFriendlyLabelRole(roleARN, configRoles)
-		roleData := roleTemplateData{
-			Role: roleLabel,
-		}
 
 		// reverse case when friendly role name alias is given as the input value
 		// --aws-iam-role "OK S3 Read"
@@ -483,11 +455,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 		}
 
 		if !w.config.IsProcessCredentialsFormat() {
-			rich, _, err := core.RunTemplate(roleSelectedTemplate, roleData)
-			if err != nil {
-				return "", err
-			}
-			w.config.Logger.Warn(rich + "\n")
+			w.config.Logger.Warn(fmt.Sprintf("  %s %s\n", labelStyle.Render("Role:"), valueStyle.Render(roleLabel)))
 		}
 		return roleARN, nil
 	}
@@ -500,12 +468,7 @@ func (w *WebSSOAuthentication) promptForRole(idp string, roleARNs []string) (rol
 		labelsARNs[roleLabel] = arn
 	}
 
-	prompt := &survey.Select{
-		Message: chooseRole,
-		Options: promptRoles,
-	}
-	var selected string
-	err = survey.AskOne(prompt, &selected, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	selected, err := picker.Pick(chooseRole, promptRoles)
 	if err != nil {
 		return "", fmt.Errorf(askRoleError, err)
 	}
@@ -541,14 +504,7 @@ func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, er
 		}
 
 		idpLabel := w.choiceFriendlyLabelIDP(idpARN, idpARN, configIDPs)
-		idpData := idpTemplateData{
-			IDP: idpLabel,
-		}
-		rich, _, err := core.RunTemplate(idpSelectedTemplate, idpData)
-		if err != nil {
-			return "", err
-		}
-		w.config.Logger.Warn(rich + "\n")
+		w.config.Logger.Warn(fmt.Sprintf("  %s %s\n", labelStyle.Render("IdP:"), valueStyle.Render(idpLabel)))
 		return idpARN, nil
 	}
 
@@ -560,12 +516,7 @@ func (w *WebSSOAuthentication) promptForIDP(idpARNs []string) (idpARN string, er
 		idpChoiceLabels[i] = idpLabel
 	}
 
-	var idpChoice string
-	prompt := &survey.Select{
-		Message: chooseIDP,
-		Options: idpChoiceLabels,
-	}
-	err = survey.AskOne(prompt, &idpChoice, survey.WithValidator(survey.Required), stderrIsOutAskOpt)
+	idpChoice, err := picker.Pick(chooseIDP, idpChoiceLabels)
 	if err != nil {
 		return idpARN, fmt.Errorf(askIDPError, err)
 	}

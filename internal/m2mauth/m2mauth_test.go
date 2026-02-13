@@ -17,6 +17,10 @@
 package m2mauth
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"net/http"
 	"os"
 	"regexp"
@@ -26,6 +30,26 @@ import (
 	"github.com/okta/okta-aws-cli/v2/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
+
+// generateTestPrivateKey creates a 2048-bit RSA private key in PKCS8 PEM format for testing
+func generateTestPrivateKey() (string, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", err
+	}
+
+	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return "", err
+	}
+
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: pkcs8Bytes,
+	}
+
+	return string(pem.EncodeToMemory(pemBlock)), nil
+}
 
 func TestMain(m *testing.M) {
 	var reset func()
@@ -42,20 +66,12 @@ func TestMain(m *testing.M) {
 	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_KEY_ID", "kid-rock")
 	defer reset()
 
-	// NOTE: Okta Security this is just some random PK to unit test the client
-	// assertion generator in this app. PK was created with
-	// `openssl genrsa 512 | pbcopy`
-	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_PRIVATE_KEY", `
------BEGIN PRIVATE KEY-----
-MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAzAZ73GY6TbcC0cQS
-LQ+GfIkZxeTJjkW8+pdg0zmcGs4ZByZqp7oP02TbZ0UyLFHe8Eqik5rXR98mts5e
-TuG2BwIDAQABAkEAmG2jrjdGCffYCGYnejjmLjaz5bCXkU6y8LmWIlkhMrg/F7uH
-/yjmN3Hcj06F4b2DRczIIxWHpZVeFaqxvitZ6QIhAPlxhYIIpx4h+mf7cPXOlCZc
-QDRqIa+pp3JH3Pgrz8mzAiEA0WNZP8acq251xTl2i+OrstH0o3YeYUmASv8bmyNs
-0F0CIALSAsVunZ0cmz0zvZo55LjuUBeHn6vhyi/jmh8AN9A7AiEAoNtM1iTTeROb
-4A7cFm2qGu8WnHkCr8SSjYrb/1vAnXUCIFgT6wGO6AFjQAahQlpVnqpppP9F8eSd
-qrebTIkNMM8u
------END PRIVATE KEY-----`)
+	// Generate a fresh RSA key for testing JWT signing
+	privateKey, err := generateTestPrivateKey()
+	if err != nil {
+		panic("failed to generate test private key: " + err.Error())
+	}
+	reset = testutils.OsSetEnvIfBlank("OKTA_AWSCLI_PRIVATE_KEY", privateKey)
 	defer reset()
 
 	os.Exit(m.Run())
