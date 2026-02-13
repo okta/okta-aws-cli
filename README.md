@@ -584,27 +584,13 @@ When multiple IdPs or Roles are available, `okta-aws-cli` presents an interactiv
 picker with fuzzy search capabilities. This makes it easy to find the right
 option even when you have many roles configured.
 
+![Fuzzy Search Picker Demo](.github/assets/demo.gif)
+
 **Features:**
 - **Fuzzy search**: Type to filter options - matches are highlighted
 - **Smart filtering**: Search is performed on the role/IdP name only (the part after the last `/`), not the full ARN
 - **Keyboard navigation**: Use `↑`/`↓` arrows to navigate, `Enter` to select, `Esc` to cancel
 - **Scroll indicators**: Shows count of items above/below when list is long
-
-**Example:**
-
-```
-? Choose a Role:
-
-  > Type to filter...
-
-  ↑ 5 more above
-> arn:aws:iam::123456789012:role/admin        <- selected, highlighted
-  arn:aws:iam::123456789012:role/developer
-  arn:aws:iam::123456789012:role/readonly
-  ↓ 10 more below
-
-  (esc to cancel)
-```
 
 When typing `dev`, only roles containing "dev" in the role name will be shown,
 with the matching characters highlighted.
