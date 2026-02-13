@@ -1,10 +1,15 @@
 # Changelog
 
-## Unreleased
+## 2.6.0 (February 14, 2025)
 
-### SECURITY
+### ENHANCEMENTS
 
 * Move web SSO token from URL query parameter to POST request body for `/login/token/sso` endpoint to prevent token exposure in server logs, browser history, and proxy logs
+* Add fuzzy-find picker for the CLI to pick the roles and IdPs.
+
+### BUG FIXES
+
+* Fix GitHub release workflow for chocolatey release
 
 ## 2.5.3 (Feb 5, 2026)
 
