@@ -694,6 +694,7 @@ awscli:
       aws-iam-role: "arn:aws:iam::123:role/S3_Read"
       write-aws-credentials: true
       open-browser: true
+      short-user-agent: true
     production:
       oidc-client-id: "0opabc"
       org-domain: "org-prd.okata.com"
@@ -701,6 +702,7 @@ awscli:
       aws-iam-role: "arn:aws:iam::456:role/S3_Read"
       write-aws-credentials: true
       open-browser: true
+      short-user-agent: false
 ```
 
 ## Debug okta.yaml
