@@ -47,10 +47,6 @@ type DirectAuthentication struct {
 // NewDirectAuthentication New Direct Authentication constructor
 func NewDirectAuthentication(cfg *config.Config) (*DirectAuthentication, error) {
 	// need to set our config defaults
-	if cfg.AuthzID() == "" {
-		_ = cfg.SetAuthzID(utils.DefaultAuthzID)
-	}
-
 	// Check if exec arg is present and that there are args for it before doing any work
 	if cfg.Exec() {
 		if _, err := exec.NewExec(cfg); err != nil {
@@ -116,7 +112,12 @@ func (da *DirectAuthentication) EstablishIAMCredentials() error {
 // https://developer.okta.com/docs/guides/configure-direct-auth-grants/dmfaoobov/main/#challenge-request
 func (da *DirectAuthentication) challengeAndPollForAT(mfaToken *okta.MFAToken) (at *okta.AccessToken, err error) {
 	clientID := da.config.OIDCAppID()
-	challengeURL := fmt.Sprintf(okta.CustomAuthzV1ChallengeEndpointFormat, da.config.OrgDomain(), da.config.AuthzID())
+        var challengeURL string
+        if da.config.AuthzID() == "" {
+            challengeURL = fmt.Sprintf(okta.OAuthV1ChallengeEndpointFormat, da.config.OrgDomain())
+        } else {
+            challengeURL = fmt.Sprintf(okta.CustomAuthzV1ChallengeEndpointFormat, da.config.OrgDomain(), da.config.AuthzID())
+        }
 	data := url.Values{
 		"client_id":                 {clientID},
 		"mfa_token":                 {mfaToken.Token},
@@ -157,7 +158,12 @@ func (da *DirectAuthentication) challengeAndPollForAT(mfaToken *okta.MFAToken) (
 	// Keep polling if Status Code is 400 and apiError.Error ==
 	// "authorization_pending". Done if status code is 200. Else error.
 	poll := func() error {
-		requestTokenURL := fmt.Sprintf(okta.CustomAuthzV1TokenEndpointFormat, da.config.OrgDomain(), da.config.AuthzID())
+                var requestTokenURL string
+                if da.config.AuthzID() == "" {
+                    requestTokenURL = fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, da.config.OrgDomain())
+                } else {
+                    requestTokenURL = fmt.Sprintf(okta.CustomAuthzV1TokenEndpointFormat, da.config.OrgDomain(), da.config.AuthzID())
+                }
 		data := url.Values{
 			"client_id":  {clientID},
 			"scope":      {"openid profile"},
@@ -223,7 +229,12 @@ func (da *DirectAuthentication) requestMFAToken() (*okta.MFAToken, error) {
 	clientID := da.config.OIDCAppID()
 	username := da.config.Username()
 	password := da.config.Password()
-	requestTokenURL := fmt.Sprintf(okta.CustomAuthzV1TokenEndpointFormat, da.config.OrgDomain(), da.config.AuthzID())
+        var requestTokenURL string
+                if da.config.AuthzID() == "" {
+                    requestTokenURL = fmt.Sprintf(okta.OAuthV1TokenEndpointFormat, da.config.OrgDomain())
+                } else {
+                    requestTokenURL = fmt.Sprintf(okta.CustomAuthzV1TokenEndpointFormat, da.config.OrgDomain(), da.config.AuthzID())
+                }
 	data := url.Values{
 		"client_id":  {clientID},
 		"grant_type": {"password"},
