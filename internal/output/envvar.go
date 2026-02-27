@@ -17,6 +17,7 @@
 package output
 
 import (
+	"os"
 	"runtime"
 
 	oaws "github.com/okta/okta-aws-cli/v2/internal/aws"
@@ -44,7 +45,15 @@ func (e *EnvVar) Output(c *config.Config, cc *oaws.CredentialContainer) error {
 		SessionToken:    cc.SessionToken,
 	}
 	c.Logger.Warn("\n")
-	if runtime.GOOS == "windows" {
+	if os.Getenv("PSModulePath") != "" {
+		// we're on powershell.
+		c.Logger.Info("$Env:AWS_ACCESS_KEY_ID = \"%s\"\n", evc.AccessKeyID)
+		c.Logger.Info("$Env:AWS_SECRET_ACCESS_KEY = \"%s\"\n", evc.SecretAccessKey)
+		c.Logger.Info("$Env:AWS_SESSION_TOKEN = \"%s\"\n", evc.SessionToken)
+		if e.LegacyAWSVariables {
+			c.Logger.Info("$Env:AWS_SECURITY_TOKEN = \"%s\"\n", evc.SessionToken)
+		}
+	} else if runtime.GOOS == "windows" {
 		c.Logger.Info("setx AWS_ACCESS_KEY_ID %s\n", evc.AccessKeyID)
 		c.Logger.Info("setx AWS_SECRET_ACCESS_KEY %s\n", evc.SecretAccessKey)
 		c.Logger.Info("setx AWS_SESSION_TOKEN %s\n", evc.SessionToken)
