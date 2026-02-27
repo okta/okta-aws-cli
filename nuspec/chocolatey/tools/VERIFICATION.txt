@@ -1,0 +1,29 @@
+VERIFICATION
+
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+
+This package contains the official okta-aws-cli binary from Okta, Inc.
+
+The embedded software is downloaded from the official GitHub releases page:
+  https://github.com/okta/okta-aws-cli/releases
+
+For verification, you can:
+
+1. Download the official release directly from GitHub:
+   https://github.com/okta/okta-aws-cli/releases
+
+2. Look for the file named: okta-aws-cli_{version}_windows_386.zip
+   (The version will match this Chocolatey package version)
+
+3. Extract the downloaded zip and compare the contents with the embedded
+   okta-aws-cli.zip file in this package's tools directory.
+
+4. Verify the checksum of the embedded binary matches the official release
+   by computing the SHA256 hash of okta-aws-cli.zip.
+
+The okta-aws-cli project is open source and maintained by Okta, Inc.
+Source code is available at: https://github.com/okta/okta-aws-cli
+
+The software is licensed under the Apache License 2.0.
+A copy of the license is included in the LICENSE.txt file.
